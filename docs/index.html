@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Programa de Logística</title>
+    <meta
+      name="description"
+      content="Gestión de envíos y seguimiento de logística (versión estática)."
+    />
+    <style>
+      :root {
+        --bg: #f7f7f8;
+        --card: #ffffff;
+        --fg: #171717;
+        --muted: #6b7280;
+        --border: rgba(0, 0, 0, 0.1);
+        --accent: #111827;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        min-height: 100vh;
+      }
+      .wrap { max-width: 960px; margin: 0 auto; padding: 24px 20px 64px; }
+      h1 { font-size: 28px; margin: 0; letter-spacing: -0.02em; }
+      h2 { font-size: 18px; margin: 0 0 16px; }
+      .muted { color: var(--muted); }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 22px;
+      }
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      .grid-metrics {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+        margin-bottom: 24px;
+      }
+      .metric { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+      .metric .v { font-size: 26px; font-weight: 700; }
+      .metric .k { font-size: 12px; color: var(--muted); }
+      form.envio-form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 500; }
+      input {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 14px;
+        outline: none;
+      }
+      input:focus { border-color: rgba(0, 0, 0, 0.4); }
+      .full { grid-column: 1 / -1; }
+      button {
+        cursor: pointer;
+        border: none;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .btn-primary { background: var(--accent); color: #fff; padding: 11px 18px; }
+      .btn-primary:disabled { opacity: 0.5; cursor: default; }
+      .btn-ghost { background: transparent; border: 1px solid var(--border); padding: 6px 10px; font-size: 12px; }
+      .btn-ghost:hover { background: rgba(0, 0, 0, 0.05); }
+      table { width: 100%; border-collapse: collapse; font-size: 14px; }
+      th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid rgba(0, 0, 0, 0.06); }
+      thead tr { background: rgba(0, 0, 0, 0.04); }
+      .code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+      .badge { border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 600; }
+      .b-pendiente { background: #fef3c7; color: #92400e; }
+      .b-en_transito { background: #dbeafe; color: #1e40af; }
+      .b-entregado { background: #dcfce7; color: #166534; }
+      .b-cancelado { background: #fee2e2; color: #991b1b; }
+      .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+      .error { background: #fee2e2; color: #991b1b; border-radius: 10px; padding: 10px 14px; font-size: 14px; margin-top: 14px; }
+      .hidden { display: none !important; }
+      /* Login */
+      .login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+      .login-card { width: 100%; max-width: 380px; }
+      .login-card h1 { font-size: 22px; margin-bottom: 4px; }
+      .login-card form { display: flex; flex-direction: column; gap: 14px; margin-top: 18px; }
+      .session-chip { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+      .avatar {
+        width: 34px; height: 34px; border-radius: 999px; background: var(--accent);
+        color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700;
+      }
+      @media (max-width: 620px) {
+        .grid-metrics { grid-template-columns: 1fr; }
+        form.envio-form { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Pantalla de inicio de sesión -->
+    <div id="login" class="login-screen">
+      <div class="card login-card">
+        <h1>Programa de Logística</h1>
+        <p class="muted">Inicia una sesión para gestionar los envíos.</p>
+        <form id="login-form">
+          <label>
+            Nombre de usuario
+            <input id="login-nombre" type="text" placeholder="Ej: operador1" required />
+          </label>
+          <label>
+            Correo (opcional)
+            <input id="login-email" type="email" placeholder="lasucursaldelcafe@gmail.com" />
+          </label>
+          <button class="btn-primary" type="submit">Iniciar sesión</button>
+        </form>
+        <p id="login-error" class="error hidden"></p>
+      </div>
+    </div>
+
+    <!-- Panel principal (requiere sesión) -->
+    <div id="app" class="wrap hidden">
+      <div class="topbar">
+        <div>
+          <h1>Programa de Logística</h1>
+          <p class="muted" style="margin: 4px 0 0">Registra envíos y actualiza su estado de entrega.</p>
+        </div>
+        <div class="session-chip">
+          <div id="avatar" class="avatar"></div>
+          <div>
+            <div id="session-nombre" style="font-weight: 600"></div>
+            <button id="logout" class="btn-ghost" type="button">Cerrar sesión</button>
+          </div>
+        </div>
+      </div>
+
+      <section class="grid-metrics">
+        <div class="metric"><div id="m-total" class="v">0</div><div class="k">Total</div></div>
+        <div class="metric"><div id="m-transito" class="v">0</div><div class="k">En tránsito</div></div>
+        <div class="metric"><div id="m-entregados" class="v">0</div><div class="k">Entregados</div></div>
+      </section>
+
+      <section class="card" style="margin-bottom: 28px">
+        <h2>Nuevo envío</h2>
+        <form id="envio-form" class="envio-form">
+          <label>Origen<input id="f-origen" type="text" placeholder="Bogotá" /></label>
+          <label>Destino<input id="f-destino" type="text" placeholder="Medellín" /></label>
+          <label>Destinatario<input id="f-destinatario" type="text" placeholder="Ana Gómez" /></label>
+          <label>Peso (kg)<input id="f-peso" type="number" min="0" placeholder="3" /></label>
+          <div class="full"><button class="btn-primary" type="submit">Crear envío</button></div>
+        </form>
+        <p id="form-error" class="error hidden"></p>
+      </section>
+
+      <section>
+        <h2>Envíos registrados</h2>
+        <div id="empty" class="muted hidden">Aún no hay envíos. Crea el primero arriba.</div>
+        <div class="card" style="padding: 0; overflow-x: auto">
+          <table id="tabla">
+            <thead>
+              <tr>
+                <th>Código</th><th>Ruta</th><th>Destinatario</th><th>Peso</th><th>Estado</th><th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      // ---- Dominio de logística (mismo modelo que la app Next.js) ----
+      const ESTADOS = ["pendiente", "en_transito", "entregado", "cancelado"];
+      const ETIQUETA = {
+        pendiente: "Pendiente",
+        en_transito: "En tránsito",
+        entregado: "Entregado",
+        cancelado: "Cancelado",
+      };
+      const TRANSICIONES = {
+        pendiente: ["en_transito", "cancelado"],
+        en_transito: ["entregado", "cancelado"],
+        entregado: [],
+        cancelado: [],
+      };
+
+      function generarCodigo() {
+        const abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        let s = "";
+        for (let i = 0; i < 6; i++) s += abc[Math.floor(Math.random() * abc.length)];
+        return "ENV-" + s;
+      }
+
+      function validarEnvio(entrada) {
+        const errores = [];
+        const origen = (entrada.origen || "").trim();
+        const destino = (entrada.destino || "").trim();
+        const destinatario = (entrada.destinatario || "").trim();
+        if (!origen) errores.push("El origen es obligatorio.");
+        if (!destino) errores.push("El destino es obligatorio.");
+        if (!destinatario) errores.push("El destinatario es obligatorio.");
+        const pesoKg = Number.isFinite(Number(entrada.pesoKg)) ? Math.round(Number(entrada.pesoKg)) : 0;
+        if (pesoKg < 0) errores.push("El peso no puede ser negativo.");
+        if (errores.length) return { ok: false, errores };
+        return { ok: true, datos: { origen, destino, destinatario, pesoKg } };
+      }
+
+      // ---- Persistencia (localStorage) ----
+      const KEY_ENVIOS = "logistica.envios";
+      const KEY_SESION = "logistica.sesion";
+
+      function leerEnvios() {
+        try { return JSON.parse(localStorage.getItem(KEY_ENVIOS)) || []; }
+        catch { return []; }
+      }
+      function guardarEnvios(lista) {
+        localStorage.setItem(KEY_ENVIOS, JSON.stringify(lista));
+      }
+
+      // ---- Sesión ----
+      function leerSesion() {
+        try { return JSON.parse(localStorage.getItem(KEY_SESION)); }
+        catch { return null; }
+      }
+      function abrirSesion(nombre, email) {
+        const sesion = { nombre, email: email || null, iniciada: new Date().toISOString() };
+        localStorage.setItem(KEY_SESION, JSON.stringify(sesion));
+        return sesion;
+      }
+      function cerrarSesion() { localStorage.removeItem(KEY_SESION); }
+
+      // ---- UI ----
+      const $ = (id) => document.getElementById(id);
+
+      function mostrarPantalla() {
+        const sesion = leerSesion();
+        if (sesion) {
+          $("login").classList.add("hidden");
+          $("app").classList.remove("hidden");
+          $("session-nombre").textContent = sesion.nombre;
+          $("avatar").textContent = (sesion.nombre[0] || "?").toUpperCase();
+          render();
+        } else {
+          $("app").classList.add("hidden");
+          $("login").classList.remove("hidden");
+        }
+      }
+
+      function render() {
+        const envios = leerEnvios().slice().sort((a, b) => b.id - a.id);
+        $("m-total").textContent = envios.length;
+        $("m-transito").textContent = envios.filter((e) => e.estado === "en_transito").length;
+        $("m-entregados").textContent = envios.filter((e) => e.estado === "entregado").length;
+
+        const tbody = $("tbody");
+        tbody.innerHTML = "";
+        $("empty").classList.toggle("hidden", envios.length !== 0);
+        $("tabla").classList.toggle("hidden", envios.length === 0);
+
+        for (const e of envios) {
+          const tr = document.createElement("tr");
+          const acciones = TRANSICIONES[e.estado]
+            .map((s) => `<button class="btn-ghost" data-id="${e.id}" data-estado="${s}">${ETIQUETA[s]}</button>`) 
+            .join("");
+          tr.innerHTML = `
+            <td class="code">${e.codigo}</td>
+            <td>${e.origen} → ${e.destino}</td>
+            <td>${e.destinatario}</td>
+            <td>${e.pesoKg} kg</td>
+            <td><span class="badge b-${e.estado}">${ETIQUETA[e.estado]}</span></td>
+            <td><div class="actions">${acciones || '<span class="muted">—</span>'}</div></td>`;
+          tbody.appendChild(tr);
+        }
+      }
+
+      function crearEnvio(ev) {
+        ev.preventDefault();
+        const err = $("form-error");
+        err.classList.add("hidden");
+        const validacion = validarEnvio({
+          origen: $("f-origen").value,
+          destino: $("f-destino").value,
+          destinatario: $("f-destinatario").value,
+          pesoKg: $("f-peso").value,
+        });
+        if (!validacion.ok) {
+          err.textContent = validacion.errores.join(" ");
+          err.classList.remove("hidden");
+          return;
+        }
+        const envios = leerEnvios();
+        const id = envios.reduce((max, e) => Math.max(max, e.id), 0) + 1;
+        const ahora = new Date().toISOString();
+        envios.push({
+          id,
+          codigo: generarCodigo(),
+          ...validacion.datos,
+          estado: "pendiente",
+          creadoEn: ahora,
+          actualizadoEn: ahora,
+        });
+        guardarEnvios(envios);
+        $("envio-form").reset();
+        render();
+      }
+
+      function cambiarEstado(id, estado) {
+        const err = $("form-error");
+        err.classList.add("hidden");
+        const envios = leerEnvios();
+        const envio = envios.find((e) => e.id === id);
+        if (!envio) return;
+        if (envio.estado !== estado && !TRANSICIONES[envio.estado].includes(estado)) {
+          err.textContent = `No se puede pasar de "${ETIQUETA[envio.estado]}" a "${ETIQUETA[estado]}".`;
+          err.classList.remove("hidden");
+          return;
+        }
+        envio.estado = estado;
+        envio.actualizadoEn = new Date().toISOString();
+        guardarEnvios(envios);
+        render();
+      }
+
+      // ---- Eventos ----
+      $("login-form").addEventListener("submit", (ev) => {
+        ev.preventDefault();
+        const nombre = $("login-nombre").value.trim();
+        const le = $("login-error");
+        if (!nombre) {
+          le.textContent = "Introduce un nombre de usuario.";
+          le.classList.remove("hidden");
+          return;
+        }
+        le.classList.add("hidden");
+        abrirSesion(nombre, $("login-email").value.trim());
+        mostrarPantalla();
+      });
+
+      $("logout").addEventListener("click", () => {
+        cerrarSesion();
+        mostrarPantalla();
+      });
+
+      $("envio-form").addEventListener("submit", crearEnvio);
+
+      $("tbody").addEventListener("click", (ev) => {
+        const btn = ev.target.closest("button[data-id]");
+        if (!btn) return;
+        cambiarEstado(Number(btn.dataset.id), btn.dataset.estado);
+      });
+
+      // Arranque
+      mostrarPantalla();
+    </script>
+  </body>
+</html>

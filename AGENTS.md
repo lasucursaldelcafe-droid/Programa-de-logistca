@@ -29,3 +29,13 @@ sobre libSQL/SQLite y Tailwind CSS v4.
   el `useEffect` inicial en `src/app/page.tsx` como referencia.
 - **Fuentes:** no se usa `next/font/google` para evitar depender de red durante el
   build. Si añades fuentes de Google, ten en cuenta que el build necesitará red.
+- **Sitio estático (`docs/index.html`):** versión HTML autónoma (sin build, sin
+  dependencias) de la logística con login de sesión y persistencia en
+  `localStorage`. Pruébala con `python3 -m http.server 8080 --directory docs` y
+  abre `http://localhost:8080`. OJO: si la app Next.js está corriendo en `:3000`,
+  no confundas las URLs — el estático es el `:8080` (empieza con pantalla de
+  login; el Next.js no tiene login). Se publica en GitHub Pages vía
+  `.github/workflows/pages.yml` (push a `main`, auto-habilita Pages).
+- **Sesiones:** el estático usa sesión local (localStorage), no auth real. Para
+  OAuth real (Google) habría que registrar el dominio de Pages + Client ID; no hay
+  secretos de proyecto inyectados en el entorno del cloud agent.

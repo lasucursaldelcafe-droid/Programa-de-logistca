@@ -55,6 +55,29 @@ tests/
   logistica.test.ts          # Tests del dominio
 ```
 
+## Versión estática (GitHub Pages)
+
+Además de la app Next.js, hay una versión **estática autónoma** en
+[`docs/index.html`](docs/index.html): un único archivo HTML (sin build ni
+dependencias) con **inicio de sesión** y gestión de envíos, con persistencia en
+`localStorage`. Sirve para probar la interfaz directamente desde GitHub sin
+levantar un servidor Node ni credenciales.
+
+- **Probar en local:**
+  ```bash
+  python3 -m http.server 8080 --directory docs
+  # abre http://localhost:8080
+  ```
+- **Publicación automática:** el workflow
+  [`.github/workflows/pages.yml`](.github/workflows/pages.yml) publica `docs/` en
+  **GitHub Pages** en cada push a `main` (auto-habilita Pages). Tras el primer
+  despliegue, el sitio queda disponible en
+  `https://<usuario>.github.io/Programa-de-logistca/`.
+- **Sesiones:** el login crea una sesión local (nombre de usuario + correo
+  opcional) guardada en `localStorage`; "Cerrar sesión" la elimina. No requiere
+  credenciales externas. Para integrar un inicio de sesión real (p. ej. Google
+  OAuth) habría que registrar el dominio de Pages y un Client ID.
+
 ## Configuración (opcional, para Turso)
 
 Crea un archivo `.env.local`:
