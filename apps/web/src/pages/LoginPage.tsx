@@ -3,10 +3,12 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Card } from "../components/ui";
 import { DEMO_MODE } from "../lib/mode";
+import { useDeploymentLinks } from "../hooks/useDeploymentLinks";
 
 export function LoginPage() {
   const { user, loading, login } = useAuth();
   const navigate = useNavigate();
+  const deployLinks = useDeploymentLinks();
   const [email, setEmail] = useState("admin@eventos.test");
   const [password, setPassword] = useState("Admin123!");
   const [error, setError] = useState<string | null>(null);
@@ -81,6 +83,19 @@ export function LoginPage() {
             <li>supervisor@eventos.test / Super123!</li>
             <li>maria@eventos.test / Trab123!</li>
           </ul>
+          {deployLinks && (
+            <p className="mt-3 border-t border-border pt-3">
+              App pública:{" "}
+              <a
+                href={deployLinks.pagesUrl}
+                className="text-accent hover:underline"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {deployLinks.pagesUrl}
+              </a>
+            </p>
+          )}
         </div>
       </Card>
     </div>

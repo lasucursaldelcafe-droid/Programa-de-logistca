@@ -19,6 +19,16 @@ npm start        # todo en uno → http://localhost:5173
 
 ## Ver en línea (GitHub Pages)
 
+<!-- DEPLOY_LINKS_START -->
+| Recurso | URL |
+|---------|-----|
+| **App en línea** | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/ |
+| **Repositorio** | https://github.com/lasucursaldelcafe-droid/Programa-de-logistca |
+| **Actions (CI)** | https://github.com/lasucursaldelcafe-droid/Programa-de-logistca/actions |
+
+> Enlaces generados automáticamente por `npm run sync:links` desde el repo `lasucursaldelcafe-droid/Programa-de-logistca`.
+<!-- DEPLOY_LINKS_END -->
+
 **URL pública:** https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/
 
 Cada push a `main` despliega automáticamente la app en modo demo (datos en memoria del navegador). Usa las mismas cuentas de prueba.

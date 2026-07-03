@@ -27,6 +27,7 @@ function main(): void {
 
   console.log("\n✓ Setup listo.");
   console.log("  Arranque automático: npm start");
+  console.log("  Sincronizar enlaces: npm run sync:links");
   console.log("  (emuladores + seed + app en http://localhost:5173)");
 }
 
