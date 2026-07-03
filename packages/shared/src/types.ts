@@ -298,3 +298,83 @@ export const ATTENDANCE_LABEL: Record<AttendanceEstado, string> = {
   revision_manual: "Revisión manual",
   cerrado: "Cerrado",
 };
+
+export type PayrollEstado = "pendiente" | "pagado";
+
+export type RefrigerioTipo = "desayuno" | "almuerzo" | "cena" | "snack";
+
+export interface RefrigerioAsignado {
+  tipo: RefrigerioTipo;
+  costo: number;
+}
+
+export interface PayrollRate {
+  id: string;
+  perfil: PerfilTrabajo;
+  tarifaPorHora: number;
+  costoRefrigerioAlmuerzo?: number;
+  costoRefrigerioCena?: number;
+  costoRefrigerioSnack?: number;
+}
+
+export interface PayrollEntry {
+  id: string;
+  workerId: string;
+  workerNombre: string;
+  eventId: string;
+  eventNombre?: string;
+  siteId: string;
+  siteNombre?: string;
+  attendanceId: string;
+  perfilAplicado: PerfilTrabajo;
+  periodoInicio: string;
+  periodoFin: string;
+  horasTrabajadas: number;
+  tarifaAplicada: number;
+  subtotalHoras: number;
+  refrigerios: RefrigerioAsignado[];
+  totalRefrigerios: number;
+  total: number;
+  estado: PayrollEstado;
+  calculadoEn: string;
+  calculadoPor?: string;
+  calculadoPorNombre?: string;
+  pagadoEn?: string;
+}
+
+export type PayrollAuditAccion = "calculado" | "marcado_pagado" | "exportado";
+
+export interface PayrollAuditEntry {
+  id: string;
+  payrollId: string;
+  accion: PayrollAuditAccion;
+  actorUid: string;
+  actorNombre: string;
+  timestamp: string;
+  detalle?: string;
+}
+
+export const PAYROLL_ESTADO_LABEL: Record<PayrollEstado, string> = {
+  pendiente: "Pendiente",
+  pagado: "Pagado",
+};
+
+export const REFRIGERIO_TIPO_LABEL: Record<RefrigerioTipo, string> = {
+  desayuno: "Desayuno",
+  almuerzo: "Almuerzo",
+  cena: "Cena",
+  snack: "Snack",
+};
+
+export function puedeGestionarNomina(role: UserRole): boolean {
+  return role === "super_admin" || role === "administrador";
+}
+
+export function puedeVerNomina(role: UserRole): boolean {
+  return (
+    role === "super_admin" ||
+    role === "administrador" ||
+    role === "supervisor_sitio" ||
+    role === "trabajador"
+  );
+}

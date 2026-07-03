@@ -51,6 +51,21 @@ async function main(): Promise<void> {
     throw new Error(`Se esperaban ≥2 notificaciones, hay ${notifications.size}`);
   }
 
+  const payrollRates = await db.collection("payrollRates").get();
+  if (payrollRates.size < 5) {
+    throw new Error(`Se esperaban ≥5 tarifas de nómina, hay ${payrollRates.size}`);
+  }
+
+  const payroll = await db.collection("payroll").get();
+  if (payroll.size < 1) {
+    throw new Error(`Se esperaba ≥1 registro de nómina, hay ${payroll.size}`);
+  }
+
+  const payrollAudit = await db.collection("payrollAudit").get();
+  if (payrollAudit.size < 1) {
+    throw new Error(`Se esperaba ≥1 entrada de auditoría, hay ${payrollAudit.size}`);
+  }
+
   console.log("✓ Smoke test OK:", {
     admin: admin.email,
     workers: workers.size,
@@ -59,6 +74,9 @@ async function main(): Promise<void> {
     qrCodes: qrCodes.size,
     attendance: attendance.size,
     notifications: notifications.size,
+    payrollRates: payrollRates.size,
+    payroll: payroll.size,
+    payrollAudit: payrollAudit.size,
   });
 }
 

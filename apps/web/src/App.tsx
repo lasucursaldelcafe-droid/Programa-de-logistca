@@ -12,6 +12,7 @@ import { QrSitiosPage } from "./pages/QrSitiosPage";
 import { MarcarEntradaPage } from "./pages/MarcarEntradaPage";
 import { MapaEnVivoPage } from "./pages/MapaEnVivoPage";
 import { NotificacionesPage } from "./pages/NotificacionesPage";
+import { NominaPage } from "./pages/NominaPage";
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -71,6 +72,7 @@ export function App() {
         <Route path="mapa" element={<MapaEnVivoPage />} />
         <Route path="marcar-entrada" element={<MarcarEntradaPage />} />
         <Route path="notificaciones" element={<NotificacionesPage />} />
+        <Route path="nomina" element={<NominaPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

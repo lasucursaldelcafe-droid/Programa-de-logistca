@@ -7,6 +7,9 @@ import type {
   Evento,
   GeoRegistro,
   Invitation,
+  PayrollAuditEntry,
+  PayrollEntry,
+  PayrollRate,
   QrCode,
   Sitio,
   Turno,
@@ -244,6 +247,90 @@ export const INITIAL_ATTENDANCES: Attendance[] = [
   },
 ];
 
+const mariaEntrada = new Date();
+mariaEntrada.setDate(mariaEntrada.getDate() - 2);
+mariaEntrada.setHours(8, 0, 0, 0);
+const mariaSalida = new Date(mariaEntrada);
+mariaSalida.setHours(16, 30, 0, 0);
+
+export const INITIAL_ATTENDANCE_CLOSED: Attendance = {
+  id: "att-maria-cerrada",
+  workerId: "worker-maria",
+  workerNombre: "María López",
+  shiftId: "shift-maria-1",
+  siteId: "site-cocina",
+  siteNombre: "Cocina central",
+  eventId: "event-festival",
+  eventNombre: "Festival Gastronómico 2026",
+  qrId: "qr-site-cocina",
+  estado: "cerrado",
+  entrada: {
+    timestamp: mariaEntrada.toISOString(),
+    lat: 4.6533,
+    lng: -74.0836,
+    dentroGeocerca: true,
+  },
+  salida: {
+    timestamp: mariaSalida.toISOString(),
+    lat: 4.6533,
+    lng: -74.0836,
+    dentroGeocerca: true,
+  },
+  alertasGeocerca: [],
+  creadoEn: mariaEntrada.toISOString(),
+};
+
+export const INITIAL_PAYROLL_RATES: PayrollRate[] = [
+  { id: "rate-logistica", perfil: "logistica", tarifaPorHora: 18_000, costoRefrigerioAlmuerzo: 12_000, costoRefrigerioSnack: 5_000 },
+  { id: "rate-montaje", perfil: "montaje", tarifaPorHora: 20_000, costoRefrigerioAlmuerzo: 12_000, costoRefrigerioCena: 10_000 },
+  { id: "rate-recreacion", perfil: "recreacion", tarifaPorHora: 16_000, costoRefrigerioAlmuerzo: 11_000, costoRefrigerioSnack: 4_500 },
+  { id: "rate-anfitrion", perfil: "anfitrion", tarifaPorHora: 17_000, costoRefrigerioAlmuerzo: 11_000 },
+  { id: "rate-chef", perfil: "chef", tarifaPorHora: 25_000, costoRefrigerioAlmuerzo: 15_000, costoRefrigerioCena: 12_000 },
+  { id: "rate-supervisor", perfil: "supervisor", tarifaPorHora: 28_000, costoRefrigerioAlmuerzo: 15_000, costoRefrigerioCena: 12_000 },
+  { id: "rate-seguridad", perfil: "seguridad", tarifaPorHora: 19_000, costoRefrigerioAlmuerzo: 12_000 },
+];
+
+export const INITIAL_PAYROLL_ENTRIES: PayrollEntry[] = [
+  {
+    id: "pay-maria-demo",
+    workerId: "worker-maria",
+    workerNombre: "María López",
+    eventId: "event-festival",
+    eventNombre: "Festival Gastronómico 2026",
+    siteId: "site-cocina",
+    siteNombre: "Cocina central",
+    attendanceId: "att-maria-cerrada",
+    perfilAplicado: "montaje",
+    periodoInicio: mariaEntrada.toISOString(),
+    periodoFin: mariaSalida.toISOString(),
+    horasTrabajadas: 8.5,
+    tarifaAplicada: 20_000,
+    subtotalHoras: 170_000,
+    refrigerios: [
+      { tipo: "almuerzo", costo: 12_000 },
+      { tipo: "cena", costo: 10_000 },
+    ],
+    totalRefrigerios: 22_000,
+    total: 192_000,
+    estado: "pendiente",
+    calculadoEn: new Date().toISOString(),
+    calculadoPor: "demo-admin",
+    calculadoPorNombre: "Admin Principal",
+  },
+];
+
+export const INITIAL_PAYROLL_AUDIT: PayrollAuditEntry[] = [
+  {
+    id: "audit-maria-1",
+    payrollId: "pay-maria-demo",
+    accion: "calculado",
+    actorUid: "demo-admin",
+    actorNombre: "Admin Principal",
+    timestamp: new Date().toISOString(),
+    detalle: "María López: 8.5h × $20000",
+  },
+];
+
 export const INITIAL_NOTIFICATIONS: Omit<AppNotification, "id">[] = [
   {
     tipo: "turno_asignado",
@@ -295,12 +382,15 @@ class DemoStore {
   sites = [...INITIAL_SITES];
   invitations = [...INITIAL_INVITATIONS];
   qrCodes = [...INITIAL_QR_CODES];
-  attendances = [...INITIAL_ATTENDANCES];
+  attendances = [...INITIAL_ATTENDANCES, INITIAL_ATTENDANCE_CLOSED];
   notifications: AppNotification[] = INITIAL_NOTIFICATIONS.map((n, i) => ({
     ...n,
     id: `notif-${i}`,
   }));
   breaks: BreakSchedule[] = [];
+  payrollRates = [...INITIAL_PAYROLL_RATES];
+  payrollEntries = [...INITIAL_PAYROLL_ENTRIES];
+  payrollAudit = [...INITIAL_PAYROLL_AUDIT];
   accounts = [...DEMO_ACCOUNTS];
   private listeners = new Set<Listener>();
 
@@ -545,6 +635,34 @@ class DemoStore {
     this.breaks = this.breaks.map((b) =>
       b.id === breakId ? { ...b, notificado: true } : b,
     );
+    this.notify();
+  }
+
+  upsertPayrollRate(rate: PayrollRate): void {
+    const exists = this.payrollRates.some((r) => r.id === rate.id);
+    this.payrollRates = exists
+      ? this.payrollRates.map((r) => (r.id === rate.id ? rate : r))
+      : [...this.payrollRates, rate].sort((a, b) => a.perfil.localeCompare(b.perfil));
+    this.notify();
+  }
+
+  addPayrollEntry(entry: Omit<PayrollEntry, "id">): string {
+    const id = `pay-${Date.now()}`;
+    this.payrollEntries = [{ ...entry, id }, ...this.payrollEntries];
+    this.notify();
+    return id;
+  }
+
+  updatePayrollEntry(id: string, patch: Partial<PayrollEntry>): void {
+    this.payrollEntries = this.payrollEntries.map((e) =>
+      e.id === id ? { ...e, ...patch } : e,
+    );
+    this.notify();
+  }
+
+  addPayrollAudit(entry: Omit<PayrollAuditEntry, "id">): void {
+    const id = `audit-${Date.now()}`;
+    this.payrollAudit = [{ ...entry, id }, ...this.payrollAudit];
     this.notify();
   }
 }

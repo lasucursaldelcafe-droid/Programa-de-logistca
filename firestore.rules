@@ -123,5 +123,27 @@ service cloud.firestore {
       allow read: if signedIn();
       allow write: if isAdmin() || isSupervisor();
     }
+
+    match /payrollRates/{rateId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /payroll/{payrollId} {
+      allow read: if signedIn()
+        && (isAdmin() || isSupervisor()
+          || (isWorker() && resource.data.workerId == currentWorkerId()));
+      allow create: if isAdmin();
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['estado', 'pagadoEn']);
+      allow delete: if isAdmin();
+    }
+
+    match /payrollAudit/{auditId} {
+      allow read: if isAdmin() || isSupervisor();
+      allow create: if isAdmin();
+      allow update, delete: if false;
+    }
   }
 }

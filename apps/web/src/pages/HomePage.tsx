@@ -1,6 +1,7 @@
 import { useAuth } from "../contexts/AuthContext";
 import { Badge, Card } from "../components/ui";
 import { useShifts, useWorkers, useAttendances } from "../hooks/useDataStore";
+import { usePayrollEntries } from "../hooks/usePayroll";
 import { DEMO_MODE } from "../lib/mode";
 
 export function HomePage() {
@@ -8,6 +9,7 @@ export function HomePage() {
   const workers = useWorkers();
   const shifts = useShifts();
   const attendances = useAttendances();
+  const payroll = usePayrollEntries();
 
   const activos = workers.filter((w) => w.estado === "en_sitio").length;
   const pendientes = shifts.filter((s) => s.estado === "pendiente").length;
@@ -15,6 +17,7 @@ export function HomePage() {
   const alertasGeocerca = attendances.filter(
     (a) => a.estado === "fuera_geocerca" || a.estado === "revision_manual",
   ).length;
+  const nominaPendiente = payroll.filter((p) => p.estado === "pendiente").length;
 
   return (
     <div className="space-y-8">
@@ -25,7 +28,7 @@ export function HomePage() {
           {DEMO_MODE ? " (modo demo)" : " (Firestore)"}.
         </p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         <Card>
           <div className="font-mono text-3xl font-semibold text-accent">
             {workers.length}
@@ -55,6 +58,12 @@ export function HomePage() {
             {alertasGeocerca}
           </div>
           <div className="text-sm text-neutral-400">Alertas geocerca</div>
+        </Card>
+        <Card>
+          <div className="font-mono text-3xl font-semibold text-accent">
+            {nominaPendiente}
+          </div>
+          <div className="text-sm text-neutral-400">Nómina pendiente</div>
         </Card>
       </div>
     </div>
