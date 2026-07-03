@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { ROLE_LABEL, puedeGestionarCuentas, puedeGestionarConfiguracion, puedeGestionarPersonal, puedeGestionarQr, puedeVerMapaEnVivo, puedeVerNomina } from "@spe/shared";
+import { ROLE_LABEL, puedeGestionarCuentas, puedeGestionarConfiguracion, puedeGestionarPersonal, puedeGestionarQr, puedeVerMapaEnVivo, puedeVerNomina, puedeVerReportesTrabajadores } from "@spe/shared";
 import { NotificationBell } from "./NotificationBell";
 import { PlatformBadge } from "./PlatformBadge";
 
@@ -23,7 +23,7 @@ export function AppLayout() {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
           <div>
             <div className="font-display text-lg font-semibold tracking-tight">
-              Personal Eventos
+              Admin Console
             </div>
             <div className="text-xs text-neutral-500 flex items-center gap-2">
               {user.nombre} · {ROLE_LABEL[user.role]}
@@ -54,9 +54,9 @@ export function AppLayout() {
                 Mapa
               </NavLink>
             )}
-            {user.role === "trabajador" && (
-              <NavLink to="/marcar-entrada" className={linkClass}>
-                Entrada
+            {puedeVerReportesTrabajadores(user.role) && (
+              <NavLink to="/reportes" className={linkClass}>
+                Reportes
               </NavLink>
             )}
             <NavLink to="/turnos" className={linkClass}>

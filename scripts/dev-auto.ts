@@ -1,6 +1,5 @@
 /**
- * Arranque automático: setup → emuladores → seed → dev server.
- * Un solo comando: npm start
+ * Arranque automático: setup → emuladores → seed → Admin Console.
  */
 import { spawn, type ChildProcess } from "node:child_process";
 import net from "node:net";
@@ -11,7 +10,7 @@ import { execSync } from "node:child_process";
 const ROOT = resolve(import.meta.dirname, "..");
 const AUTH_PORT = 9099;
 const FIRESTORE_PORT = 8080;
-const WEB_PORT = 5173;
+const ADMIN_PORT = 5173;
 const PROJECT_ID = "demo-personal-eventos";
 
 let emulatorProc: ChildProcess | null = null;
@@ -23,20 +22,20 @@ function log(msg: string): void {
 }
 
 function portOpen(port: number, host = "127.0.0.1", timeoutMs = 800): Promise<boolean> {
-  return new Promise((resolve) => {
+  return new Promise((resolvePort) => {
     const socket = net.connect({ port, host });
     const timer = setTimeout(() => {
       socket.destroy();
-      resolve(false);
+      resolvePort(false);
     }, timeoutMs);
     socket.once("connect", () => {
       clearTimeout(timer);
       socket.end();
-      resolve(true);
+      resolvePort(true);
     });
     socket.once("error", () => {
       clearTimeout(timer);
-      resolve(false);
+      resolvePort(false);
     });
   });
 }
@@ -48,18 +47,14 @@ async function waitForPorts(ports: number[], timeoutMs = 90_000): Promise<void> 
     if (results.every(Boolean)) return;
     await new Promise((r) => setTimeout(r, 600));
   }
-  throw new Error(`Emuladores no respondieron en ${timeoutMs / 1000}s (puertos ${ports.join(", ")})`);
+  throw new Error(`Emuladores no respondieron en ${timeoutMs / 1000}s`);
 }
 
 function runSync(cmd: string, args: string[]): void {
   execSync([cmd, ...args].join(" "), { cwd: ROOT, stdio: "inherit", shell: true });
 }
 
-function spawnProc(
-  cmd: string,
-  args: string[],
-  label: string,
-): ChildProcess {
+function spawnProc(cmd: string, args: string[], label: string): ChildProcess {
   const proc = spawn(cmd, args, {
     cwd: ROOT,
     stdio: "inherit",
@@ -74,8 +69,8 @@ function spawnProc(
 }
 
 async function ensureSetup(): Promise<void> {
-  const webEnv = resolve(ROOT, "apps/web/.env.local");
-  if (!existsSync(webEnv) || !existsSync(resolve(ROOT, "node_modules"))) {
+  const adminEnv = resolve(ROOT, "apps/admin/.env.local");
+  if (!existsSync(adminEnv) || !existsSync(resolve(ROOT, "node_modules"))) {
     log("Ejecutando setup inicial…");
     runSync("npm", ["run", "setup"]);
   }
@@ -93,18 +88,10 @@ async function ensureEmulators(): Promise<void> {
   log(`Iniciando Firebase Emulators (proyecto ${PROJECT_ID})…`);
   emulatorProc = spawnProc(
     "npx",
-    [
-      "firebase",
-      "emulators:start",
-      "--only",
-      "auth,firestore",
-      "--project",
-      PROJECT_ID,
-    ],
+    ["firebase", "emulators:start", "--only", "auth,firestore", "--project", PROJECT_ID],
     "Emuladores",
   );
   startedEmulators = true;
-
   await waitForPorts([AUTH_PORT, FIRESTORE_PORT]);
   log(`Emuladores listos · UI http://localhost:4000`);
 }
@@ -115,17 +102,14 @@ async function ensureSeed(): Promise<void> {
   log("Seed completo");
 }
 
-function startWeb(): void {
-  const webUp = portOpen(WEB_PORT).then((up) => {
-    if (up) log(`Puerto ${WEB_PORT} ocupado — Vite puede reutilizar otro puerto`);
-  });
-  void webUp;
+function startAdmin(): void {
+  log(`Admin Console → http://localhost:${ADMIN_PORT}`);
+  console.log("\n  Plataformas:");
+  console.log("    Master     → npm run dev:master  (5175)  master@eventos.test / Master123!");
+  console.log("    Admin      → http://localhost:5173      admin@eventos.test / Admin123!");
+  console.log("    Trabajador → npm run dev:worker (5174)  maria@eventos.test / Trab123!\n");
 
-  log(`Iniciando app web → http://localhost:${WEB_PORT}`);
-  console.log("\n  Cuentas: admin@eventos.test / Admin123!");
-  console.log("           maria@eventos.test / Trab123!\n");
-
-  webProc = spawnProc("npm", ["run", "dev:web"], "Web");
+  webProc = spawnProc("npm", ["run", "dev:admin"], "Admin");
 }
 
 function shutdown(): void {
@@ -138,7 +122,7 @@ function shutdown(): void {
 
 async function main(): Promise<void> {
   console.log("═══════════════════════════════════════════");
-  console.log("  Sistema de Personal — arranque automático");
+  console.log("  Personal Eventos — 3 plataformas");
   console.log("═══════════════════════════════════════════");
 
   process.on("SIGINT", () => {
@@ -153,14 +137,14 @@ async function main(): Promise<void> {
   await ensureSetup();
   await ensureEmulators();
   await ensureSeed();
-  startWeb();
+  startAdmin();
 
-  await new Promise<void>((resolve) => {
+  await new Promise<void>((resolveWait) => {
     const check = setInterval(() => {
       if (webProc?.exitCode !== null && webProc?.exitCode !== undefined) {
         clearInterval(check);
         shutdown();
-        resolve();
+        resolveWait();
       }
     }, 500);
   });

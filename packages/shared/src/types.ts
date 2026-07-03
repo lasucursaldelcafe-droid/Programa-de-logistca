@@ -179,6 +179,32 @@ export type NotificationTipo =
 
 export type BreakTipo = "almuerzo" | "break" | "receso";
 
+export type ReporteTipo =
+  | "retraso"
+  | "incidente"
+  | "no_puedo_entrar"
+  | "equipo"
+  | "otro";
+
+export type ReporteEstado = "abierto" | "en_revision" | "resuelto";
+
+export interface Reporte {
+  id: string;
+  workerId: string;
+  workerNombre: string;
+  shiftId?: string;
+  siteId?: string;
+  siteNombre?: string;
+  eventId?: string;
+  tipo: ReporteTipo;
+  mensaje: string;
+  estado: ReporteEstado;
+  creadoEn: string;
+  resueltoEn?: string;
+  resueltoPor?: string;
+  resueltoPorNombre?: string;
+}
+
 export interface AppNotification {
   id: string;
   tipo: NotificationTipo;
@@ -207,6 +233,20 @@ export interface BreakSchedule {
   fin: string;
   notificado: boolean;
 }
+
+export const REPORTE_TIPO_LABEL: Record<ReporteTipo, string> = {
+  retraso: "Retraso / llegada tarde",
+  incidente: "Incidente en sitio",
+  no_puedo_entrar: "No puedo marcar entrada",
+  equipo: "Problema con equipo / QR",
+  otro: "Otro",
+};
+
+export const REPORTE_ESTADO_LABEL: Record<ReporteEstado, string> = {
+  abierto: "Abierto",
+  en_revision: "En revisión",
+  resuelto: "Resuelto",
+};
 
 export const PERFILES_LABEL: Record<string, string> = {
   logistica: "Logística",
@@ -240,27 +280,27 @@ export const ROLE_LABEL: Record<UserRole, string> = {
 };
 
 export function puedeGestionarPersonal(role: UserRole): boolean {
-  return role === "super_admin" || role === "administrador" || role === "supervisor_sitio";
+  return role === "administrador" || role === "supervisor_sitio";
 }
 
 export function puedeGestionarTurnos(role: UserRole): boolean {
-  return role === "super_admin" || role === "administrador" || role === "supervisor_sitio";
+  return role === "administrador" || role === "supervisor_sitio";
 }
 
 export function puedeGestionarCuentas(role: UserRole): boolean {
-  return role === "super_admin" || role === "administrador";
+  return role === "administrador";
 }
 
 export function puedeGestionarQr(role: UserRole): boolean {
-  return role === "super_admin" || role === "administrador" || role === "supervisor_sitio";
+  return role === "administrador" || role === "supervisor_sitio";
 }
 
 export function puedeVerMapaEnVivo(role: UserRole): boolean {
-  return role === "super_admin" || role === "administrador" || role === "supervisor_sitio";
+  return role === "administrador" || role === "supervisor_sitio";
 }
 
 export function puedeEnviarEmergencia(role: UserRole): boolean {
-  return role === "super_admin" || role === "administrador" || role === "supervisor_sitio";
+  return role === "administrador" || role === "supervisor_sitio";
 }
 
 export const NOTIFICATION_TIPO_LABEL: Record<NotificationTipo, string> = {
@@ -367,12 +407,11 @@ export const REFRIGERIO_TIPO_LABEL: Record<RefrigerioTipo, string> = {
 };
 
 export function puedeGestionarNomina(role: UserRole): boolean {
-  return role === "super_admin" || role === "administrador";
+  return role === "administrador";
 }
 
 export function puedeVerNomina(role: UserRole): boolean {
   return (
-    role === "super_admin" ||
     role === "administrador" ||
     role === "supervisor_sitio" ||
     role === "trabajador"
@@ -393,5 +432,9 @@ export interface SetupConfig {
 }
 
 export function puedeGestionarConfiguracion(role: UserRole): boolean {
-  return role === "super_admin" || role === "administrador";
+  return role === "administrador";
+}
+
+export function puedeVerReportesTrabajadores(role: UserRole): boolean {
+  return role === "administrador" || role === "supervisor_sitio";
 }

@@ -1,23 +1,40 @@
 # Sistema de Personal para Eventos
 
-Plataforma de gestión de personal para empresas de logística y recreación en eventos (200+ trabajadores). Web + Firebase con emuladores locales para desarrollo.
+Plataforma de gestión de personal para empresas de logística y recreación en eventos (200+ trabajadores). **Tres plataformas separadas** + Firebase.
 
-**Fase 8 (actual):** Apps nativas — Capacitor (Android) y Electron (Windows) con GPS nativo y modo demo.
+## Las 3 plataformas
 
-## Requisitos
+| Plataforma | Puerto local | Rol | Para qué |
+|------------|--------------|-----|----------|
+| **Master Console** | 5175 | `super_admin` | Informes globales, auditoría, administradores |
+| **Admin Console** | 5173 | `administrador`, `supervisor_sitio` | Eventos, turnos, personal, QR, mapa, nómina |
+| **App Trabajador** | 5174 | `trabajador` | Escanear QR, marcar entrada, reportar al supervisor |
 
-- Node.js 22+
-- npm
-- Java (Firebase Emulators)
-- **Android:** Android Studio + SDK (para compilar APK)
-- **Windows:** Windows 10+ (para empaquetar con electron-builder)
+Cada plataforma valida el rol al iniciar sesión (`PlatformGate`). Un trabajador **no puede** entrar al Admin; el admin **no puede** entrar al Master.
 
-## Inicio rápido (automático)
+## Inicio rápido
 
 ```bash
-npm run setup    # primera vez: deps + .env.local
-npm start        # todo en uno → http://localhost:5173
+npm run setup    # primera vez: deps + .env.local (×3 apps)
+npm start        # emuladores + seed + Admin :5173
 ```
+
+En otras terminales:
+
+```bash
+npm run dev:worker   # App Trabajador → http://localhost:5174
+npm run dev:master   # Master Console → http://localhost:5175
+```
+
+## Cuentas de prueba (seed)
+
+| Plataforma | Email | Contraseña |
+|------------|-------|------------|
+| Master | master@eventos.test | Master123! |
+| Admin | admin@eventos.test | Admin123! |
+| Supervisor | supervisor@eventos.test | Super123! |
+| Trabajador | maria@eventos.test | Trab123! |
+| Trabajador | juan@eventos.test | Trab123! |
 
 ## Ver en línea (GitHub Pages)
 
@@ -31,110 +48,53 @@ npm start        # todo en uno → http://localhost:5173
 > Enlaces generados automáticamente por `npm run sync:links` desde el repo `lasucursaldelcafe-droid/Programa-de-logistca`.
 <!-- DEPLOY_LINKS_END -->
 
-**URL pública:** https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/
-
-Cada push a `main` despliega automáticamente la app en modo demo (datos en memoria del navegador). Usa las mismas cuentas de prueba.
-
-Si la URL muestra la versión antigua, en GitHub ve a **Settings → Pages** y confirma que la fuente sea rama `gh-pages` y carpeta `/docs` (o `main` / `docs`). El workflow publica en `gh-pages/docs/`. Si el despliegue falla por reglas de entorno, desactiva la protección en **Settings → Environments → github-pages**.
-
-El comando `npm start` hace automáticamente:
-1. Setup si falta `.env.local` o `node_modules`
-2. Firebase Emulators (Auth + Firestore)
-3. Seed con cuentas y datos de prueba
-4. Servidor Vite en puerto 5173
-
-## Manual (opcional)
-
-```bash
-npm run emulators    # Terminal A
-npm run seed         # Terminal B
-npm run dev:web      # Terminal C
-```
-
-## Cuentas de prueba
-
-| Rol | Email | Contraseña |
-|-----|-------|------------|
-| Administrador | admin@eventos.test | Admin123! |
-| Supervisor | supervisor@eventos.test | Super123! |
-| Trabajador | maria@eventos.test | Trab123! |
-| Trabajador | juan@eventos.test | Trab123! |
+GitHub Pages publica la **Admin Console** en modo demo. Worker y Master se usan en local o con Firebase producción.
 
 ## Estructura del monorepo
 
 ```
-apps/web/              → React + Vite + Tailwind (app principal)
-apps/desktop/          → Cliente Windows (Electron)
-apps/web/android/      → Proyecto Capacitor Android
-packages/shared/       → Tipos, permisos, cliente Firebase
-functions/             → Cloud Functions (Fase 2+)
-scripts/               → setup-phase1.ts, seed-emulators.ts
-_legacy/envios-next/   → Prototipo anterior (envíos/logística)
-firebase.json          → Emuladores Auth + Firestore
-firestore.rules        → Permisos por rol
+apps/admin/            → Admin Console (antes apps/web)
+apps/worker/           → App Trabajador (móvil + Capacitor Android)
+apps/master/           → Master Console
+apps/desktop/          → Electron (empaqueta App Trabajador)
+packages/shared/       → Tipos, permisos, plataformas, geo, nómina
+scripts/               → setup, seed, dev-auto
 ```
+
+## Flujo operativo
+
+1. **Master** — supervisa toda la plataforma, exporta informes, ve auditoría.
+2. **Admin** — wizard de evento, sitios GPS, QR, turnos, cuentas de trabajadores.
+3. **Trabajador** — acepta turno, escanea QR, GPS, **Reportar** incidencias al supervisor.
+4. **Admin** — ve reportes en `/reportes`, mapa en vivo, nómina.
 
 ## Scripts
 
 | Script | Descripción |
 |--------|-------------|
-| `npm start` | **Automático:** emuladores + seed + app web |
-| `npm run setup` | Instala deps y crea `.env.local` para emuladores |
-| `npm run emulators` | Solo emuladores Firebase |
-| `npm run seed` | Carga usuarios, trabajadores, eventos y turnos |
-| `npm run dev:web` | Solo servidor Vite |
-| `npm run build` | Build de producción (shared + web) |
-| `npm run build:native` | Build para apps nativas (`base: ./`, modo demo) |
-| `npm run cap:sync` | Sincroniza `dist` → proyecto Android |
-| `npm run cap:android` | Abre Android Studio |
-| `npm run electron` | Lanza cliente Windows (Electron) |
-| `npm run electron:build` | Empaqueta instalador `.exe` (Windows) |
-| `npm run test:smoke` | CI: emuladores + seed + verificación |
+| `npm start` | Emuladores + seed + Admin |
+| `npm run dev:admin` | Solo Admin Console |
+| `npm run dev:worker` | Solo App Trabajador |
+| `npm run dev:master` | Solo Master Console |
+| `npm run build` | Build de las 3 plataformas |
+| `npm run cap:android` | Android (App Trabajador) |
+| `npm run seed` | Datos y cuentas de prueba |
 
-## Apps nativas (Fase 8)
+## Producción Firebase
 
-Las apps Android y Windows usan **modo demo** (datos en memoria) — ideal para supervisores en campo sin backend propio.
+Variables en `apps/admin/.env.local`, `apps/worker/.env.local`, `apps/master/.env.local`:
 
-### Android (Capacitor)
-
-```bash
-npm run cap:add:android   # primera vez (ya incluido en el repo)
-npm run cap:sync          # build nativo + copia a android/
-npm run cap:android       # abre Android Studio → Run
+```
+VITE_USE_FIREBASE_EMULATORS=false
 ```
 
-GPS en Android usa `@capacitor/geolocation` con permisos en `AndroidManifest.xml`.
+Desplegar cada app en su URL/subdominio con HTTPS (GPS requiere HTTPS).
 
-### Windows (Electron)
+## Apps nativas
 
-```bash
-npm run electron          # ventana de escritorio con build nativo
-npm run electron:build    # genera instalador en apps/desktop/release/
-```
-
-Electron usa `HashRouter` para rutas locales. El badge **Windows** aparece en la barra superior.
-
-## Roles y permisos
-
-- **super_admin / administrador:** gestión completa de personal y turnos
-- **supervisor_sitio:** supervisión en sitio
-- **trabajador:** ver y aceptar/rechazar sus turnos; activación por invitación
-
-## Diseño
-
-Paleta del prompt maestro: fondo `#0A0A0A`, acento `#E8823C`, positivo `#3DDC97`, alerta `#D9455F`.
-
-## Fases pendientes
-
-1. ✅ Auth + Personal + Turnos
-2. ✅ Cuentas de trabajadores + invitaciones
-3. ✅ QR + GPS + geocercas
-4. ✅ Notificaciones push (FCM) + bandeja en app
-5. ✅ Nómina (horas, tarifas, refrigerios, exportación CSV)
-6. ✅ Dashboard avanzado (KPIs, gráficos, actividad, filtro por evento)
-7. ✅ Wizard de configuración (evento → sitios → tarifas → QR → resumen)
-8. ✅ Capacitor (Android) + Electron (Windows)
+- **Android:** `npm run cap:sync` + `npm run cap:android` (proyecto en `apps/worker/android/`)
+- **Windows:** `npm run electron` (cliente con App Trabajador)
 
 ## Prototipo anterior
 
-El CRUD de envíos (Next.js + Turso) quedó en `_legacy/envios-next/` y la versión estática en `docs/`. No forma parte del sistema de personal.
+CRUD de envíos en `_legacy/envios-next/` — no forma parte del sistema de personal.

@@ -7,7 +7,7 @@ function resolveIndexHtml() {
   if (app.isPackaged) {
     return path.join(process.resourcesPath, "web", "index.html");
   }
-  return path.join(__dirname, "..", "..", "web", "dist", "index.html");
+  return path.join(__dirname, "..", "..", "worker", "dist", "index.html");
 }
 
 function createWindow() {

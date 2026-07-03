@@ -2,7 +2,7 @@ import { cpSync, mkdirSync, rmSync, copyFileSync, writeFileSync } from "node:fs"
 import { resolve } from "node:path";
 import { getDeploymentLinks, updateReadme, updateRootIndex, writeDeploymentJson } from "./sync-links";
 
-const dist = resolve(import.meta.dirname, "../apps/web/dist");
+const dist = resolve(import.meta.dirname, "../apps/admin/dist");
 const docs = resolve(import.meta.dirname, "../docs");
 
 const links = getDeploymentLinks();

@@ -10,11 +10,17 @@ service cloud.firestore {
     function role() {
       return userDoc().data.role;
     }
+    function isMaster() {
+      return signedIn() && role() == 'super_admin';
+    }
+    function isPlatformAdmin() {
+      return signedIn() && role() in ['administrador', 'supervisor_sitio'];
+    }
     function isAdmin() {
-      return signedIn() && role() in ['super_admin', 'administrador'];
+      return isMaster() || isPlatformAdmin();
     }
     function isSupervisor() {
-      return signedIn() && role() in ['super_admin', 'administrador', 'supervisor_sitio'];
+      return isPlatformAdmin();
     }
 
     function isWorker() {
@@ -76,15 +82,15 @@ service cloud.firestore {
 
     match /invitations/{token} {
       allow read: if true;
-      allow create: if isAdmin();
-      allow update: if isAdmin()
+      allow create: if isPlatformAdmin() || isMaster();
+      allow update: if isPlatformAdmin() || isMaster()
         || (signedIn()
           && resource.data.estado == 'pendiente'
           && request.resource.data.estado == 'usada'
           && request.resource.data.uid == request.auth.uid
           && request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['estado', 'usadaEn', 'uid']));
-      allow delete: if isAdmin();
+      allow delete: if isPlatformAdmin() || isMaster();
     }
 
     match /events/{eventId} {
@@ -141,14 +147,22 @@ service cloud.firestore {
     }
 
     match /payrollAudit/{auditId} {
-      allow read: if isAdmin() || isSupervisor();
-      allow create: if isAdmin();
+      allow read: if isPlatformAdmin() || isMaster();
+      allow create: if isPlatformAdmin() || isMaster();
       allow update, delete: if false;
     }
 
     match /setupConfig/{configId} {
       allow read: if signedIn();
-      allow write: if isAdmin();
+      allow write: if isPlatformAdmin() || isMaster();
+    }
+
+    match /reports/{reportId} {
+      allow read: if isPlatformAdmin() || isMaster()
+        || (isWorker() && resource.data.workerId == currentWorkerId());
+      allow create: if isWorker();
+      allow update: if isPlatformAdmin() || isMaster();
+      allow delete: if isMaster();
     }
   }
 }

@@ -2,7 +2,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
   appId: "com.spe.personaleventos",
-  appName: "Personal Eventos",
+  appName: "Trabajador SPE",
   webDir: "dist",
   android: {
     allowMixedContent: true,

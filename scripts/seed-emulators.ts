@@ -27,6 +27,7 @@ interface SeedUser {
 }
 
 const USERS: SeedUser[] = [
+  { email: "master@eventos.test", password: "Master123!", nombre: "Master Plataforma", role: "super_admin" },
   { email: "admin@eventos.test", password: "Admin123!", nombre: "Admin Principal", role: "administrador" },
   { email: "supervisor@eventos.test", password: "Super123!", nombre: "Carlos Supervisor", role: "supervisor_sitio" },
   { email: "maria@eventos.test", password: "Trab123!", nombre: "María López", role: "trabajador", workerId: "worker-maria" },

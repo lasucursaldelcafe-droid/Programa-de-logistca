@@ -1,19 +1,14 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import { useAuth } from "./contexts/AuthContext";
-import { AppLayout } from "./components/AppLayout";
+import { useAuth } from "@core/contexts/AuthContext";
+import { PlatformGate } from "@core/components/PlatformGate";
+import { ActivarCuentaPage } from "@core/pages/ActivarCuentaPage";
+import { CompletarPerfilPage } from "@core/pages/CompletarPerfilPage";
+import { MarcarEntradaPage } from "@core/pages/MarcarEntradaPage";
+import { TurnosPage } from "@core/pages/TurnosPage";
+import { WorkerLayout } from "./components/WorkerLayout";
 import { LoginPage } from "./pages/LoginPage";
-import { HomePage } from "./pages/HomePage";
-import { PersonalPage } from "./pages/PersonalPage";
-import { TurnosPage } from "./pages/TurnosPage";
-import { CuentasPage } from "./pages/CuentasPage";
-import { ActivarCuentaPage } from "./pages/ActivarCuentaPage";
-import { CompletarPerfilPage } from "./pages/CompletarPerfilPage";
-import { QrSitiosPage } from "./pages/QrSitiosPage";
-import { MarcarEntradaPage } from "./pages/MarcarEntradaPage";
-import { MapaEnVivoPage } from "./pages/MapaEnVivoPage";
-import { NotificacionesPage } from "./pages/NotificacionesPage";
-import { NominaPage } from "./pages/NominaPage";
-import { ConfiguracionPage } from "./pages/ConfiguracionPage";
+import { WorkerHomePage } from "./pages/WorkerHomePage";
+import { ReportarPage } from "./pages/ReportarPage";
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -25,10 +20,10 @@ function Protected({ children }: { children: React.ReactNode }) {
     );
   }
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role === "trabajador" && user.perfilCompleto !== true) {
+  if (user.perfilCompleto !== true) {
     return <Navigate to="/completar-perfil" replace />;
   }
-  return <>{children}</>;
+  return <PlatformGate platform="worker">{children}</PlatformGate>;
 }
 
 function ProfileGate({ children }: { children: React.ReactNode }) {
@@ -61,20 +56,14 @@ export function App() {
       <Route
         element={
           <Protected>
-            <AppLayout />
+            <WorkerLayout />
           </Protected>
         }
       >
-        <Route index element={<HomePage />} />
-        <Route path="personal" element={<PersonalPage />} />
+        <Route index element={<WorkerHomePage />} />
         <Route path="turnos" element={<TurnosPage />} />
-        <Route path="cuentas" element={<CuentasPage />} />
-        <Route path="qr-sitios" element={<QrSitiosPage />} />
-        <Route path="mapa" element={<MapaEnVivoPage />} />
-        <Route path="marcar-entrada" element={<MarcarEntradaPage />} />
-        <Route path="notificaciones" element={<NotificacionesPage />} />
-        <Route path="nomina" element={<NominaPage />} />
-        <Route path="configuracion" element={<ConfiguracionPage />} />
+        <Route path="entrada" element={<MarcarEntradaPage />} />
+        <Route path="reportar" element={<ReportarPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

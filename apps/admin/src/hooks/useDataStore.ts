@@ -33,6 +33,10 @@ import {
   type Turno,
   type Worker,
   type WorkerEstado,
+  type Reporte,
+  type ReporteEstado,
+  type ReporteTipo,
+  type AppUser,
 } from "@spe/shared";
 import type { GeoPosition } from "../lib/geolocation";
 import { DEMO_MODE } from "../lib/mode";
@@ -729,4 +733,81 @@ export async function createSite(data: {
     }
   }
   return id;
+}
+
+export function useReportes(): Reporte[] {
+  const [reportes, setReportes] = useState<Reporte[]>([]);
+
+  useEffect(() => {
+    if (DEMO_MODE) return;
+    const unsub = onSnapshot(
+      query(collection(getFirestoreDb(), "reports"), orderBy("creadoEn", "desc")),
+      (snap) => setReportes(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Reporte))),
+    );
+    return unsub;
+  }, []);
+
+  const demoReportes = useDemoSnapshot(() => demoStore.reportes);
+  return DEMO_MODE ? demoReportes : reportes;
+}
+
+export function usePlatformUsers(): AppUser[] {
+  const [users, setUsers] = useState<AppUser[]>([]);
+
+  useEffect(() => {
+    if (DEMO_MODE) return;
+    const unsub = onSnapshot(collection(getFirestoreDb(), "users"), (snap) =>
+      setUsers(snap.docs.map((d) => ({ uid: d.id, ...d.data() } as AppUser))),
+    );
+    return unsub;
+  }, []);
+
+  const demoUsers = useDemoSnapshot(() => demoStore.accounts.map((a) => a.user));
+  return DEMO_MODE ? demoUsers : users;
+}
+
+export async function createReporte(data: {
+  workerId: string;
+  workerNombre: string;
+  shiftId?: string;
+  siteId?: string;
+  siteNombre?: string;
+  eventId?: string;
+  tipo: ReporteTipo;
+  mensaje: string;
+}): Promise<string> {
+  const id = `rep-${Date.now().toString(36)}`;
+  const reporte: Omit<Reporte, "id"> = {
+    ...data,
+    estado: "abierto",
+    creadoEn: new Date().toISOString(),
+  };
+
+  if (DEMO_MODE) {
+    demoStore.addReporte({ ...reporte, id });
+    return id;
+  }
+
+  await setDoc(doc(getFirestoreDb(), "reports", id), reporte);
+  return id;
+}
+
+export async function updateReporteEstado(
+  reporteId: string,
+  estado: ReporteEstado,
+  actor: { uid: string; nombre: string },
+): Promise<void> {
+  const patch: Partial<Reporte> = { estado };
+  if (estado === "resuelto") {
+    patch.resueltoEn = new Date().toISOString();
+    patch.resueltoPor = actor.uid;
+    patch.resueltoPorNombre = actor.nombre;
+  }
+
+  if (DEMO_MODE) {
+    demoStore.updateReporte(reporteId, patch);
+    return;
+  }
+
+  await updateDoc(doc(getFirestoreDb(), "reports", reporteId), patch);
 }

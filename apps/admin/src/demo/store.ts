@@ -11,6 +11,7 @@ import type {
   PayrollEntry,
   PayrollRate,
   QrCode,
+  Reporte,
   SetupConfig,
   Sitio,
   Turno,
@@ -23,6 +24,17 @@ export const DEMO_ACCOUNTS: Array<{
   password: string;
   user: AppUser;
 }> = [
+  {
+    email: "master@eventos.test",
+    password: "Master123!",
+    user: {
+      uid: "demo-master",
+      email: "master@eventos.test",
+      nombre: "Master Plataforma",
+      role: "super_admin",
+      perfilCompleto: true,
+    },
+  },
   {
     email: "admin@eventos.test",
     password: "Admin123!",
@@ -385,6 +397,22 @@ export const INITIAL_INVITATIONS: Invitation[] = [
   },
 ];
 
+export const INITIAL_REPORTES: Reporte[] = [
+  {
+    id: "rep-demo-1",
+    workerId: "worker-maria",
+    workerNombre: "María López",
+    shiftId: "shift-maria-1",
+    siteId: "site-cocina",
+    siteNombre: "Cocina central",
+    eventId: "event-festival",
+    tipo: "retraso",
+    mensaje: "Tráfico en la vía; llegaré 15 minutos tarde.",
+    estado: "abierto",
+    creadoEn: new Date().toISOString(),
+  },
+];
+
 type Listener = () => void;
 
 class DemoStore {
@@ -404,6 +432,7 @@ class DemoStore {
   payrollEntries = [...INITIAL_PAYROLL_ENTRIES];
   payrollAudit = [...INITIAL_PAYROLL_AUDIT];
   setupConfig: SetupConfig | null = { ...INITIAL_SETUP_CONFIG };
+  reportes = [...INITIAL_REPORTES];
   accounts = [...DEMO_ACCOUNTS];
   private listeners = new Set<Listener>();
 
@@ -702,6 +731,16 @@ class DemoStore {
   updateSetupConfig(patch: Partial<SetupConfig>): void {
     if (!this.setupConfig) return;
     this.setupConfig = { ...this.setupConfig, ...patch };
+    this.notify();
+  }
+
+  addReporte(reporte: Reporte): void {
+    this.reportes = [reporte, ...this.reportes];
+    this.notify();
+  }
+
+  updateReporte(id: string, patch: Partial<Reporte>): void {
+    this.reportes = this.reportes.map((r) => (r.id === id ? { ...r, ...patch } : r));
     this.notify();
   }
 }

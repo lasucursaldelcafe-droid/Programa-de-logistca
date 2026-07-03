@@ -1,0 +1,35 @@
+{
+  "name": "@spe/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:native": "NATIVE_BUILD=true vite build",
+    "preview": "vite preview",
+    "cap:sync": "cap sync",
+    "cap:open": "cap open",
+    "cap:add:android": "cap add android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.2",
+    "@capacitor/core": "^7.4.2",
+    "@capacitor/geolocation": "^7.1.4",
+    "@spe/shared": "*",
+    "firebase": "^11.6.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.6.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.2",
+    "@tailwindcss/vite": "^4.1.8",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "@vitejs/plugin-react": "^4.5.2",
+    "tailwindcss": "^4.1.8",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5"
+  }
+}

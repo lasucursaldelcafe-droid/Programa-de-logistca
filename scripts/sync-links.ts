@@ -133,7 +133,7 @@ function updateRootIndex(links: DeploymentLinks): boolean {
 }
 
 function writeDeploymentJson(links: DeploymentLinks): void {
-  const out = resolve(ROOT, "apps/web/public/deployment.json");
+  const out = resolve(ROOT, "apps/admin/public/deployment.json");
   writeFileSync(out, `${JSON.stringify(links, null, 2)}\n`, "utf-8");
 }
 
