@@ -36,6 +36,14 @@ sobre libSQL/SQLite y Tailwind CSS v4.
   no confundas las URLs — el estático es el `:8080` (empieza con pantalla de
   login; el Next.js no tiene login). Se publica en GitHub Pages vía
   `.github/workflows/pages.yml` (push a `main`, auto-habilita Pages).
-- **Sesiones:** el estático usa sesión local (localStorage), no auth real. Para
-  OAuth real (Google) habría que registrar el dominio de Pages + Client ID; no hay
-  secretos de proyecto inyectados en el entorno del cloud agent.
+- **Sesiones:** el estático soporta (a) sesión local en localStorage y (b) inicio
+  de sesión con Google (Google Identity Services). Google se activa con un Client
+  ID vía la constante `GOOGLE_CLIENT_ID` en `docs/index.html` o el parámetro
+  `?client_id=...` (se guarda en localStorage). Sin Client ID solo se muestra el
+  login local (fallback). El Client ID es público, no un secreto; no hay secretos
+  de proyecto inyectados en el entorno del cloud agent.
+- **Probar Google en local:** el botón solo se renderiza si hay Client ID; para
+  completar el login, el `origen JavaScript autorizado` del cliente OAuth debe
+  incluir el origen usado (`http://localhost:8080` en local, o el dominio de
+  Pages). En pruebas locales sin origen autorizado el botón aparece pero el
+  sign-in fallará al hacer clic (comportamiento esperado).

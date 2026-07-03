@@ -90,6 +90,10 @@
       .login-card { width: 100%; max-width: 380px; }
       .login-card h1 { font-size: 22px; margin-bottom: 4px; }
       .login-card form { display: flex; flex-direction: column; gap: 14px; margin-top: 18px; }
+      .divider { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; margin: 18px 0 4px; }
+      .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+      #google-box { margin-top: 18px; }
+      #google-signin { display: flex; justify-content: center; }
       .session-chip { display: flex; align-items: center; gap: 10px; font-size: 14px; }
       .avatar {
         width: 34px; height: 34px; border-radius: 999px; background: var(--accent);
@@ -107,6 +111,10 @@
       <div class="card login-card">
         <h1>Programa de Logística</h1>
         <p class="muted">Inicia una sesión para gestionar los envíos.</p>
+        <div id="google-box" class="hidden">
+          <div id="google-signin"></div>
+          <div class="divider">o inicia sesión localmente</div>
+        </div>
         <form id="login-form">
           <label>
             Nombre de usuario
@@ -173,6 +181,36 @@
     </div>
 
     <script>
+      // ---- Configuración de inicio de sesión con Google (opcional) ----
+      // Rellena con tu Client ID de OAuth ("....apps.googleusercontent.com").
+      // También se puede activar sin editar el archivo añadiendo ?client_id=... a la URL.
+      const GOOGLE_CLIENT_ID = "";
+      const KEY_CLIENT_ID = "logistica.googleClientId";
+
+      function resolverClientId() {
+        try {
+          const q = new URL(location.href).searchParams.get("client_id");
+          if (q) {
+            localStorage.setItem(KEY_CLIENT_ID, q);
+            return q;
+          }
+          return GOOGLE_CLIENT_ID || localStorage.getItem(KEY_CLIENT_ID) || "";
+        } catch {
+          return GOOGLE_CLIENT_ID;
+        }
+      }
+
+      function decodificarJwt(token) {
+        const base = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+        const json = decodeURIComponent(
+          atob(base)
+            .split("")
+            .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+            .join(""),
+        );
+        return JSON.parse(json);
+      }
+
       // ---- Dominio de logística (mismo modelo que la app Next.js) ----
       const ESTADOS = ["pendiente", "en_transito", "entregado", "cancelado"];
       const ETIQUETA = {
@@ -226,8 +264,13 @@
         try { return JSON.parse(localStorage.getItem(KEY_SESION)); }
         catch { return null; }
       }
-      function abrirSesion(nombre, email) {
-        const sesion = { nombre, email: email || null, iniciada: new Date().toISOString() };
+      function abrirSesion(nombre, email, proveedor) {
+        const sesion = {
+          nombre,
+          email: email || null,
+          proveedor: proveedor || "local",
+          iniciada: new Date().toISOString(),
+        };
         localStorage.setItem(KEY_SESION, JSON.stringify(sesion));
         return sesion;
       }
@@ -353,7 +396,45 @@
         cambiarEstado(Number(btn.dataset.id), btn.dataset.estado);
       });
 
+      // ---- Inicio de sesión con Google (Google Identity Services) ----
+      function onGoogleCredential(resp) {
+        try {
+          const info = decodificarJwt(resp.credential);
+          abrirSesion(info.name || info.email, info.email, "google");
+          mostrarPantalla();
+        } catch {
+          const le = $("login-error");
+          le.textContent = "No se pudo procesar el inicio de sesión de Google.";
+          le.classList.remove("hidden");
+        }
+      }
+
+      function initGoogle() {
+        const clientId = resolverClientId();
+        if (!clientId) return; // Sin Client ID: solo login local.
+        const s = document.createElement("script");
+        s.src = "https://accounts.google.com/gsi/client";
+        s.async = true;
+        s.defer = true;
+        s.onload = () => {
+          if (!window.google || !google.accounts || !google.accounts.id) return;
+          google.accounts.id.initialize({
+            client_id: clientId,
+            callback: onGoogleCredential,
+          });
+          google.accounts.id.renderButton($("google-signin"), {
+            theme: "outline",
+            size: "large",
+            text: "signin_with",
+            locale: "es",
+          });
+          $("google-box").classList.remove("hidden");
+        };
+        document.head.appendChild(s);
+      }
+
       // Arranque
+      initGoogle();
       mostrarPantalla();
     </script>
   </body>

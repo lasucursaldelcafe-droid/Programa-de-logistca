@@ -74,9 +74,19 @@ levantar un servidor Node ni credenciales.
   despliegue, el sitio queda disponible en
   `https://<usuario>.github.io/Programa-de-logistca/`.
 - **Sesiones:** el login crea una sesión local (nombre de usuario + correo
-  opcional) guardada en `localStorage`; "Cerrar sesión" la elimina. No requiere
-  credenciales externas. Para integrar un inicio de sesión real (p. ej. Google
-  OAuth) habría que registrar el dominio de Pages y un Client ID.
+  opcional) guardada en `localStorage`; "Cerrar sesión" la elimina.
+- **Inicio de sesión con Google (opcional):** la pantalla de login integra
+  Google Identity Services. Para activarlo, define tu Client ID de OAuth de una
+  de estas formas:
+  1. Edita `GOOGLE_CLIENT_ID` en `docs/index.html`, o
+  2. Añade `?client_id=TU_ID.apps.googleusercontent.com` a la URL (se recuerda en
+     `localStorage`).
+
+  Con el Client ID configurado aparece el botón "Iniciar sesión con Google" y la
+  sesión se abre con el nombre/correo de la cuenta Google. Requisito: en Google
+  Cloud, el **origen JavaScript autorizado** debe incluir el dominio donde se
+  sirva (p. ej. `https://<usuario>.github.io` para Pages, o `http://localhost:8080`
+  para pruebas locales). El Client ID es un valor público (no es un secreto).
 
 ## Configuración (opcional, para Turso)
 
