@@ -31,9 +31,6 @@ jobs:
 
       - name: Configurar Pages
         uses: actions/configure-pages@v5
-        with:
-          # Habilita Pages automáticamente si aún no está activo.
-          enablement: true
 
       - name: Subir artefacto (docs/)
         uses: actions/upload-pages-artifact@v3
