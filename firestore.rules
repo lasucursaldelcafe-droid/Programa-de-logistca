@@ -17,6 +17,13 @@ service cloud.firestore {
       return signedIn() && role() in ['super_admin', 'administrador', 'supervisor_sitio'];
     }
 
+    function isWorker() {
+      return signedIn() && role() == 'trabajador';
+    }
+    function workerId() {
+      return userDoc().data.workerId;
+    }
+
     match /users/{userId} {
       allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
       allow write: if isAdmin();
@@ -40,8 +47,12 @@ service cloud.firestore {
 
     match /shifts/{shiftId} {
       allow read: if signedIn();
-      allow create, update: if isAdmin() || isSupervisor();
-      allow delete: if isAdmin();
+      allow create, delete: if isAdmin() || isSupervisor();
+      allow update: if isAdmin() || isSupervisor()
+        || (isWorker()
+          && resource.data.workerId == workerId()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado'])
+          && request.resource.data.estado in ['confirmado', 'rechazado']);
     }
   }
 }
