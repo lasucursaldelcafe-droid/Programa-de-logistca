@@ -3,7 +3,10 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "node:path";
 
+const pagesBase = process.env.GITHUB_PAGES_BASE ?? "/";
+
 export default defineConfig({
+  base: pagesBase,
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

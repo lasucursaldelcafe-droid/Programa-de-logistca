@@ -1,32 +1,12 @@
-import { useEffect, useState } from "react";
-import {
-  collection,
-  onSnapshot,
-  query,
-  orderBy,
-} from "firebase/firestore";
-import { getFirestoreDb, type Worker, type Turno } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
 import { Badge, Card } from "../components/ui";
+import { useShifts, useWorkers } from "../hooks/useDataStore";
+import { DEMO_MODE } from "../lib/mode";
 
 export function HomePage() {
   const { user } = useAuth();
-  const [workers, setWorkers] = useState<Worker[]>([]);
-  const [shifts, setShifts] = useState<Turno[]>([]);
-
-  useEffect(() => {
-    const db = getFirestoreDb();
-    const unsubW = onSnapshot(query(collection(db, "workers"), orderBy("nombre")), (snap) => {
-      setWorkers(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Worker)));
-    });
-    const unsubS = onSnapshot(query(collection(db, "shifts"), orderBy("inicio")), (snap) => {
-      setShifts(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Turno)));
-    });
-    return () => {
-      unsubW();
-      unsubS();
-    };
-  }, []);
+  const workers = useWorkers();
+  const shifts = useShifts();
 
   const activos = workers.filter((w) => w.estado === "en_sitio").length;
   const pendientes = shifts.filter((s) => s.estado === "pendiente").length;
@@ -36,7 +16,8 @@ export function HomePage() {
       <div>
         <h1 className="font-display text-3xl font-bold">Panel operativo</h1>
         <p className="mt-1 text-neutral-400">
-          Bienvenido, {user?.nombre}. Resumen en tiempo real (Firestore).
+          Bienvenido, {user?.nombre}. Resumen en tiempo real
+          {DEMO_MODE ? " (modo demo)" : " (Firestore)"}.
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-3">

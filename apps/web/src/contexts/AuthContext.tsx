@@ -20,6 +20,12 @@ import {
   type AppUser,
   type UserRole,
 } from "@spe/shared";
+import { DEMO_MODE } from "../lib/mode";
+import {
+  clearDemoSession,
+  demoLogin,
+  loadDemoSession,
+} from "../demo/store";
 
 interface AuthContextValue {
   user: AppUser | null;
@@ -48,6 +54,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      setUser(loadDemoSession());
+      setLoading(false);
+      return;
+    }
+
     const unsub = onAuthStateChanged(getFirebaseAuth(), async (fbUser) => {
       if (!fbUser) {
         setUser(null);
@@ -62,10 +74,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
+    if (DEMO_MODE) {
+      const appUser = demoLogin(email, password);
+      setUser(appUser);
+      return;
+    }
     await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
   }, []);
 
   const logout = useCallback(async () => {
+    if (DEMO_MODE) {
+      clearDemoSession();
+      setUser(null);
+      return;
+    }
     await signOut(getFirebaseAuth());
   }, []);
 

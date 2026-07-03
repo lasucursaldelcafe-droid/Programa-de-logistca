@@ -12,6 +12,7 @@
     "dev": "npm start",
     "dev:web": "npm run dev -w @spe/web",
     "build": "npm run build -w @spe/shared && npm run build -w @spe/web",
+    "build:pages": "npm run build -w @spe/shared && npm run build:pages -w @spe/web",
     "emulators": "firebase emulators:start --only auth,firestore --project demo-personal-eventos",
     "seed": "tsx scripts/seed-emulators.ts",
     "setup": "tsx scripts/setup-phase1.ts",

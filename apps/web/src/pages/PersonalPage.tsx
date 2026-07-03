@@ -1,24 +1,18 @@
-import { useEffect, useState } from "react";
-import {
-  addDoc,
-  collection,
-  onSnapshot,
-  orderBy,
-  query,
-  updateDoc,
-  doc,
-} from "firebase/firestore";
+import { useState } from "react";
 import {
   ESTADO_LABEL,
   PERFILES_LABEL,
-  getFirestoreDb,
   puedeGestionarPersonal,
   type PerfilTrabajo,
-  type Worker,
   type WorkerEstado,
 } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
 import { Badge, Card, PerfilTag } from "../components/ui";
+import {
+  createWorker,
+  updateWorkerEstado,
+  useWorkers,
+} from "../hooks/useDataStore";
 
 const PERFILES: PerfilTrabajo[] = [
   "logistica",
@@ -32,7 +26,7 @@ const PERFILES: PerfilTrabajo[] = [
 
 export function PersonalPage() {
   const { user } = useAuth();
-  const [workers, setWorkers] = useState<Worker[]>([]);
+  const workers = useWorkers();
   const [form, setForm] = useState({
     nombre: "",
     documento: "",
@@ -41,35 +35,18 @@ export function PersonalPage() {
     perfiles: ["logistica"] as PerfilTrabajo[],
   });
 
-  useEffect(() => {
-    const unsub = onSnapshot(
-      query(collection(getFirestoreDb(), "workers"), orderBy("nombre")),
-      (snap) => setWorkers(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Worker))),
-    );
-    return unsub;
-  }, []);
-
   if (!user || !puedeGestionarPersonal(user.role)) {
     return <p className="text-neutral-400">Sin permisos para gestionar personal.</p>;
   }
 
   async function crearTrabajador(e: React.FormEvent) {
     e.preventDefault();
-    await addDoc(collection(getFirestoreDb(), "workers"), {
-      ...form,
-      experienciaAnios: 0,
-      eventosTrabajados: 0,
-      rating: 0,
-      estado: "sin_asignar" satisfies WorkerEstado,
-      cuentaCreada: false,
-      certificaciones: [],
-      creadoEn: new Date().toISOString(),
-    });
+    await createWorker(form);
     setForm({ nombre: "", documento: "", telefono: "", email: "", perfiles: ["logistica"] });
   }
 
   async function cambiarEstado(id: string, estado: WorkerEstado) {
-    await updateDoc(doc(getFirestoreDb(), "workers", id), { estado });
+    await updateWorkerEstado(id, estado);
   }
 
   return (

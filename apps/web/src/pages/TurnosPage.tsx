@@ -1,32 +1,26 @@
-import { useEffect, useState } from "react";
-import {
-  addDoc,
-  collection,
-  doc,
-  onSnapshot,
-  orderBy,
-  query,
-  updateDoc,
-} from "firebase/firestore";
+import { useState } from "react";
 import {
   SHIFT_LABEL,
-  getFirestoreDb,
   puedeGestionarTurnos,
   type ShiftEstado,
-  type Turno,
-  type Worker,
-  type Evento,
-  type Sitio,
 } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
 import { Badge, Card } from "../components/ui";
+import {
+  createShift,
+  updateShiftEstado,
+  useEvents,
+  useShifts,
+  useSites,
+  useWorkers,
+} from "../hooks/useDataStore";
 
 export function TurnosPage() {
   const { user } = useAuth();
-  const [shifts, setShifts] = useState<Turno[]>([]);
-  const [workers, setWorkers] = useState<Worker[]>([]);
-  const [events, setEvents] = useState<Evento[]>([]);
-  const [sites, setSites] = useState<Sitio[]>([]);
+  const shifts = useShifts();
+  const workers = useWorkers();
+  const events = useEvents();
+  const sites = useSites();
   const [form, setForm] = useState({
     workerId: "",
     eventId: "",
@@ -34,25 +28,6 @@ export function TurnosPage() {
     inicio: "",
     fin: "",
   });
-
-  useEffect(() => {
-    const db = getFirestoreDb();
-    const unsubs = [
-      onSnapshot(query(collection(db, "shifts"), orderBy("inicio")), (snap) =>
-        setShifts(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Turno))),
-      ),
-      onSnapshot(collection(db, "workers"), (snap) =>
-        setWorkers(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Worker))),
-      ),
-      onSnapshot(collection(db, "events"), (snap) =>
-        setEvents(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Evento))),
-      ),
-      onSnapshot(collection(db, "sites"), (snap) =>
-        setSites(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Sitio))),
-      ),
-    ];
-    return () => unsubs.forEach((u) => u());
-  }, []);
 
   const esAdmin = user && puedeGestionarTurnos(user.role);
   const misTurnos =
@@ -66,7 +41,7 @@ export function TurnosPage() {
     const worker = workers.find((w) => w.id === form.workerId);
     const event = events.find((ev) => ev.id === form.eventId);
     const site = sites.find((s) => s.id === form.siteId);
-    await addDoc(collection(getFirestoreDb(), "shifts"), {
+    await createShift({
       workerId: form.workerId,
       workerNombre: worker?.nombre ?? "",
       eventId: form.eventId,
@@ -81,7 +56,7 @@ export function TurnosPage() {
   }
 
   async function responderTurno(id: string, estado: "confirmado" | "rechazado") {
-    await updateDoc(doc(getFirestoreDb(), "shifts", id), { estado });
+    await updateShiftEstado(id, estado);
   }
 
   const sitesFiltrados = sites.filter((s) => !form.eventId || s.eventId === form.eventId);

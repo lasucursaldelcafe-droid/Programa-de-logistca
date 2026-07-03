@@ -17,6 +17,14 @@ npm run setup    # primera vez: deps + .env.local
 npm start        # todo en uno → http://localhost:5173
 ```
 
+## Ver en línea (GitHub Pages)
+
+**URL pública:** https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/
+
+Cada push a `main` despliega automáticamente la app en modo demo (datos en memoria del navegador, sin Firebase). Usa las mismas cuentas de prueba.
+
+Para desarrollo local con Firebase real-time, usa `npm start` con emuladores.
+
 El comando `npm start` hace automáticamente:
 1. Setup si falta `.env.local` o `node_modules`
 2. Firebase Emulators (Auth + Firestore)
