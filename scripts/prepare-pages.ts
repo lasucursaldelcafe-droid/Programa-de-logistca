@@ -16,6 +16,12 @@ function finalizeSpa(distDir: string): void {
   writeFileSync(resolve(distDir, ".nojekyll"), "");
 }
 
+function appBase(subpath?: string): string {
+  const root = resolvePagesBase();
+  if (!subpath) return root;
+  return `${root}${subpath.replace(/^\//, "")}/`;
+}
+
 const links = getDeploymentLinks();
 writeDeploymentJson(links);
 updateReadme(links);
@@ -23,21 +29,21 @@ updateRootIndex(links);
 
 console.log("→ Build Admin Console…");
 run("npm run build -w @spe/shared && npm run build -w @spe/admin", {
-  GITHUB_PAGES_BASE: resolvePagesBase(),
+  GITHUB_PAGES_BASE: appBase(),
   VITE_DEMO_MODE: process.env.VITE_DEMO_MODE ?? "true",
   VITE_USE_FIREBASE_EMULATORS: process.env.VITE_USE_FIREBASE_EMULATORS ?? "false",
 });
 
 console.log("→ Build App Trabajador…");
 run("npm run build -w @spe/worker", {
-  GITHUB_PAGES_BASE: resolvePagesBase("worker"),
+  GITHUB_PAGES_BASE: appBase("worker"),
   VITE_DEMO_MODE: process.env.VITE_DEMO_MODE ?? "true",
   VITE_USE_FIREBASE_EMULATORS: process.env.VITE_USE_FIREBASE_EMULATORS ?? "false",
 });
 
 console.log("→ Build Master Console…");
 run("npm run build -w @spe/master", {
-  GITHUB_PAGES_BASE: resolvePagesBase("master"),
+  GITHUB_PAGES_BASE: appBase("master"),
   VITE_DEMO_MODE: process.env.VITE_DEMO_MODE ?? "true",
   VITE_USE_FIREBASE_EMULATORS: process.env.VITE_USE_FIREBASE_EMULATORS ?? "false",
 });
@@ -66,6 +72,7 @@ copyFileSync(deploymentJson, resolve(docs, "master/deployment.json"));
 
 // Guía estática accesible sin SPA
 copyFileSync(resolve(ROOT, "docs-source/GUIA.md"), resolve(docs, "GUIA.md"));
+writeFileSync(resolve(docs, ".nojekyll"), "");
 
 console.log(`✓ GitHub Pages listo (${links.pagesUrl})`);
 console.log(`  Admin:    ${links.pagesUrl}`);
