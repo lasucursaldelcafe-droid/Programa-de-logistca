@@ -13,6 +13,7 @@ import { NotificacionesPage } from "./pages/NotificacionesPage";
 import { NominaPage } from "./pages/NominaPage";
 import { ConfiguracionPage } from "./pages/ConfiguracionPage";
 import { ReportesPage } from "./pages/ReportesPage";
+import { AyudaPage } from "./pages/AyudaPage";
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -33,6 +34,7 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/ayuda" element={<AyudaPage platform="admin" />} />
       <Route
         element={
           <Protected>
@@ -50,6 +52,7 @@ export function App() {
         <Route path="notificaciones" element={<NotificacionesPage />} />
         <Route path="nomina" element={<NominaPage />} />
         <Route path="configuracion" element={<ConfiguracionPage />} />
+        <Route path="ayuda" element={<AyudaPage platform="admin" />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

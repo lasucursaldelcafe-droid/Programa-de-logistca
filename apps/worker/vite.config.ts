@@ -4,7 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "node:path";
 
 export default defineConfig({
-  base: process.env.NATIVE_BUILD === "true" ? "./" : "/",
+  base: process.env.NATIVE_BUILD === "true" ? "./" : (process.env.GITHUB_PAGES_BASE ?? "/"),
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

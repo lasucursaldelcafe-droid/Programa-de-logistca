@@ -5,8 +5,13 @@ export interface DeploymentLinks {
   repo: string;
   pagesBase: string;
   pagesUrl: string;
+  workerBase: string;
+  workerUrl: string;
+  masterBase: string;
+  masterUrl: string;
   repoUrl: string;
   actionsUrl: string;
+  guiaUrl: string;
 }
 
 export function useDeploymentLinks(): DeploymentLinks | null {

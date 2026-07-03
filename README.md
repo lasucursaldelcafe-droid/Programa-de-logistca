@@ -41,14 +41,25 @@ npm run dev:master   # Master Console → http://localhost:5175
 <!-- DEPLOY_LINKS_START -->
 | Recurso | URL |
 |---------|-----|
-| **App en línea** | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/ |
+| **Admin Console** | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/ |
+| **App Trabajador** | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/worker/ |
+| **Master Console** | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/master/ |
+| **Guía (markdown)** | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/GUIA.md |
 | **Repositorio** | https://github.com/lasucursaldelcafe-droid/Programa-de-logistca |
 | **Actions (CI)** | https://github.com/lasucursaldelcafe-droid/Programa-de-logistca/actions |
 
 > Enlaces generados automáticamente por `npm run sync:links` desde el repo `lasucursaldelcafe-droid/Programa-de-logistca`.
 <!-- DEPLOY_LINKS_END -->
 
-GitHub Pages publica la **Admin Console** en modo demo. Worker y Master se usan en local o con Firebase producción.
+GitHub Pages publica las **tres plataformas** en modo demo:
+
+| Plataforma | URL |
+|------------|-----|
+| Admin Console | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/ |
+| App Trabajador | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/worker/ |
+| Master Console | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/master/ |
+
+Guía completa: `docs-source/GUIA.md` o `/ayuda` dentro de cada app.
 
 ## Estructura del monorepo
 

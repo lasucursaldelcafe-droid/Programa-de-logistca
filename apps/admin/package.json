@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:pages": "tsc -b && vite build && tsx ../../scripts/prepare-pages.ts",
+    "build:pages": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {

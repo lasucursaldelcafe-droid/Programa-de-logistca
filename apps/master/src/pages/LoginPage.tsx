@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@core/contexts/AuthContext";
 import { Card } from "@core/components/ui";
 import { DEMO_MODE } from "@core/lib/mode";
@@ -77,6 +77,11 @@ export function LoginPage() {
           <p className="mt-2 font-mono">master@eventos.test / Master123!</p>
           <p className="mt-3 border-t border-border pt-3 text-neutral-500">
             Admin: puerto 5173 · Trabajador: 5174
+          </p>
+          <p className="mt-3">
+            <Link to="/ayuda" className="text-accent hover:underline">
+              Ver guía de uso →
+            </Link>
           </p>
         </div>
       </Card>

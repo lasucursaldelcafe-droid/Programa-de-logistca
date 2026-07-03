@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@core/contexts/AuthContext";
 import { Card } from "@core/components/ui";
 import { DEMO_MODE } from "@core/lib/mode";
@@ -78,6 +78,11 @@ export function LoginPage() {
             <li>maria@eventos.test / Trab123!</li>
             <li>juan@eventos.test / Trab123!</li>
           </ul>
+          <p className="mt-3">
+            <Link to="/ayuda" className="text-accent hover:underline">
+              Ver guía de uso →
+            </Link>
+          </p>
         </div>
       </Card>
     </div>

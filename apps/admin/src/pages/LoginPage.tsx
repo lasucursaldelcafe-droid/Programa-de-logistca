@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Card } from "../components/ui";
 import { DEMO_MODE } from "../lib/mode";
@@ -110,21 +110,35 @@ export function LoginPage() {
             <li>supervisor@eventos.test / Super123!</li>
           </ul>
           <p className="mt-3 border-t border-border pt-3 text-neutral-500">
-            Master: puerto 5175 · Trabajador: 5174
+            Otras plataformas: Trabajador (5174) · Master (5175)
           </p>
           {deployLinks && (
-            <p className="mt-3 border-t border-border pt-3">
-              App pública:{" "}
-              <a
-                href={deployLinks.pagesUrl}
-                className="text-accent hover:underline"
-                target="_blank"
-                rel="noreferrer"
-              >
-                {deployLinks.pagesUrl}
-              </a>
-            </p>
+            <div className="mt-3 space-y-1 border-t border-border pt-3">
+              <p>
+                Admin:{" "}
+                <a href={deployLinks.pagesUrl} className="text-accent hover:underline" target="_blank" rel="noreferrer">
+                  {deployLinks.pagesUrl}
+                </a>
+              </p>
+              <p>
+                Trabajador:{" "}
+                <a href={deployLinks.workerUrl} className="text-accent hover:underline" target="_blank" rel="noreferrer">
+                  {deployLinks.workerUrl}
+                </a>
+              </p>
+              <p>
+                Master:{" "}
+                <a href={deployLinks.masterUrl} className="text-accent hover:underline" target="_blank" rel="noreferrer">
+                  {deployLinks.masterUrl}
+                </a>
+              </p>
+            </div>
           )}
+          <p className="mt-3">
+            <Link to="/ayuda" className="text-accent hover:underline">
+              Ver guía de uso →
+            </Link>
+          </p>
         </div>
       </Card>
     </div>

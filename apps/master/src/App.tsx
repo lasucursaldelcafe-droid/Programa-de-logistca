@@ -7,6 +7,7 @@ import { MasterHomePage } from "./pages/MasterHomePage";
 import { AdminsPage } from "./pages/AdminsPage";
 import { InformesPage } from "./pages/InformesPage";
 import { AuditoriaPage } from "./pages/AuditoriaPage";
+import { AyudaPage } from "@core/pages/AyudaPage";
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -25,6 +26,7 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/ayuda" element={<AyudaPage platform="master" />} />
       <Route
         element={
           <Protected>

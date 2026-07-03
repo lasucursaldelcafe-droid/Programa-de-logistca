@@ -13,8 +13,13 @@ export interface DeploymentLinks {
   repo: string;
   pagesBase: string;
   pagesUrl: string;
+  workerBase: string;
+  workerUrl: string;
+  masterBase: string;
+  masterUrl: string;
   repoUrl: string;
   actionsUrl: string;
+  guiaUrl: string;
 }
 
 function detectRepo(): { owner: string; repo: string } {
@@ -58,10 +63,27 @@ export function getDeploymentLinks(): DeploymentLinks {
   const { owner, repo } = detectRepo();
   const pagesBase = `/${repo}/`;
   const pagesUrl = `https://${owner}.github.io/${repo}/`;
+  const workerBase = `/${repo}/worker/`;
+  const workerUrl = `https://${owner}.github.io/${repo}/worker/`;
+  const masterBase = `/${repo}/master/`;
+  const masterUrl = `https://${owner}.github.io/${repo}/master/`;
   const repoUrl = `https://github.com/${owner}/${repo}`;
   const actionsUrl = `${repoUrl}/actions`;
+  const guiaUrl = `${pagesUrl}GUIA.md`;
 
-  return { owner, repo, pagesBase, pagesUrl, repoUrl, actionsUrl };
+  return {
+    owner,
+    repo,
+    pagesBase,
+    pagesUrl,
+    workerBase,
+    workerUrl,
+    masterBase,
+    masterUrl,
+    repoUrl,
+    actionsUrl,
+    guiaUrl,
+  };
 }
 
 function updateReadme(links: DeploymentLinks): boolean {
@@ -74,7 +96,10 @@ function updateReadme(links: DeploymentLinks): boolean {
   const block = `${markerStart}
 | Recurso | URL |
 |---------|-----|
-| **App en línea** | ${links.pagesUrl} |
+| **Admin Console** | ${links.pagesUrl} |
+| **App Trabajador** | ${links.workerUrl} |
+| **Master Console** | ${links.masterUrl} |
+| **Guía (markdown)** | ${links.guiaUrl} |
 | **Repositorio** | ${links.repoUrl} |
 | **Actions (CI)** | ${links.actionsUrl} |
 
@@ -115,14 +140,23 @@ function updateRootIndex(links: DeploymentLinks): boolean {
 <html lang="es">
   <head>
     <meta charset="utf-8" />
-    <meta http-equiv="refresh" content="0; url=${links.pagesBase}" />
-    <script>
-      location.replace("${links.pagesBase}" + location.search + location.hash);
-    </script>
     <title>Sistema de Personal — Eventos</title>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; }
+      h1 { font-size: 1.25rem; }
+      ul { line-height: 1.8; }
+      a { color: #2563eb; }
+    </style>
   </head>
   <body>
-    <p><a href="${links.pagesBase}">Ir al Sistema de Personal</a></p>
+    <h1>Sistema de Personal para Eventos</h1>
+    <p>Elige la plataforma que corresponde a tu rol:</p>
+    <ul>
+      <li><a href="${links.pagesBase}">Admin Console</a> — administradores y supervisores</li>
+      <li><a href="${links.workerBase}">App Trabajador</a> — personal de campo</li>
+      <li><a href="${links.masterBase}">Master Console</a> — super administrador</li>
+      <li><a href="${links.guiaUrl}">Guía de uso (GUIA.md)</a></li>
+    </ul>
   </body>
 </html>
 `;
@@ -144,9 +178,10 @@ function main(): void {
   const indexChanged = updateRootIndex(links);
 
   console.log("✓ Enlaces de despliegue sincronizados:");
-  console.log(`  base:  ${links.pagesBase}`);
-  console.log(`  url:   ${links.pagesUrl}`);
-  console.log(`  repo:  ${links.repoUrl}`);
+  console.log(`  admin:  ${links.pagesUrl}`);
+  console.log(`  worker: ${links.workerUrl}`);
+  console.log(`  master: ${links.masterUrl}`);
+  console.log(`  repo:   ${links.repoUrl}`);
   if (readmeChanged) console.log("  ~ README.md actualizado");
   if (indexChanged) console.log("  ~ index.html actualizado");
 }

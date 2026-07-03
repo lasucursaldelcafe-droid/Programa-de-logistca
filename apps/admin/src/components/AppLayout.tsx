@@ -72,6 +72,9 @@ export function AppLayout() {
                 Configuración
               </NavLink>
             )}
+            <NavLink to="/ayuda" className={linkClass}>
+              Ayuda
+            </NavLink>
             <NotificationBell />
             <button
               type="button"

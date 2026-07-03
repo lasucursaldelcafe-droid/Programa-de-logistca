@@ -9,6 +9,7 @@ import { WorkerLayout } from "./components/WorkerLayout";
 import { LoginPage } from "./pages/LoginPage";
 import { WorkerHomePage } from "./pages/WorkerHomePage";
 import { ReportarPage } from "./pages/ReportarPage";
+import { AyudaPage } from "@core/pages/AyudaPage";
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -44,6 +45,7 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/ayuda" element={<AyudaPage platform="worker" />} />
       <Route path="/activar/:token" element={<ActivarCuentaPage />} />
       <Route
         path="/completar-perfil"
