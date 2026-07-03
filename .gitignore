@@ -24,10 +24,17 @@
 
 # production
 /build
+dist/
+**/.vite/
 
 # misc
 .DS_Store
 *.pem
+
+# firebase emulators
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
 
 # debug
 npm-debug.log*
@@ -37,7 +44,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
-!.env.example
+!/apps/web/.env.local
 
 # vercel
 .vercel

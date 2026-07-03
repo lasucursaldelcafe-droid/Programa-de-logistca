@@ -1,131 +1,82 @@
-# Programa de Logística
+# Sistema de Personal para Eventos
 
-Aplicación web para registrar envíos y hacer seguimiento de su estado de entrega.
-Construida con **Next.js 16 (App Router) + TypeScript**, **Drizzle ORM** sobre
-**libSQL/SQLite** y **Tailwind CSS v4**.
+Plataforma de gestión de personal para empresas de logística y recreación en eventos (200+ trabajadores). Web + Firebase con emuladores locales para desarrollo.
 
-En desarrollo usa una base de datos SQLite local (sin servicios externos). El mismo
-código funciona contra **Turso** definiendo `TURSO_DATABASE_URL` (y `TURSO_AUTH_TOKEN`).
+**Fase 1 (actual):** Auth con roles, módulo Personal, módulo Turnos.
 
 ## Requisitos
 
 - Node.js 22+
 - npm
+- Java (Firebase Emulators)
 
-## Puesta en marcha
+## Inicio rápido (pruebas locales)
 
 ```bash
-npm install        # instalar dependencias
-npm run db:init    # crear el esquema (idempotente) en ./data/logistica.db
-npm run db:seed    # (opcional) datos de ejemplo
-npm run dev        # servidor de desarrollo en http://localhost:3000
+npm run setup          # deps + apps/web/.env.local
+npm run emulators      # Terminal A — Auth :9099, Firestore :8080, UI :4000
+npm run seed           # Terminal B — datos y cuentas de prueba
+npm run dev:web        # Terminal C — http://localhost:5173
+```
+
+O en un solo comando (emuladores en background):
+
+```bash
+npm run setup:all && npm run dev
+```
+
+## Cuentas de prueba
+
+| Rol | Email | Contraseña |
+|-----|-------|------------|
+| Administrador | admin@eventos.test | Admin123! |
+| Supervisor | supervisor@eventos.test | Super123! |
+| Trabajador | maria@eventos.test | Trab123! |
+| Trabajador | juan@eventos.test | Trab123! |
+
+## Estructura del monorepo
+
+```
+apps/web/              → React + Vite + Tailwind (app principal)
+packages/shared/       → Tipos, permisos, cliente Firebase
+functions/             → Cloud Functions (Fase 2+)
+scripts/               → setup-phase1.ts, seed-emulators.ts
+_legacy/envios-next/   → Prototipo anterior (envíos/logística)
+firebase.json          → Emuladores Auth + Firestore
+firestore.rules        → Permisos por rol
 ```
 
 ## Scripts
 
-| Script            | Descripción                                             |
-| ----------------- | ------------------------------------------------------- |
-| `npm run dev`     | Servidor de desarrollo (Turbopack) en el puerto 3000.   |
-| `npm run build`   | Build de producción.                                    |
-| `npm start`       | Sirve el build de producción.                           |
-| `npm run lint`    | ESLint (config `eslint-config-next`).                   |
-| `npm test`        | Tests unitarios con Vitest.                             |
-| `npm run db:init` | Crea el esquema de la base de datos (idempotente).      |
-| `npm run db:seed` | Inserta envíos de ejemplo.                              |
-| `npm run db:studio` | Abre Drizzle Studio para inspeccionar la base de datos. |
+| Script | Descripción |
+|--------|-------------|
+| `npm run setup` | Instala deps y crea `.env.local` para emuladores |
+| `npm run emulators` | Inicia Firebase Emulators (Auth, Firestore) |
+| `npm run seed` | Carga usuarios, trabajadores, eventos y turnos de prueba |
+| `npm run dev:web` | Servidor Vite en puerto 5173 |
+| `npm run build` | Build de producción (shared + web) |
 
-## Estructura
+## Roles y permisos
 
-```
-src/
-  app/
-    page.tsx                 # Panel: crear/listar envíos y cambiar estado
-    layout.tsx
-    api/envios/route.ts      # GET (listar) y POST (crear)
-    api/envios/[id]/route.ts # PATCH (cambiar estado) y DELETE
-  db/
-    schema.ts                # Esquema Drizzle de `envios`
-    index.ts                 # Cliente libSQL/Drizzle (local o Turso)
-  lib/
-    logistica.ts             # Dominio: validación, códigos, transiciones de estado
-scripts/
-  db-init.ts                 # Crea el esquema
-  db-seed.ts                 # Datos de ejemplo
-tests/
-  logistica.test.ts          # Tests del dominio
-```
+- **super_admin / administrador:** gestión completa de personal y turnos
+- **supervisor_sitio:** supervisión en sitio (Fase 2+)
+- **trabajador:** ver y aceptar/rechazar sus turnos
 
-## Versión estática (GitHub Pages)
+## Diseño
 
-Además de la app Next.js, hay una versión **estática autónoma** en
-[`docs/index.html`](docs/index.html): un único archivo HTML (sin build ni
-dependencias) con **inicio de sesión** y gestión de envíos, con persistencia en
-`localStorage`. Sirve para probar la interfaz directamente desde GitHub sin
-levantar un servidor Node ni credenciales.
+Paleta del prompt maestro: fondo `#0A0A0A`, acento `#E8823C`, positivo `#3DDC97`, alerta `#D9455F`.
 
-- **Probar en local:**
-  ```bash
-  python3 -m http.server 8080 --directory docs
-  # abre http://localhost:8080
-  ```
-- **Publicación automática:** el workflow
-  [`.github/workflows/pages.yml`](.github/workflows/pages.yml) publica `docs/` en
-  **GitHub Pages** en cada push a `main` (auto-habilita Pages). Tras el primer
-  despliegue, el sitio queda disponible en
-  `https://<usuario>.github.io/Programa-de-logistca/`.
-- **Sesiones:** el login crea una sesión local (nombre de usuario + correo
-  opcional) guardada en `localStorage`; "Cerrar sesión" la elimina.
-- **Inicio de sesión con Google (opcional):** la pantalla de login integra
-  Google Identity Services. Para activarlo, define tu Client ID de OAuth de una
-  de estas formas:
-  1. Edita `GOOGLE_CLIENT_ID` en `docs/index.html`, o
-  2. Añade `?client_id=TU_ID.apps.googleusercontent.com` a la URL (se recuerda en
-     `localStorage`).
+## Fases pendientes
 
-  Con el Client ID configurado aparece el botón "Iniciar sesión con Google" y la
-  sesión se abre con el nombre/correo de la cuenta Google. Requisito: en Google
-  Cloud, el **origen JavaScript autorizado** debe incluir el dominio donde se
-  sirva (p. ej. `https://<usuario>.github.io` para Pages, o `http://localhost:8080`
-  para pruebas locales). El Client ID es un valor público (no es un secreto).
+1. ✅ Auth + Personal + Turnos
+2. Cuentas de trabajadores + invitaciones
+3. QR + GPS + geocercas
+4. Notificaciones push (FCM)
+5. Nómina
+6. Dashboard avanzado
+7. Wizard de configuración
+8. Capacitor (Android) + Electron (Windows)
 
-## Configuración (opcional, para Turso)
+## Prototipo anterior
 
-Crea un archivo `.env.local` (o ejecuta `npm run setup:all`):
-
-```bash
-npm run setup:all    # orquesta Turso + DB + config estática
-npm run setup:turso    # solo Turso (requiere TURSO_PLATFORM_TOKEN)
-npm run setup:google   # guía OAuth Google Cloud
-```
-
-Variables en `.env.example`. Para producción, configura estos **secrets en GitHub**
-(Settings → Secrets → Actions):
-
-| Secret | Uso |
-|--------|-----|
-| `TURSO_PLATFORM_TOKEN` | Crea BD `programa-de-logistica` en Turso |
-| `TURSO_DATABASE_URL` | URL libsql (generada por setup:turso) |
-| `TURSO_AUTH_TOKEN` | JWT de la BD (generado por setup:turso) |
-| `GOOGLE_CLIENT_ID` | Login Google (Next.js + estático) |
-| `GOOGLE_CLIENT_SECRET` | OAuth servidor (Vercel) |
-| `VERCEL_TOKEN` | Despliegue CI en Vercel |
-| `VERCEL_ORG_ID` | Organización Vercel |
-
-```bash
-TURSO_DATABASE_URL=libsql://<tu-base>.turso.io
-TURSO_AUTH_TOKEN=<token>
-```
-
-Sin estas variables se usa `file:./data/logistica.db` automáticamente.
-
-## Despliegues conectados
-
-- **Vercel (Next.js):** `.github/workflows/vercel-deploy.yml` — push a `main`
-- **GitHub Pages (estático):** `.github/workflows/pages-gh-pages.yml` → rama `gh-pages`
-  (Settings → Pages → branch `gh-pages`)
-- **Provisionar:** `.github/workflows/provision-integrations.yml` — Turso + Google al tener secrets
-
-## Modelo de estados de un envío
-
-`pendiente → en_transito → entregado`, con `cancelado` disponible desde
-`pendiente` o `en_transito`. Los estados `entregado` y `cancelado` son terminales.
+El CRUD de envíos (Next.js + Turso) quedó en `_legacy/envios-next/` y la versión estática en `docs/`. No forma parte del sistema de personal.

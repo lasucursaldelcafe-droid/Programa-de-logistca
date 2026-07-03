@@ -1,43 +1,25 @@
 {
-  "name": "programa-de-logistica",
+  "name": "sistema-personal-eventos",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "functions"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "db:init": "tsx scripts/db-init.ts",
-    "db:seed": "tsx scripts/db-seed.ts",
-    "db:studio": "drizzle-kit studio",
-    "setup": "tsx scripts/setup-all.ts",
-    "setup:all": "tsx scripts/setup-all.ts",
-    "setup:turso": "tsx scripts/setup-turso.ts",
-    "setup:google": "tsx scripts/setup-google.ts",
-    "setup:static": "tsx scripts/inject-static-config.ts",
-    "prebuild": "tsx scripts/inject-static-config.ts",
-    "deploy:vercel": "vercel --prod"
-  },
-  "dependencies": {
-    "@libsql/client": "^0.17.4",
-    "drizzle-orm": "^0.45.2",
-    "next": "16.2.10",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "dev": "npm run emulators & sleep 4 && npm run dev:web",
+    "dev:web": "npm run dev -w @spe/web",
+    "build": "npm run build -w @spe/shared && npm run build -w @spe/web",
+    "emulators": "firebase emulators:start --only auth,firestore --project demo-personal-eventos",
+    "seed": "tsx scripts/seed-emulators.ts",
+    "setup": "tsx scripts/setup-phase1.ts",
+    "setup:all": "npm run setup && npm run seed"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "drizzle-kit": "^0.31.10",
-    "eslint": "^9",
-    "eslint-config-next": "16.2.10",
-    "tailwindcss": "^4",
+    "firebase-admin": "^13.4.0",
+    "firebase-tools": "^14.0.0",
     "tsx": "^4.22.5",
-    "typescript": "^5",
-    "vitest": "^4.1.9"
+    "typescript": "^5.8.3"
   }
 }
