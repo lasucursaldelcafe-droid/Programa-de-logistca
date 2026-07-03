@@ -2,7 +2,7 @@
 
 Plataforma de gestión de personal para empresas de logística y recreación en eventos (200+ trabajadores). Web + Firebase con emuladores locales para desarrollo.
 
-**Fase 5 (actual):** Nómina automática desde jornadas cerradas, tarifas por perfil, refrigerios y exportación CSV.
+**Fase 6 (actual):** Dashboard operativo avanzado con KPIs, gráficos, resumen por sitio y panel personal para trabajadores.
 
 ## Requisitos
 
@@ -99,7 +99,7 @@ Paleta del prompt maestro: fondo `#0A0A0A`, acento `#E8823C`, positivo `#3DDC97`
 3. ✅ QR + GPS + geocercas
 4. ✅ Notificaciones push (FCM) + bandeja en app
 5. ✅ Nómina (horas, tarifas, refrigerios, exportación CSV)
-6. Dashboard avanzado
+6. ✅ Dashboard avanzado (KPIs, gráficos, actividad, filtro por evento)
 7. Wizard de configuración
 8. Capacitor (Android) + Electron (Windows)
 
