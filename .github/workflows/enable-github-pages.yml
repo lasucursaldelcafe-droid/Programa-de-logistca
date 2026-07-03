@@ -1,0 +1,56 @@
+name: Activar GitHub Pages
+
+# Intenta habilitar Pages y desplegar desde Actions (fuente recomendada por GitHub).
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/enable-github-pages.yml"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: enable-pages
+  cancel-in-progress: false
+
+jobs:
+  enable-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Inyectar config estática
+        run: npm ci && npx tsx scripts/inject-static-config.ts
+        env:
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GITHUB_PAGES_BASE: /Programa-de-logistca/
+
+      - name: Habilitar GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Subir artefacto
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./docs
+
+      - name: Desplegar en GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: URL publicada
+        run: |
+          echo "page_url=${{ steps.deployment.outputs.page_url }}"
