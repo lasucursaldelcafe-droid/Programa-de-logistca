@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { ROLE_LABEL, puedeGestionarCuentas, puedeGestionarPersonal, puedeGestionarQr, puedeVerMapaEnVivo } from "@spe/shared";
+import { NotificationBell } from "./NotificationBell";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-lg px-3 py-2 text-sm font-medium transition ${
@@ -59,6 +60,7 @@ export function AppLayout() {
             <NavLink to="/turnos" className={linkClass}>
               Turnos
             </NavLink>
+            <NotificationBell />
             <button
               type="button"
               onClick={async () => {

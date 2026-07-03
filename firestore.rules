@@ -106,5 +106,22 @@ service cloud.firestore {
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado'])
           && request.resource.data.estado in ['confirmado', 'rechazado']);
     }
+
+    match /notifications/{notificationId} {
+      allow read: if signedIn();
+      allow create: if signedIn();
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['leidaPor']);
+      allow delete: if isAdmin();
+    }
+
+    match /fcmTokens/{userId} {
+      allow read, write: if signedIn() && request.auth.uid == userId;
+    }
+
+    match /breaks/{breakId} {
+      allow read: if signedIn();
+      allow write: if isAdmin() || isSupervisor();
+    }
   }
 }

@@ -11,6 +11,7 @@ import { CompletarPerfilPage } from "./pages/CompletarPerfilPage";
 import { QrSitiosPage } from "./pages/QrSitiosPage";
 import { MarcarEntradaPage } from "./pages/MarcarEntradaPage";
 import { MapaEnVivoPage } from "./pages/MapaEnVivoPage";
+import { NotificacionesPage } from "./pages/NotificacionesPage";
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -69,6 +70,7 @@ export function App() {
         <Route path="qr-sitios" element={<QrSitiosPage />} />
         <Route path="mapa" element={<MapaEnVivoPage />} />
         <Route path="marcar-entrada" element={<MarcarEntradaPage />} />
+        <Route path="notificaciones" element={<NotificacionesPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

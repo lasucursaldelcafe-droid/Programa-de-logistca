@@ -167,6 +167,47 @@ export interface Turno {
   estado: ShiftEstado;
 }
 
+export type NotificationTipo =
+  | "turno_asignado"
+  | "turno_respuesta"
+  | "entrada"
+  | "salida"
+  | "geocerca_alerta"
+  | "emergencia"
+  | "break_recordatorio"
+  | "sistema";
+
+export type BreakTipo = "almuerzo" | "break" | "receso";
+
+export interface AppNotification {
+  id: string;
+  tipo: NotificationTipo;
+  titulo: string;
+  mensaje: string;
+  timestamp: string;
+  urgente: boolean;
+  destinatarios: string[];
+  shiftId?: string;
+  eventId?: string;
+  siteId?: string;
+  attendanceId?: string;
+  actorUid?: string;
+  actorNombre?: string;
+  leidaPor: string[];
+  accionTurno?: boolean;
+}
+
+export interface BreakSchedule {
+  id: string;
+  shiftId: string;
+  workerId: string;
+  workerNombre?: string;
+  tipo: BreakTipo;
+  inicio: string;
+  fin: string;
+  notificado: boolean;
+}
+
 export const PERFILES_LABEL: Record<string, string> = {
   logistica: "Logística",
   recreacion: "Recreación",
@@ -217,6 +258,27 @@ export function puedeGestionarQr(role: UserRole): boolean {
 export function puedeVerMapaEnVivo(role: UserRole): boolean {
   return role === "super_admin" || role === "administrador" || role === "supervisor_sitio";
 }
+
+export function puedeEnviarEmergencia(role: UserRole): boolean {
+  return role === "super_admin" || role === "administrador" || role === "supervisor_sitio";
+}
+
+export const NOTIFICATION_TIPO_LABEL: Record<NotificationTipo, string> = {
+  turno_asignado: "Turno asignado",
+  turno_respuesta: "Respuesta de turno",
+  entrada: "Entrada",
+  salida: "Salida",
+  geocerca_alerta: "Alerta geocerca",
+  emergencia: "Emergencia",
+  break_recordatorio: "Recordatorio break",
+  sistema: "Sistema",
+};
+
+export const BREAK_TIPO_LABEL: Record<BreakTipo, string> = {
+  almuerzo: "Almuerzo",
+  break: "Break",
+  receso: "Receso",
+};
 
 export const INVITATION_LABEL: Record<InvitationEstado, string> = {
   pendiente: "Pendiente",

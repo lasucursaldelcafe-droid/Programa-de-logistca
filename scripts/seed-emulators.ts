@@ -250,6 +250,30 @@ async function main(): Promise<void> {
   });
   console.log("+ jornada activa demo (Juan Pérez)");
 
+  await db.collection("notifications").doc("notif-maria-turno").set({
+    tipo: "turno_asignado",
+    titulo: "Nuevo turno asignado",
+    mensaje: "¿Deseas tomar el turno en Cocina central (Festival Gastronómico 2026)?",
+    timestamp: new Date().toISOString(),
+    urgente: false,
+    destinatarios: ["worker-maria"],
+    shiftId: "shift-maria-1",
+    accionTurno: true,
+    leidaPor: [],
+  });
+
+  await db.collection("notifications").doc("notif-juan-entrada").set({
+    tipo: "entrada",
+    titulo: "Entrada registrada",
+    mensaje: "Juan Pérez marcó entrada en Puerta principal.",
+    timestamp: new Date().toISOString(),
+    urgente: false,
+    destinatarios: ["_admins", "worker-juan"],
+    attendanceId: "att-juan-activo",
+    leidaPor: [],
+  });
+  console.log("+ notificaciones demo");
+
   console.log("\n✓ Seed completo. Cuentas:");
   for (const u of USERS) {
     console.log(`  ${u.email} / ${u.password}`);

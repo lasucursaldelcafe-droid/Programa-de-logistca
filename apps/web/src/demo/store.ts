@@ -1,7 +1,9 @@
 import type {
   AppUser,
+  AppNotification,
   Attendance,
   AttendanceEstado,
+  BreakSchedule,
   Evento,
   GeoRegistro,
   Invitation,
@@ -242,6 +244,30 @@ export const INITIAL_ATTENDANCES: Attendance[] = [
   },
 ];
 
+export const INITIAL_NOTIFICATIONS: Omit<AppNotification, "id">[] = [
+  {
+    tipo: "turno_asignado",
+    titulo: "Nuevo turno asignado",
+    mensaje: "¿Deseas tomar el turno en Cocina central (Festival Gastronómico 2026)?",
+    timestamp: new Date().toISOString(),
+    urgente: false,
+    destinatarios: ["worker-maria"],
+    shiftId: "shift-maria-1",
+    accionTurno: true,
+    leidaPor: [],
+  },
+  {
+    tipo: "entrada",
+    titulo: "Entrada registrada",
+    mensaje: "Juan Pérez marcó entrada en Puerta principal.",
+    timestamp: new Date().toISOString(),
+    urgente: false,
+    destinatarios: ["_admins", "worker-juan"],
+    attendanceId: "att-juan-activo",
+    leidaPor: [],
+  },
+];
+
 const expira = new Date();
 expira.setDate(expira.getDate() + 7);
 
@@ -270,6 +296,11 @@ class DemoStore {
   invitations = [...INITIAL_INVITATIONS];
   qrCodes = [...INITIAL_QR_CODES];
   attendances = [...INITIAL_ATTENDANCES];
+  notifications: AppNotification[] = INITIAL_NOTIFICATIONS.map((n, i) => ({
+    ...n,
+    id: `notif-${i}`,
+  }));
+  breaks: BreakSchedule[] = [];
   accounts = [...DEMO_ACCOUNTS];
   private listeners = new Set<Listener>();
 
@@ -295,12 +326,13 @@ class DemoStore {
     this.notify();
   }
 
-  addShift(shift: Omit<Turno, "id">): void {
+  addShift(shift: Omit<Turno, "id">): string {
     const id = `shift-${Date.now()}`;
     this.shifts = [...this.shifts, { ...shift, id }].sort((a, b) =>
       a.inicio.localeCompare(b.inicio),
     );
     this.notify();
+    return id;
   }
 
   updateShift(id: string, patch: Partial<Turno>): void {
@@ -484,6 +516,34 @@ class DemoStore {
             alertasGeocerca: [...a.alertasGeocerca, now],
           }
         : a,
+    );
+    this.notify();
+  }
+
+  addNotification(data: Omit<AppNotification, "id">): void {
+    const id = `notif-${Date.now()}`;
+    this.notifications = [{ ...data, id }, ...this.notifications];
+    this.notify();
+  }
+
+  markNotificationRead(notificationId: string, uid: string): void {
+    this.notifications = this.notifications.map((n) =>
+      n.id === notificationId && !n.leidaPor.includes(uid)
+        ? { ...n, leidaPor: [...n.leidaPor, uid] }
+        : n,
+    );
+    this.notify();
+  }
+
+  addBreak(data: Omit<BreakSchedule, "id" | "notificado"> & { notificado?: boolean }): void {
+    const id = `break-${Date.now()}`;
+    this.breaks = [...this.breaks, { ...data, id, notificado: data.notificado ?? false }];
+    this.notify();
+  }
+
+  markBreakNotified(breakId: string): void {
+    this.breaks = this.breaks.map((b) =>
+      b.id === breakId ? { ...b, notificado: true } : b,
     );
     this.notify();
   }

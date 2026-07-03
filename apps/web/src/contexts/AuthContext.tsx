@@ -21,6 +21,7 @@ import {
   type UserRole,
 } from "@spe/shared";
 import { DEMO_MODE } from "../lib/mode";
+import { initPushNotifications } from "../lib/fcm";
 import {
   clearDemoSession,
   demoLogin,
@@ -71,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       const appUser = await loadAppUser(fbUser);
       setUser(appUser);
+      if (appUser) void initPushNotifications(appUser.uid);
       setLoading(false);
     });
     return unsub;
@@ -97,6 +99,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
+    const fbUser = getFirebaseAuth().currentUser;
+    if (fbUser) void initPushNotifications(fbUser.uid);
   }, []);
 
   const logout = useCallback(async () => {

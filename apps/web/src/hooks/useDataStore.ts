@@ -37,6 +37,13 @@ import {
 import type { GeoPosition } from "../lib/geolocation";
 import { DEMO_MODE } from "../lib/mode";
 import { demoStore } from "../demo/store";
+import {
+  notifyCheckIn,
+  notifyCheckOut,
+  notifyGeofenceAlert,
+  notifyShiftAssigned,
+  notifyShiftResponse,
+} from "./useNotifications";
 
 function useDemoSnapshot<T>(selector: () => T): T {
   return useSyncExternalStore(demoStore.subscribe.bind(demoStore), selector, selector);
@@ -144,20 +151,38 @@ export async function updateWorkerEstado(id: string, estado: WorkerEstado): Prom
   await updateDoc(doc(getFirestoreDb(), "workers", id), { estado });
 }
 
-export async function createShift(data: Omit<Turno, "id">): Promise<void> {
+export async function createShift(data: Omit<Turno, "id">): Promise<string> {
   if (DEMO_MODE) {
-    demoStore.addShift(data);
-    return;
+    const id = demoStore.addShift(data);
+    await notifyShiftAssigned({ id, ...data });
+    return id;
   }
-  await addDoc(collection(getFirestoreDb(), "shifts"), data);
+  const ref = await addDoc(collection(getFirestoreDb(), "shifts"), data);
+  await notifyShiftAssigned({ id: ref.id, ...data });
+  return ref.id;
 }
 
 export async function updateShiftEstado(id: string, estado: ShiftEstado): Promise<void> {
+  let shift: Turno | null = null;
   if (DEMO_MODE) {
+    shift = demoStore.shifts.find((s) => s.id === id) ?? null;
     demoStore.updateShift(id, { estado });
-    return;
+  } else {
+    const snap = await getDoc(doc(getFirestoreDb(), "shifts", id));
+    if (snap.exists()) shift = { id: snap.id, ...snap.data() } as Turno;
+    await updateDoc(doc(getFirestoreDb(), "shifts", id), { estado });
   }
-  await updateDoc(doc(getFirestoreDb(), "shifts", id), { estado });
+
+  if (shift && (estado === "confirmado" || estado === "rechazado")) {
+    await notifyShiftResponse({
+      shiftId: id,
+      workerId: shift.workerId,
+      workerNombre: shift.workerNombre ?? shift.workerId,
+      estado,
+      eventNombre: shift.eventNombre,
+      siteNombre: shift.siteNombre,
+    });
+  }
 }
 
 export function useInvitations(): Invitation[] {
@@ -476,7 +501,7 @@ export async function checkInWithQr(data: {
   };
 
   if (DEMO_MODE) {
-    return demoStore.checkIn({
+    const attendanceId = demoStore.checkIn({
       workerId: data.workerId,
       workerNombre: data.workerNombre,
       shift,
@@ -485,6 +510,15 @@ export async function checkInWithQr(data: {
       entrada,
       position: data.position,
     });
+    await notifyCheckIn({
+      workerId: data.workerId,
+      workerNombre: data.workerNombre,
+      siteNombre: qr.siteNombre,
+      eventNombre: qr.eventNombre,
+      attendanceId,
+      dentroGeocerca: dentro,
+    });
+    return attendanceId;
   }
 
   const ref = await addDoc(collection(getFirestoreDb(), "attendance"), {
@@ -513,18 +547,35 @@ export async function checkInWithQr(data: {
   });
 
   await updateDoc(doc(getFirestoreDb(), "workers", data.workerId), { estado: "en_sitio" });
+  await notifyCheckIn({
+    workerId: data.workerId,
+    workerNombre: data.workerNombre,
+    siteNombre: qr.siteNombre,
+    eventNombre: qr.eventNombre,
+    attendanceId: ref.id,
+    dentroGeocerca: dentro,
+  });
   return ref.id;
 }
 
 export async function checkOut(attendanceId: string, position: GeoPosition): Promise<void> {
   if (DEMO_MODE) {
+    const att = demoStore.attendances.find((a) => a.id === attendanceId);
     demoStore.checkOut(attendanceId, position);
+    if (att) {
+      await notifyCheckOut({
+        workerId: att.workerId,
+        workerNombre: att.workerNombre ?? att.workerId,
+        siteNombre: att.siteNombre,
+        attendanceId,
+      });
+    }
     return;
   }
 
   const snap = await getDoc(doc(getFirestoreDb(), "attendance", attendanceId));
   if (!snap.exists()) throw new Error("Jornada no encontrada");
-  const attendance = snap.data() as Attendance;
+  const attendance = { id: snap.id, ...snap.data() } as Attendance;
   const siteSnap = await getDoc(doc(getFirestoreDb(), "sites", attendance.siteId));
   const site = siteSnap.data() as Sitio;
 
@@ -544,6 +595,13 @@ export async function checkOut(attendanceId: string, position: GeoPosition): Pro
 
   await updateDoc(doc(getFirestoreDb(), "workers", attendance.workerId), {
     estado: "sin_asignar",
+  });
+
+  await notifyCheckOut({
+    workerId: attendance.workerId,
+    workerNombre: attendance.workerNombre ?? attendance.workerId,
+    siteNombre: attendance.siteNombre,
+    attendanceId,
   });
 }
 
@@ -566,21 +624,43 @@ export async function updateAttendanceLocation(
 
 export async function recordGeofenceAlert(attendanceId: string): Promise<void> {
   if (DEMO_MODE) {
+    const att = demoStore.attendances.find((a) => a.id === attendanceId);
+    const hadAlerts = (att?.alertasGeocerca.length ?? 0) > 0;
     demoStore.recordGeofenceAlert(attendanceId);
+    if (att && !hadAlerts) {
+      await notifyGeofenceAlert({
+        workerId: att.workerId,
+        workerNombre: att.workerNombre ?? att.workerId,
+        siteNombre: att.siteNombre,
+        attendanceId,
+      });
+    }
     return;
   }
 
   const snap = await getDoc(doc(getFirestoreDb(), "attendance", attendanceId));
   if (!snap.exists()) return;
   const data = snap.data();
+  const attendance = { id: snap.id, ...data } as Attendance;
   const alertas = (data.alertasGeocerca as string[] | undefined) ?? [];
   const now = new Date().toISOString();
   if (alertas.length > 0 && alertas[alertas.length - 1] === now) return;
+
+  const isFirstAlert = alertas.length === 0;
 
   await updateDoc(doc(getFirestoreDb(), "attendance", attendanceId), {
     estado: "fuera_geocerca",
     alertasGeocerca: [...alertas, now],
   });
+
+  if (isFirstAlert) {
+    await notifyGeofenceAlert({
+      workerId: attendance.workerId,
+      workerNombre: attendance.workerNombre ?? attendance.workerId,
+      siteNombre: attendance.siteNombre,
+      attendanceId,
+    });
+  }
 }
 
 export function getActiveAttendance(

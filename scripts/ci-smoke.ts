@@ -46,6 +46,11 @@ async function main(): Promise<void> {
     throw new Error(`Se esperaba ≥1 jornada, hay ${attendance.size}`);
   }
 
+  const notifications = await db.collection("notifications").get();
+  if (notifications.size < 2) {
+    throw new Error(`Se esperaban ≥2 notificaciones, hay ${notifications.size}`);
+  }
+
   console.log("✓ Smoke test OK:", {
     admin: admin.email,
     workers: workers.size,
@@ -53,6 +58,7 @@ async function main(): Promise<void> {
     invitations: invitations.size,
     qrCodes: qrCodes.size,
     attendance: attendance.size,
+    notifications: notifications.size,
   });
 }
 
