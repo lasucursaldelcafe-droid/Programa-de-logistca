@@ -37,7 +37,7 @@ export function LoginPage() {
       <Card className="w-full max-w-md">
         <h1 className="font-display text-2xl font-bold">Sistema de Personal</h1>
         <p className="mt-1 text-sm text-neutral-400">
-          Gestión de personal para eventos — Fase 4
+          Gestión de personal para eventos — Fase 8
         </p>
         {DEMO_MODE && (
           <p className="mt-2 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-xs text-accent">
