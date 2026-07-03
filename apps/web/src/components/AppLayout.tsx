@@ -2,6 +2,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { ROLE_LABEL, puedeGestionarCuentas, puedeGestionarConfiguracion, puedeGestionarPersonal, puedeGestionarQr, puedeVerMapaEnVivo, puedeVerNomina } from "@spe/shared";
 import { NotificationBell } from "./NotificationBell";
+import { PlatformBadge } from "./PlatformBadge";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-lg px-3 py-2 text-sm font-medium transition ${
@@ -24,8 +25,9 @@ export function AppLayout() {
             <div className="font-display text-lg font-semibold tracking-tight">
               Personal Eventos
             </div>
-            <div className="text-xs text-neutral-500">
+            <div className="text-xs text-neutral-500 flex items-center gap-2">
               {user.nombre} · {ROLE_LABEL[user.role]}
+              <PlatformBadge />
             </div>
           </div>
           <nav className="flex flex-wrap items-center gap-1">
