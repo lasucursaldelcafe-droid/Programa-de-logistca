@@ -1,7 +1,6 @@
 name: Publicar app (GitHub Pages)
 
-# Publica apps/web en la rama gh-pages.
-# Settings → Pages → Deploy from branch → gh-pages / (root)
+# Publica en rama gh-pages Y en docs/ (main) para máxima compatibilidad.
 on:
   push:
     branches: [main]
@@ -16,9 +15,12 @@ concurrency:
 
 jobs:
   deploy:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-node@v4
         with:
@@ -39,6 +41,14 @@ jobs:
           branch: gh-pages
           clean: true
           commit-message: "deploy: sistema personal eventos (Fase 1)"
+
+      - name: Sincronizar docs/ en main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/
+          git diff --staged --quiet || git commit -m "deploy: actualizar docs/ para GitHub Pages [skip ci]"
+          git push
 
       - name: URL
         run: |

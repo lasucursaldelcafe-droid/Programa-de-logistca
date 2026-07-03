@@ -21,9 +21,9 @@ npm start        # todo en uno → http://localhost:5173
 
 **URL pública:** https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/
 
-Cada push a `main` despliega automáticamente la app en modo demo (datos en memoria del navegador, sin Firebase). Usa las mismas cuentas de prueba.
+Cada push a `main` despliega automáticamente la app en modo demo (datos en memoria del navegador). Usa las mismas cuentas de prueba.
 
-Para desarrollo local con Firebase real-time, usa `npm start` con emuladores.
+Si la URL muestra la versión antigua, en GitHub ve a **Settings → Pages** y confirma que la fuente sea `gh-pages` o `main` / `docs`. Si el despliegue falla por reglas de entorno, desactiva la protección en **Settings → Environments → github-pages**.
 
 El comando `npm start` hace automáticamente:
 1. Setup si falta `.env.local` o `node_modules`
