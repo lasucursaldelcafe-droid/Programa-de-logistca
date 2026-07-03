@@ -762,7 +762,7 @@ export function usePlatformUsers(): AppUser[] {
     return unsub;
   }, []);
 
-  const demoUsers = useDemoSnapshot(() => demoStore.accounts.map((a) => a.user));
+  const demoUsers = useDemoSnapshot(() => demoStore.platformUsers);
   return DEMO_MODE ? demoUsers : users;
 }
 

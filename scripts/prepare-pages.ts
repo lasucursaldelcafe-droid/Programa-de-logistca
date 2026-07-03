@@ -11,9 +11,19 @@ function run(cmd: string, env: Record<string, string>): void {
   execSync(cmd, { cwd: ROOT, stdio: "inherit", env: { ...process.env, ...env } });
 }
 
-function finalizeSpa(distDir: string): void {
+function mirrorSpaRoutes(distDir: string, routes: string[]): void {
+  const indexPath = resolve(distDir, "index.html");
+  for (const route of routes) {
+    const dir = resolve(distDir, route);
+    mkdirSync(dir, { recursive: true });
+    copyFileSync(indexPath, resolve(dir, "index.html"));
+  }
+}
+
+function finalizeSpa(distDir: string, extraRoutes: string[] = []): void {
   copyFileSync(resolve(distDir, "index.html"), resolve(distDir, "404.html"));
   writeFileSync(resolve(distDir, ".nojekyll"), "");
+  if (extraRoutes.length > 0) mirrorSpaRoutes(distDir, extraRoutes);
 }
 
 function appBase(subpath?: string): string {
@@ -52,9 +62,9 @@ const adminDist = resolve(ROOT, "apps/admin/dist");
 const workerDist = resolve(ROOT, "apps/worker/dist");
 const masterDist = resolve(ROOT, "apps/master/dist");
 
-finalizeSpa(adminDist);
-finalizeSpa(workerDist);
-finalizeSpa(masterDist);
+finalizeSpa(adminDist, ["login", "ayuda", "personal", "turnos", "cuentas", "qr-sitios", "mapa", "reportes", "nomina", "configuracion"]);
+finalizeSpa(workerDist, ["login", "ayuda", "turnos", "entrada", "reportar", "completar-perfil"]);
+finalizeSpa(masterDist, ["login", "ayuda", "administradores", "informes", "auditoria"]);
 
 mkdirSync(docs, { recursive: true });
 rmSync(docs, { recursive: true, force: true });

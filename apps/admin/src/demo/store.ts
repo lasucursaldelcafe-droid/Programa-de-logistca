@@ -434,6 +434,7 @@ class DemoStore {
   setupConfig: SetupConfig | null = { ...INITIAL_SETUP_CONFIG };
   reportes = [...INITIAL_REPORTES];
   accounts = [...DEMO_ACCOUNTS];
+  platformUsers: AppUser[] = DEMO_ACCOUNTS.map((a) => a.user);
   private listeners = new Set<Listener>();
 
   subscribe(listener: Listener): () => void {
@@ -442,6 +443,7 @@ class DemoStore {
   }
 
   private notify(): void {
+    this.platformUsers = this.accounts.map((a) => a.user);
     for (const listener of this.listeners) listener();
   }
 
