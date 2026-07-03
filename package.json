@@ -8,13 +8,15 @@
     "functions"
   ],
   "scripts": {
-    "dev": "npm run emulators & sleep 4 && npm run dev:web",
+    "start": "tsx scripts/dev-auto.ts",
+    "dev": "npm start",
     "dev:web": "npm run dev -w @spe/web",
     "build": "npm run build -w @spe/shared && npm run build -w @spe/web",
     "emulators": "firebase emulators:start --only auth,firestore --project demo-personal-eventos",
     "seed": "tsx scripts/seed-emulators.ts",
     "setup": "tsx scripts/setup-phase1.ts",
-    "setup:all": "npm run setup && npm run seed"
+    "setup:all": "npm run setup && npm run seed",
+    "test:smoke": "firebase emulators:exec --only auth,firestore --project demo-personal-eventos \"npm run seed && tsx scripts/ci-smoke.ts\""
   },
   "devDependencies": {
     "firebase-admin": "^13.4.0",

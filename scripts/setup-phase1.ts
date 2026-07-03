@@ -1,4 +1,4 @@
-import { existsSync, writeFileSync, readFileSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { execSync } from "node:child_process";
 
@@ -25,11 +25,9 @@ function main(): void {
   console.log("> Instalando dependencias…");
   execSync("npm install", { cwd: ROOT, stdio: "inherit" });
 
-  console.log("\n✓ Setup listo. Siguiente:");
-  console.log("  1. Terminal A: npm run emulators");
-  console.log("  2. Terminal B: npm run seed");
-  console.log("  3. Terminal C: npm run dev:web");
-  console.log("  4. Abre http://localhost:5173");
+  console.log("\n✓ Setup listo.");
+  console.log("  Arranque automático: npm start");
+  console.log("  (emuladores + seed + app en http://localhost:5173)");
 }
 
 main();

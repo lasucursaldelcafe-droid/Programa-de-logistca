@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "cursor/**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Setup
+        run: npm run setup
+
+      - name: Build
+        run: npm run build
+
+      - name: Smoke test con emuladores
+        run: npm run test:smoke

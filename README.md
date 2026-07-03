@@ -10,19 +10,25 @@ Plataforma de gestión de personal para empresas de logística y recreación en 
 - npm
 - Java (Firebase Emulators)
 
-## Inicio rápido (pruebas locales)
+## Inicio rápido (automático)
 
 ```bash
-npm run setup          # deps + apps/web/.env.local
-npm run emulators      # Terminal A — Auth :9099, Firestore :8080, UI :4000
-npm run seed           # Terminal B — datos y cuentas de prueba
-npm run dev:web        # Terminal C — http://localhost:5173
+npm run setup    # primera vez: deps + .env.local
+npm start        # todo en uno → http://localhost:5173
 ```
 
-O en un solo comando (emuladores en background):
+El comando `npm start` hace automáticamente:
+1. Setup si falta `.env.local` o `node_modules`
+2. Firebase Emulators (Auth + Firestore)
+3. Seed con cuentas y datos de prueba
+4. Servidor Vite en puerto 5173
+
+## Manual (opcional)
 
 ```bash
-npm run setup:all && npm run dev
+npm run emulators    # Terminal A
+npm run seed         # Terminal B
+npm run dev:web      # Terminal C
 ```
 
 ## Cuentas de prueba
@@ -50,11 +56,13 @@ firestore.rules        → Permisos por rol
 
 | Script | Descripción |
 |--------|-------------|
+| `npm start` | **Automático:** emuladores + seed + app web |
 | `npm run setup` | Instala deps y crea `.env.local` para emuladores |
-| `npm run emulators` | Inicia Firebase Emulators (Auth, Firestore) |
-| `npm run seed` | Carga usuarios, trabajadores, eventos y turnos de prueba |
-| `npm run dev:web` | Servidor Vite en puerto 5173 |
+| `npm run emulators` | Solo emuladores Firebase |
+| `npm run seed` | Carga usuarios, trabajadores, eventos y turnos |
+| `npm run dev:web` | Solo servidor Vite |
 | `npm run build` | Build de producción (shared + web) |
+| `npm run test:smoke` | CI: emuladores + seed + verificación |
 
 ## Roles y permisos
 
