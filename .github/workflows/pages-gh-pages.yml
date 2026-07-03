@@ -1,15 +1,16 @@
 name: Publicar sitio estático (gh-pages)
 
-# Publica docs/ en la rama gh-pages (no requiere habilitar Pages API).
-# Una vez: Settings → Pages → Deploy from branch → gh-pages / root
+# Publica docs/ en la rama gh-pages.
+# Activar una vez: Settings → Pages → Deploy from branch → gh-pages / (root)
+# URL: https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/
 on:
   push:
     branches: [main]
     paths:
       - "docs/**"
+      - "index.html"
       - ".github/workflows/pages-gh-pages.yml"
       - "scripts/inject-static-config.ts"
-      - ".env.example"
   workflow_dispatch:
 
 permissions:
@@ -30,14 +31,11 @@ jobs:
           node-version: "22"
           cache: npm
 
-      - name: Instalar dependencias (solo tsx)
-        run: npm ci
-
-      - name: Inyectar Google Client ID en config estática
+      - name: Inyectar base href y config estática
+        run: npm ci && npx tsx scripts/inject-static-config.ts
         env:
           NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GITHUB_PAGES_BASE: /Programa-de-logistca
-        run: npx tsx scripts/inject-static-config.ts
+          GITHUB_PAGES_BASE: /Programa-de-logistca/
 
       - name: Publicar en gh-pages
         uses: JamesIves/github-pages-deploy-action@v4
@@ -46,3 +44,9 @@ jobs:
           branch: gh-pages
           clean: true
           commit-message: "deploy: sitio estático de logística"
+
+      - name: Resumen de URL
+        run: |
+          echo "Sitio publicado en rama gh-pages."
+          echo "Si ves 404, activa: Settings → Pages → gh-pages → / (root)"
+          echo "URL: https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/"
