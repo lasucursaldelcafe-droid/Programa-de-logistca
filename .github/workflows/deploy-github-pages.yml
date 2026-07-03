@@ -40,11 +40,12 @@ jobs:
           VITE_DEMO_MODE: "true"
           VITE_USE_FIREBASE_EMULATORS: "false"
 
-      - name: Publicar en gh-pages
+      - name: Publicar en gh-pages/docs (ruta que usa GitHub Pages)
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: apps/web/dist
           branch: gh-pages
+          target-folder: docs
           clean: true
           commit-message: "deploy: ${{ github.event.repository.name }} @ ${{ github.sha }}"
 

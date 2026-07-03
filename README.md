@@ -35,7 +35,7 @@ npm start        # todo en uno → http://localhost:5173
 
 Cada push a `main` despliega automáticamente la app en modo demo (datos en memoria del navegador). Usa las mismas cuentas de prueba.
 
-Si la URL muestra la versión antigua, en GitHub ve a **Settings → Pages** y confirma que la fuente sea `gh-pages` o `main` / `docs`. Si el despliegue falla por reglas de entorno, desactiva la protección en **Settings → Environments → github-pages**.
+Si la URL muestra la versión antigua, en GitHub ve a **Settings → Pages** y confirma que la fuente sea rama `gh-pages` y carpeta `/docs` (o `main` / `docs`). El workflow publica en `gh-pages/docs/`. Si el despliegue falla por reglas de entorno, desactiva la protección en **Settings → Environments → github-pages**.
 
 El comando `npm start` hace automáticamente:
 1. Setup si falta `.env.local` o `node_modules`
