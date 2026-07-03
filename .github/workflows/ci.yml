@@ -17,8 +17,8 @@ jobs:
           node-version: "22"
           cache: npm
 
-      - name: Setup
-        run: npm run setup
+      - name: Instalar dependencias
+        run: npm ci
 
       - name: Build
         run: npm run build

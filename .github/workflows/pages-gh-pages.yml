@@ -3,14 +3,8 @@ name: Publicar sitio estático (gh-pages)
 # Publica docs/ en la rama gh-pages.
 # Activar una vez: Settings → Pages → Deploy from branch → gh-pages / (root)
 # URL: https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/
+# Deshabilitado — usar deploy-github-pages.yml (app React Fase 1)
 on:
-  push:
-    branches: [main]
-    paths:
-      - "docs/**"
-      - "index.html"
-      - ".github/workflows/pages-gh-pages.yml"
-      - "scripts/inject-static-config.ts"
   workflow_dispatch:
 
 permissions:

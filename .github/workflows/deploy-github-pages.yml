@@ -1,14 +1,14 @@
 name: Publicar app (GitHub Pages)
 
+# Publica apps/web en la rama gh-pages.
+# Settings → Pages → Deploy from branch → gh-pages / (root)
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages-deploy
@@ -16,9 +16,6 @@ concurrency:
 
 jobs:
   deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -35,19 +32,14 @@ jobs:
           VITE_DEMO_MODE: "true"
           VITE_USE_FIREBASE_EMULATORS: "false"
 
-      - name: Configurar Pages
-        uses: actions/configure-pages@v5
+      - name: Publicar en gh-pages
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          enablement: true
+          folder: apps/web/dist
+          branch: gh-pages
+          clean: true
+          commit-message: "deploy: sistema personal eventos (Fase 1)"
 
-      - name: Subir artefacto
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./apps/web/dist
-
-      - name: Desplegar
-        id: deployment
-        uses: actions/deploy-pages@v4
-
-      - name: URL publicada
-        run: echo "App en ${{ steps.deployment.outputs.page_url }}"
+      - name: URL
+        run: |
+          echo "https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/"
