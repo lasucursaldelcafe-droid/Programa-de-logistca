@@ -8,6 +8,7 @@ import {
   formatCurrencyCOP,
   notificationsToActivity,
   payrollStatusBars,
+  puedeGestionarConfiguracion,
   puedeVerDashboardOperativo,
   shiftStatusBars,
   workerStatusBars,
@@ -29,6 +30,7 @@ import {
 import { usePayrollEntries } from "../hooks/usePayroll";
 import { useNotifications } from "../hooks/useNotifications";
 import { DEMO_MODE } from "../lib/mode";
+import { SetupBanner } from "../components/SetupBanner";
 
 export function HomePage() {
   const { user } = useAuth();
@@ -169,6 +171,7 @@ export function HomePage() {
 
   return (
     <div className="space-y-8">
+      {user && puedeGestionarConfiguracion(user.role) && <SetupBanner />}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl font-bold">Dashboard operativo</h1>

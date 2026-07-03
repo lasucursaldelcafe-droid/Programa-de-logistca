@@ -11,6 +11,7 @@ import type {
   PayrollEntry,
   PayrollRate,
   QrCode,
+  SetupConfig,
   Sitio,
   Turno,
   Worker,
@@ -331,6 +332,17 @@ export const INITIAL_PAYROLL_AUDIT: PayrollAuditEntry[] = [
   },
 ];
 
+export const INITIAL_SETUP_CONFIG: SetupConfig = {
+  id: "default",
+  completado: true,
+  pasoActual: "resumen",
+  pasosCompletados: ["evento", "sitios", "tarifas", "qr", "resumen"],
+  eventoId: "event-festival",
+  actualizadoEn: new Date().toISOString(),
+  actualizadoPor: "demo-admin",
+  actualizadoPorNombre: "Admin Principal",
+};
+
 export const INITIAL_NOTIFICATIONS: Omit<AppNotification, "id">[] = [
   {
     tipo: "turno_asignado",
@@ -391,6 +403,7 @@ class DemoStore {
   payrollRates = [...INITIAL_PAYROLL_RATES];
   payrollEntries = [...INITIAL_PAYROLL_ENTRIES];
   payrollAudit = [...INITIAL_PAYROLL_AUDIT];
+  setupConfig: SetupConfig | null = { ...INITIAL_SETUP_CONFIG };
   accounts = [...DEMO_ACCOUNTS];
   private listeners = new Set<Listener>();
 
@@ -663,6 +676,32 @@ class DemoStore {
   addPayrollAudit(entry: Omit<PayrollAuditEntry, "id">): void {
     const id = `audit-${Date.now()}`;
     this.payrollAudit = [{ ...entry, id }, ...this.payrollAudit];
+    this.notify();
+  }
+
+  addEvent(event: Evento): void {
+    this.events = [...this.events, event];
+    this.notify();
+  }
+
+  addSite(site: Sitio): void {
+    this.sites = [...this.sites, site];
+    this.events = this.events.map((e) =>
+      e.id === site.eventId && !e.sitioIds.includes(site.id)
+        ? { ...e, sitioIds: [...e.sitioIds, site.id] }
+        : e,
+    );
+    this.notify();
+  }
+
+  setSetupConfig(config: SetupConfig): void {
+    this.setupConfig = config;
+    this.notify();
+  }
+
+  updateSetupConfig(patch: Partial<SetupConfig>): void {
+    if (!this.setupConfig) return;
+    this.setupConfig = { ...this.setupConfig, ...patch };
     this.notify();
   }
 }

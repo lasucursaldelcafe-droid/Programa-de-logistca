@@ -145,5 +145,10 @@ service cloud.firestore {
       allow create: if isAdmin();
       allow update, delete: if false;
     }
+
+    match /setupConfig/{configId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
   }
 }

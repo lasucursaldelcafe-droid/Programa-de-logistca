@@ -66,6 +66,11 @@ async function main(): Promise<void> {
     throw new Error(`Se esperaba ≥1 entrada de auditoría, hay ${payrollAudit.size}`);
   }
 
+  const setupConfig = await db.collection("setupConfig").doc("default").get();
+  if (!setupConfig.exists) {
+    throw new Error("setupConfig/default no encontrado");
+  }
+
   console.log("✓ Smoke test OK:", {
     admin: admin.email,
     workers: workers.size,
@@ -77,6 +82,7 @@ async function main(): Promise<void> {
     payrollRates: payrollRates.size,
     payroll: payroll.size,
     payrollAudit: payrollAudit.size,
+    setupConfig: setupConfig.data()?.completado === true,
   });
 }
 

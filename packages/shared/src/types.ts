@@ -378,3 +378,20 @@ export function puedeVerNomina(role: UserRole): boolean {
     role === "trabajador"
   );
 }
+
+export type SetupPaso = "evento" | "sitios" | "tarifas" | "qr" | "resumen";
+
+export interface SetupConfig {
+  id: string;
+  completado: boolean;
+  pasoActual: SetupPaso;
+  pasosCompletados: SetupPaso[];
+  eventoId?: string;
+  actualizadoEn: string;
+  actualizadoPor: string;
+  actualizadoPorNombre?: string;
+}
+
+export function puedeGestionarConfiguracion(role: UserRole): boolean {
+  return role === "super_admin" || role === "administrador";
+}

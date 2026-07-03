@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { ROLE_LABEL, puedeGestionarCuentas, puedeGestionarPersonal, puedeGestionarQr, puedeVerMapaEnVivo, puedeVerNomina } from "@spe/shared";
+import { ROLE_LABEL, puedeGestionarCuentas, puedeGestionarConfiguracion, puedeGestionarPersonal, puedeGestionarQr, puedeVerMapaEnVivo, puedeVerNomina } from "@spe/shared";
 import { NotificationBell } from "./NotificationBell";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -63,6 +63,11 @@ export function AppLayout() {
             {puedeVerNomina(user.role) && (
               <NavLink to="/nomina" className={linkClass}>
                 Nómina
+              </NavLink>
+            )}
+            {puedeGestionarConfiguracion(user.role) && (
+              <NavLink to="/configuracion" className={linkClass}>
+                Configuración
               </NavLink>
             )}
             <NotificationBell />

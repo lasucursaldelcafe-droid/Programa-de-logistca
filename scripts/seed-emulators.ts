@@ -359,6 +359,17 @@ async function main(): Promise<void> {
   });
   console.log("+ nómina demo y auditoría");
 
+  await db.collection("setupConfig").doc("default").set({
+    completado: true,
+    pasoActual: "resumen",
+    pasosCompletados: ["evento", "sitios", "tarifas", "qr", "resumen"],
+    eventoId: "event-festival",
+    actualizadoEn: new Date().toISOString(),
+    actualizadoPor: uids["admin@eventos.test"] ?? "seed",
+    actualizadoPorNombre: "Admin Principal",
+  });
+  console.log("+ configuración inicial (wizard completado)");
+
   console.log("\n✓ Seed completo. Cuentas:");
   for (const u of USERS) {
     console.log(`  ${u.email} / ${u.password}`);

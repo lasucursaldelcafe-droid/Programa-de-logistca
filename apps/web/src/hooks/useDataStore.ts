@@ -675,3 +675,58 @@ export function getActiveAttendance(
     ) ?? null
   );
 }
+
+export async function createEvent(data: {
+  nombre: string;
+  fechaInicio: string;
+  fechaFin: string;
+}): Promise<string> {
+  const id = `event-${Date.now().toString(36)}`;
+  const evento = {
+    nombre: data.nombre,
+    fechaInicio: new Date(data.fechaInicio).toISOString(),
+    fechaFin: new Date(data.fechaFin).toISOString(),
+    sitioIds: [] as string[],
+  };
+
+  if (DEMO_MODE) {
+    demoStore.addEvent({ ...evento, id });
+    return id;
+  }
+
+  await setDoc(doc(getFirestoreDb(), "events", id), evento);
+  return id;
+}
+
+export async function createSite(data: {
+  eventId: string;
+  nombre: string;
+  lat: number;
+  lng: number;
+  radioGeocerca: number;
+}): Promise<string> {
+  const id = `site-${Date.now().toString(36)}`;
+  const site = {
+    eventId: data.eventId,
+    nombre: data.nombre,
+    lat: data.lat,
+    lng: data.lng,
+    radioGeocerca: data.radioGeocerca,
+  };
+
+  if (DEMO_MODE) {
+    demoStore.addSite({ ...site, id });
+    return id;
+  }
+
+  await setDoc(doc(getFirestoreDb(), "sites", id), site);
+  const eventRef = doc(getFirestoreDb(), "events", data.eventId);
+  const eventSnap = await getDoc(eventRef);
+  if (eventSnap.exists()) {
+    const sitioIds = (eventSnap.data().sitioIds as string[] | undefined) ?? [];
+    if (!sitioIds.includes(id)) {
+      await updateDoc(eventRef, { sitioIds: [...sitioIds, id] });
+    }
+  }
+  return id;
+}
