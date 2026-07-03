@@ -2,6 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { Envio, EstadoEnvio } from "@/db/schema";
+import { LoginScreen } from "@/components/login-screen";
+import {
+  cerrarSesion,
+  guardarSesion,
+  leerSesion,
+  type SesionUsuario,
+} from "@/lib/auth";
 
 const ETIQUETA_ESTADO: Record<EstadoEnvio, string> = {
   pendiente: "Pendiente",
@@ -25,6 +32,8 @@ const SIGUIENTES: Record<EstadoEnvio, EstadoEnvio[]> = {
 };
 
 export default function Home() {
+  const [sesion, setSesion] = useState<SesionUsuario | null>(null);
+  const [sesionLista, setSesionLista] = useState(false);
   const [envios, setEnvios] = useState<Envio[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +44,20 @@ export default function Home() {
     destinatario: "",
     pesoKg: "",
   });
+
+  useEffect(() => {
+    let activo = true;
+    (async () => {
+      const guardada = leerSesion();
+      if (activo) {
+        setSesion(guardada);
+        setSesionLista(true);
+      }
+    })();
+    return () => {
+      activo = false;
+    };
+  }, []);
 
   const cargar = useCallback(async () => {
     try {
@@ -49,6 +72,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (!sesion) return;
     let activo = true;
     (async () => {
       try {
@@ -64,7 +88,20 @@ export default function Home() {
     return () => {
       activo = false;
     };
-  }, []);
+  }, [sesion]);
+
+  function handleLogin(nueva: SesionUsuario) {
+    guardarSesion(nueva);
+    setSesion(nueva);
+    setCargando(true);
+  }
+
+  function handleLogout() {
+    cerrarSesion();
+    setSesion(null);
+    setEnvios([]);
+    setCargando(true);
+  }
 
   async function crearEnvio(e: React.FormEvent) {
     e.preventDefault();
@@ -107,19 +144,46 @@ export default function Home() {
     await cargar();
   }
 
+  if (!sesionLista) {
+    return (
+      <main className="mx-auto flex min-h-screen items-center justify-center px-6">
+        <p className="text-sm opacity-70">Cargando…</p>
+      </main>
+    );
+  }
+
+  if (!sesion) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
+
   const total = envios.length;
   const enTransito = envios.filter((e) => e.estado === "en_transito").length;
   const entregados = envios.filter((e) => e.estado === "entregado").length;
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">
-          Programa de Logística
-        </h1>
-        <p className="mt-1 text-sm opacity-70">
-          Registra envíos y actualiza su estado de entrega.
-        </p>
+      <header className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Programa de Logística
+          </h1>
+          <p className="mt-1 text-sm opacity-70">
+            Registra envíos y actualiza su estado de entrega.
+          </p>
+        </div>
+        <div className="text-right text-sm">
+          <div className="font-medium">{sesion.nombre}</div>
+          {sesion.email && (
+            <div className="text-xs opacity-60">{sesion.email}</div>
+          )}
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="mt-2 text-xs underline opacity-70 hover:opacity-100"
+          >
+            Cerrar sesión
+          </button>
+        </div>
       </header>
 
       <section className="mb-8 grid grid-cols-3 gap-4">

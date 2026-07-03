@@ -1,0 +1,48 @@
+name: Publicar sitio estático (gh-pages)
+
+# Publica docs/ en la rama gh-pages (no requiere habilitar Pages API).
+# Una vez: Settings → Pages → Deploy from branch → gh-pages / root
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - ".github/workflows/pages-gh-pages.yml"
+      - "scripts/inject-static-config.ts"
+      - ".env.example"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gh-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Instalar dependencias (solo tsx)
+        run: npm ci
+
+      - name: Inyectar Google Client ID en config estática
+        env:
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GITHUB_PAGES_BASE: /Programa-de-logistca
+        run: npx tsx scripts/inject-static-config.ts
+
+      - name: Publicar en gh-pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: docs
+          branch: gh-pages
+          clean: true
+          commit-message: "deploy: sitio estático de logística"

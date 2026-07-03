@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Programa de Logística</title>
+    <script src="config.js"></script>
     <meta
       name="description"
       content="Gestión de envíos y seguimiento de logística (versión estática)."
@@ -182,9 +183,8 @@
 
     <script>
       // ---- Configuración de inicio de sesión con Google (opcional) ----
-      // Rellena con tu Client ID de OAuth ("....apps.googleusercontent.com").
-      // También se puede activar sin editar el archivo añadiendo ?client_id=... a la URL.
-      const GOOGLE_CLIENT_ID = "";
+      // Prioridad: docs/config.js → constante → ?client_id= → localStorage
+      const GOOGLE_CLIENT_ID = (window.LOGISTICA_CONFIG && window.LOGISTICA_CONFIG.googleClientId) || "";
       const KEY_CLIENT_ID = "logistica.googleClientId";
 
       function resolverClientId() {

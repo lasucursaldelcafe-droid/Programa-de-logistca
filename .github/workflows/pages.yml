@@ -29,6 +29,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Inyectar config estática
+        run: npm ci && npx tsx scripts/inject-static-config.ts
+        env:
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GITHUB_PAGES_BASE: /Programa-de-logistca
+
       - name: Configurar Pages
         uses: actions/configure-pages@v5
 

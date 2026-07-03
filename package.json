@@ -11,7 +11,14 @@
     "test:watch": "vitest",
     "db:init": "tsx scripts/db-init.ts",
     "db:seed": "tsx scripts/db-seed.ts",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "setup": "tsx scripts/setup-all.ts",
+    "setup:all": "tsx scripts/setup-all.ts",
+    "setup:turso": "tsx scripts/setup-turso.ts",
+    "setup:google": "tsx scripts/setup-google.ts",
+    "setup:static": "tsx scripts/inject-static-config.ts",
+    "prebuild": "tsx scripts/inject-static-config.ts",
+    "deploy:vercel": "vercel --prod"
   },
   "dependencies": {
     "@libsql/client": "^0.17.4",

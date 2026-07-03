@@ -90,7 +90,26 @@ levantar un servidor Node ni credenciales.
 
 ## Configuración (opcional, para Turso)
 
-Crea un archivo `.env.local`:
+Crea un archivo `.env.local` (o ejecuta `npm run setup:all`):
+
+```bash
+npm run setup:all    # orquesta Turso + DB + config estática
+npm run setup:turso    # solo Turso (requiere TURSO_PLATFORM_TOKEN)
+npm run setup:google   # guía OAuth Google Cloud
+```
+
+Variables en `.env.example`. Para producción, configura estos **secrets en GitHub**
+(Settings → Secrets → Actions):
+
+| Secret | Uso |
+|--------|-----|
+| `TURSO_PLATFORM_TOKEN` | Crea BD `programa-de-logistica` en Turso |
+| `TURSO_DATABASE_URL` | URL libsql (generada por setup:turso) |
+| `TURSO_AUTH_TOKEN` | JWT de la BD (generado por setup:turso) |
+| `GOOGLE_CLIENT_ID` | Login Google (Next.js + estático) |
+| `GOOGLE_CLIENT_SECRET` | OAuth servidor (Vercel) |
+| `VERCEL_TOKEN` | Despliegue CI en Vercel |
+| `VERCEL_ORG_ID` | Organización Vercel |
 
 ```bash
 TURSO_DATABASE_URL=libsql://<tu-base>.turso.io
@@ -98,6 +117,13 @@ TURSO_AUTH_TOKEN=<token>
 ```
 
 Sin estas variables se usa `file:./data/logistica.db` automáticamente.
+
+## Despliegues conectados
+
+- **Vercel (Next.js):** `.github/workflows/vercel-deploy.yml` — push a `main`
+- **GitHub Pages (estático):** `.github/workflows/pages-gh-pages.yml` → rama `gh-pages`
+  (Settings → Pages → branch `gh-pages`)
+- **Provisionar:** `.github/workflows/provision-integrations.yml` — Turso + Google al tener secrets
 
 ## Modelo de estados de un envío
 
