@@ -12,6 +12,7 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    if: ${{ secrets.VERCEL_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -30,6 +31,7 @@ jobs:
         run: npx tsx scripts/inject-static-config.ts
 
       - name: Inicializar esquema Turso
+        if: ${{ secrets.TURSO_DATABASE_URL != '' }}
         env:
           TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
