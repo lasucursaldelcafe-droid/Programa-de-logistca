@@ -1,4 +1,16 @@
-import type { AppUser, Evento, Invitation, Sitio, Turno, Worker } from "@spe/shared";
+import type {
+  AppUser,
+  Attendance,
+  AttendanceEstado,
+  Evento,
+  GeoRegistro,
+  Invitation,
+  QrCode,
+  Sitio,
+  Turno,
+  Worker,
+} from "@spe/shared";
+import type { GeoPosition } from "../lib/geolocation";
 
 export const DEMO_ACCOUNTS: Array<{
   email: string;
@@ -164,6 +176,72 @@ export const INITIAL_SHIFTS: Turno[] = [
   },
 ];
 
+const ventanaInicio = new Date();
+ventanaInicio.setHours(ventanaInicio.getHours() - 1);
+const ventanaFin = new Date();
+ventanaFin.setHours(ventanaFin.getHours() + 12);
+
+export const INITIAL_QR_CODES: QrCode[] = [
+  {
+    id: "qr-site-cocina",
+    eventId: "event-festival",
+    eventNombre: "Festival Gastronómico 2026",
+    siteId: "site-cocina",
+    siteNombre: "Cocina central",
+    token: "cocina2026token",
+    modo: "por_jornada",
+    ventanaInicio: ventanaInicio.toISOString(),
+    ventanaFin: ventanaFin.toISOString(),
+    radioGeocerca: 80,
+    descripcionDatos:
+      "Recopilamos tu ubicación GPS solo durante la jornada activa para verificar presencia en el sitio asignado.",
+    activo: true,
+    creadoEn: new Date().toISOString(),
+    creadoPor: "demo-admin",
+  },
+  {
+    id: "qr-site-puerta",
+    eventId: "event-festival",
+    eventNombre: "Festival Gastronómico 2026",
+    siteId: "site-puerta",
+    siteNombre: "Puerta principal",
+    token: "puerta2026token",
+    modo: "por_jornada",
+    ventanaInicio: ventanaInicio.toISOString(),
+    ventanaFin: ventanaFin.toISOString(),
+    radioGeocerca: 50,
+    descripcionDatos:
+      "Recopilamos tu ubicación GPS solo durante la jornada activa para verificar presencia en el sitio asignado.",
+    activo: true,
+    creadoEn: new Date().toISOString(),
+    creadoPor: "demo-admin",
+  },
+];
+
+export const INITIAL_ATTENDANCES: Attendance[] = [
+  {
+    id: "att-juan-activo",
+    workerId: "worker-juan",
+    workerNombre: "Juan Pérez",
+    shiftId: "shift-juan-1",
+    siteId: "site-puerta",
+    siteNombre: "Puerta principal",
+    eventId: "event-festival",
+    eventNombre: "Festival Gastronómico 2026",
+    qrId: "qr-site-puerta",
+    estado: "activo",
+    entrada: {
+      timestamp: new Date().toISOString(),
+      lat: 4.654,
+      lng: -74.084,
+      dentroGeocerca: true,
+    },
+    ubicacionActual: { lat: 4.654, lng: -74.084 },
+    alertasGeocerca: [],
+    creadoEn: new Date().toISOString(),
+  },
+];
+
 const expira = new Date();
 expira.setDate(expira.getDate() + 7);
 
@@ -190,6 +268,8 @@ class DemoStore {
   events = [...INITIAL_EVENTS];
   sites = [...INITIAL_SITES];
   invitations = [...INITIAL_INVITATIONS];
+  qrCodes = [...INITIAL_QR_CODES];
+  attendances = [...INITIAL_ATTENDANCES];
   accounts = [...DEMO_ACCOUNTS];
   private listeners = new Set<Listener>();
 
@@ -300,6 +380,112 @@ class DemoStore {
 
   findAccountByEmail(email: string) {
     return this.accounts.find((a) => a.email === email);
+  }
+
+  addQrCode(qr: QrCode): void {
+    this.qrCodes = [qr, ...this.qrCodes];
+    this.notify();
+  }
+
+  updateQrCode(id: string, patch: Partial<QrCode>): void {
+    this.qrCodes = this.qrCodes.map((q) => (q.id === id ? { ...q, ...patch } : q));
+    this.notify();
+  }
+
+  checkIn(data: {
+    workerId: string;
+    workerNombre: string;
+    shift: Turno;
+    qr: QrCode;
+    estado: AttendanceEstado;
+    entrada: GeoRegistro;
+    position: GeoPosition;
+  }): string {
+    const existing = this.attendances.find(
+      (a) => a.workerId === data.workerId && a.estado !== "cerrado",
+    );
+    if (existing) throw new Error("Ya tienes una jornada activa");
+
+    const id = `att-${Date.now()}`;
+    this.attendances = [
+      {
+        id,
+        workerId: data.workerId,
+        workerNombre: data.workerNombre,
+        shiftId: data.shift.id,
+        siteId: data.qr.siteId,
+        siteNombre: data.qr.siteNombre,
+        eventId: data.qr.eventId,
+        eventNombre: data.qr.eventNombre,
+        qrId: data.qr.id,
+        estado: data.estado,
+        entrada: data.entrada,
+        ubicacionActual: { lat: data.position.lat, lng: data.position.lng },
+        alertasGeocerca: [],
+        creadoEn: new Date().toISOString(),
+      },
+      ...this.attendances,
+    ];
+    this.updateWorker(data.workerId, { estado: "en_sitio" });
+    this.notify();
+    return id;
+  }
+
+  checkOut(attendanceId: string, position: GeoPosition): void {
+    const att = this.attendances.find((a) => a.id === attendanceId);
+    if (!att) throw new Error("Jornada no encontrada");
+    const site = this.sites.find((s) => s.id === att.siteId);
+    const dentro = site
+      ? Math.hypot(position.lat - site.lat, position.lng - site.lng) < 0.001
+      : true;
+
+    this.attendances = this.attendances.map((a) =>
+      a.id === attendanceId
+        ? {
+            ...a,
+            estado: "cerrado",
+            salida: {
+              timestamp: new Date().toISOString(),
+              lat: position.lat,
+              lng: position.lng,
+              dentroGeocerca: dentro,
+            },
+          }
+        : a,
+    );
+    this.updateWorker(att.workerId, { estado: "sin_asignar" });
+    this.notify();
+  }
+
+  updateAttendanceLocation(
+    attendanceId: string,
+    position: GeoPosition,
+    dentroGeocerca: boolean,
+  ): void {
+    this.attendances = this.attendances.map((a) =>
+      a.id === attendanceId
+        ? {
+            ...a,
+            ubicacionActual: { lat: position.lat, lng: position.lng },
+            estado: dentroGeocerca ? "activo" : "fuera_geocerca",
+          }
+        : a,
+    );
+    this.notify();
+  }
+
+  recordGeofenceAlert(attendanceId: string): void {
+    const now = new Date().toISOString();
+    this.attendances = this.attendances.map((a) =>
+      a.id === attendanceId
+        ? {
+            ...a,
+            estado: "fuera_geocerca",
+            alertasGeocerca: [...a.alertasGeocerca, now],
+          }
+        : a,
+    );
+    this.notify();
   }
 }
 

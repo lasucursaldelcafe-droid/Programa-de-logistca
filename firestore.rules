@@ -41,12 +41,37 @@ service cloud.firestore {
 
     match /workers/{workerId} {
       allow read: if signedIn();
-      allow create, update: if isAdmin() || isSupervisor()
+      allow create: if isAdmin() || isSupervisor();
+      allow update: if isAdmin() || isSupervisor()
         || (isWorker()
           && currentWorkerId() == workerId
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cuentaCreada'])
-          && request.resource.data.cuentaCreada == true);
+          && (
+            (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cuentaCreada'])
+              && request.resource.data.cuentaCreada == true)
+            || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado'])
+          ));
       allow delete: if isAdmin();
+    }
+
+    match /qrCodes/{qrId} {
+      allow read: if signedIn();
+      allow write: if isAdmin() || isSupervisor();
+    }
+
+    match /attendance/{attendanceId} {
+      allow read: if signedIn();
+      allow create: if isWorker();
+      allow update: if isAdmin() || isSupervisor()
+        || (isWorker()
+          && resource.data.workerId == currentWorkerId());
+      allow delete: if isAdmin();
+    }
+
+    match /consents/{consentId} {
+      allow read: if signedIn()
+        && (isAdmin() || isSupervisor() || resource.data.workerId == currentWorkerId());
+      allow create: if isWorker();
+      allow update, delete: if isAdmin();
     }
 
     match /invitations/{token} {

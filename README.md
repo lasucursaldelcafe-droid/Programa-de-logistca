@@ -2,7 +2,7 @@
 
 Plataforma de gestión de personal para empresas de logística y recreación en eventos (200+ trabajadores). Web + Firebase con emuladores locales para desarrollo.
 
-**Fase 2 (actual):** Auth con roles, Personal, Turnos, Cuentas e invitaciones.
+**Fase 3 (actual):** QR de sitio, marcación con GPS, geocercas y mapa en vivo.
 
 ## Requisitos
 
@@ -96,7 +96,7 @@ Paleta del prompt maestro: fondo `#0A0A0A`, acento `#E8823C`, positivo `#3DDC97`
 
 1. ✅ Auth + Personal + Turnos
 2. ✅ Cuentas de trabajadores + invitaciones
-3. QR + GPS + geocercas
+3. ✅ QR + GPS + geocercas
 4. Notificaciones push (FCM)
 5. Nómina
 6. Dashboard avanzado

@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { ROLE_LABEL, puedeGestionarCuentas, puedeGestionarPersonal } from "@spe/shared";
+import { ROLE_LABEL, puedeGestionarCuentas, puedeGestionarPersonal, puedeGestionarQr, puedeVerMapaEnVivo } from "@spe/shared";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-lg px-3 py-2 text-sm font-medium transition ${
@@ -39,6 +39,21 @@ export function AppLayout() {
             {puedeGestionarCuentas(user.role) && (
               <NavLink to="/cuentas" className={linkClass}>
                 Cuentas
+              </NavLink>
+            )}
+            {puedeGestionarQr(user.role) && (
+              <NavLink to="/qr-sitios" className={linkClass}>
+                QR Sitios
+              </NavLink>
+            )}
+            {puedeVerMapaEnVivo(user.role) && (
+              <NavLink to="/mapa" className={linkClass}>
+                Mapa
+              </NavLink>
+            )}
+            {user.role === "trabajador" && (
+              <NavLink to="/marcar-entrada" className={linkClass}>
+                Entrada
               </NavLink>
             )}
             <NavLink to="/turnos" className={linkClass}>

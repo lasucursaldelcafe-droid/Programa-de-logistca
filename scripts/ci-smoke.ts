@@ -36,11 +36,23 @@ async function main(): Promise<void> {
     throw new Error(`Se esperaba ≥1 invitación, hay ${invitations.size}`);
   }
 
+  const qrCodes = await db.collection("qrCodes").get();
+  if (qrCodes.size < 2) {
+    throw new Error(`Se esperaban ≥2 códigos QR, hay ${qrCodes.size}`);
+  }
+
+  const attendance = await db.collection("attendance").get();
+  if (attendance.size < 1) {
+    throw new Error(`Se esperaba ≥1 jornada, hay ${attendance.size}`);
+  }
+
   console.log("✓ Smoke test OK:", {
     admin: admin.email,
     workers: workers.size,
     shifts: shifts.size,
     invitations: invitations.size,
+    qrCodes: qrCodes.size,
+    attendance: attendance.size,
   });
 }
 

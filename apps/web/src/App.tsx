@@ -8,6 +8,9 @@ import { TurnosPage } from "./pages/TurnosPage";
 import { CuentasPage } from "./pages/CuentasPage";
 import { ActivarCuentaPage } from "./pages/ActivarCuentaPage";
 import { CompletarPerfilPage } from "./pages/CompletarPerfilPage";
+import { QrSitiosPage } from "./pages/QrSitiosPage";
+import { MarcarEntradaPage } from "./pages/MarcarEntradaPage";
+import { MapaEnVivoPage } from "./pages/MapaEnVivoPage";
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -63,6 +66,9 @@ export function App() {
         <Route path="personal" element={<PersonalPage />} />
         <Route path="turnos" element={<TurnosPage />} />
         <Route path="cuentas" element={<CuentasPage />} />
+        <Route path="qr-sitios" element={<QrSitiosPage />} />
+        <Route path="mapa" element={<MapaEnVivoPage />} />
+        <Route path="marcar-entrada" element={<MarcarEntradaPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

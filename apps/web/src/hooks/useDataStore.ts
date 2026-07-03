@@ -17,15 +17,24 @@ import {
 import {
   getFirebaseAuth,
   getFirestoreDb,
+  getRotatingToken,
+  isInsideGeofence,
+  isWithinTimeWindow,
+  parseQrPayload,
+  type Attendance,
+  type AttendanceEstado,
   type Evento,
   type Invitation,
   type PerfilTrabajo,
+  type QrCode,
+  type QrModo,
   type ShiftEstado,
   type Sitio,
   type Turno,
   type Worker,
   type WorkerEstado,
 } from "@spe/shared";
+import type { GeoPosition } from "../lib/geolocation";
 import { DEMO_MODE } from "../lib/mode";
 import { demoStore } from "../demo/store";
 
@@ -302,4 +311,287 @@ export async function getWorkerById(workerId: string): Promise<Worker | null> {
   const snap = await getDoc(doc(getFirestoreDb(), "workers", workerId));
   if (!snap.exists()) return null;
   return { id: snap.id, ...snap.data() } as Worker;
+}
+
+export async function getSiteById(siteId: string): Promise<Sitio | null> {
+  if (DEMO_MODE) return demoStore.sites.find((s) => s.id === siteId) ?? null;
+  const snap = await getDoc(doc(getFirestoreDb(), "sites", siteId));
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...snap.data() } as Sitio;
+}
+
+export function useQrCodes(): QrCode[] {
+  const [qrCodes, setQrCodes] = useState<QrCode[]>([]);
+
+  useEffect(() => {
+    if (DEMO_MODE) return;
+    const unsub = onSnapshot(
+      query(collection(getFirestoreDb(), "qrCodes"), orderBy("creadoEn", "desc")),
+      (snap) => setQrCodes(snap.docs.map((d) => ({ id: d.id, ...d.data() } as QrCode))),
+    );
+    return unsub;
+  }, []);
+
+  const demoQr = useDemoSnapshot(() => demoStore.qrCodes);
+  return DEMO_MODE ? demoQr : qrCodes;
+}
+
+export function useAttendances(): Attendance[] {
+  const [attendances, setAttendances] = useState<Attendance[]>([]);
+
+  useEffect(() => {
+    if (DEMO_MODE) return;
+    const unsub = onSnapshot(
+      query(collection(getFirestoreDb(), "attendance"), orderBy("creadoEn", "desc")),
+      (snap) =>
+        setAttendances(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Attendance))),
+    );
+    return unsub;
+  }, []);
+
+  const demoAtt = useDemoSnapshot(() => demoStore.attendances);
+  return DEMO_MODE ? demoAtt : attendances;
+}
+
+export async function getQrCodeById(qrId: string): Promise<QrCode | null> {
+  if (DEMO_MODE) return demoStore.qrCodes.find((q) => q.id === qrId) ?? null;
+  const snap = await getDoc(doc(getFirestoreDb(), "qrCodes", qrId));
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...snap.data() } as QrCode;
+}
+
+function resolveToken(qr: QrCode, token: string): boolean {
+  if (!qr.activo) return false;
+  if (qr.modo === "rotativo" && qr.secret && qr.intervaloRotacionSegundos) {
+    const expected = getRotatingToken(qr.id, qr.secret, qr.intervaloRotacionSegundos);
+    return token === expected;
+  }
+  return token === qr.token;
+}
+
+export async function createQrCode(data: {
+  eventId: string;
+  eventNombre: string;
+  siteId: string;
+  siteNombre: string;
+  modo: QrModo;
+  ventanaInicio: string;
+  ventanaFin: string;
+  radioGeocerca: number;
+  descripcionDatos: string;
+  intervaloRotacionSegundos?: number;
+  creadoPor: string;
+}): Promise<string> {
+  const id = `qr-${data.siteId}-${Date.now().toString(36)}`;
+  const token = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+  const secret = data.modo === "rotativo" ? crypto.randomUUID().slice(0, 8) : undefined;
+
+  const qr: Omit<QrCode, "id"> = {
+    eventId: data.eventId,
+    eventNombre: data.eventNombre,
+    siteId: data.siteId,
+    siteNombre: data.siteNombre,
+    token,
+    secret,
+    modo: data.modo,
+    intervaloRotacionSegundos: data.intervaloRotacionSegundos,
+    ventanaInicio: data.ventanaInicio,
+    ventanaFin: data.ventanaFin,
+    radioGeocerca: data.radioGeocerca,
+    descripcionDatos: data.descripcionDatos,
+    activo: true,
+    creadoEn: new Date().toISOString(),
+    creadoPor: data.creadoPor,
+  };
+
+  if (DEMO_MODE) {
+    demoStore.addQrCode({ ...qr, id });
+    return id;
+  }
+  await setDoc(doc(getFirestoreDb(), "qrCodes", id), qr);
+  return id;
+}
+
+export async function deactivateQrCode(qrId: string): Promise<void> {
+  if (DEMO_MODE) {
+    demoStore.updateQrCode(qrId, { activo: false });
+    return;
+  }
+  await updateDoc(doc(getFirestoreDb(), "qrCodes", qrId), { activo: false });
+}
+
+export function findShiftForCheckin(
+  shifts: Turno[],
+  workerId: string,
+  siteId: string,
+): Turno | null {
+  const now = new Date();
+  return (
+    shifts.find(
+      (s) =>
+        s.workerId === workerId &&
+        s.siteId === siteId &&
+        s.estado === "confirmado" &&
+        new Date(s.inicio) <= now &&
+        new Date(s.fin) >= now,
+    ) ?? null
+  );
+}
+
+export async function checkInWithQr(data: {
+  rawQr: string;
+  workerId: string;
+  workerNombre: string;
+  shifts: Turno[];
+  position: GeoPosition;
+}): Promise<string> {
+  const parsed = parseQrPayload(data.rawQr);
+  if (!parsed) throw new Error("Código QR inválido");
+
+  const qr = await getQrCodeById(parsed.qrId);
+  if (!qr) throw new Error("Código QR no encontrado");
+  if (!resolveToken(qr, parsed.token)) throw new Error("Token QR inválido o expirado");
+  if (!isWithinTimeWindow(qr.ventanaInicio, qr.ventanaFin)) {
+    throw new Error("El código QR no está vigente en este horario");
+  }
+
+  const shift = findShiftForCheckin(data.shifts, data.workerId, qr.siteId);
+  if (!shift) throw new Error("No tienes un turno confirmado en este sitio ahora");
+
+  const site = await getSiteById(qr.siteId);
+  if (!site) throw new Error("Sitio no encontrado");
+
+  const dentro = isInsideGeofence(
+    data.position,
+    { lat: site.lat, lng: site.lng },
+    qr.radioGeocerca,
+  );
+
+  const estado: AttendanceEstado = dentro ? "activo" : "revision_manual";
+  const entrada = {
+    timestamp: new Date().toISOString(),
+    lat: data.position.lat,
+    lng: data.position.lng,
+    dentroGeocerca: dentro,
+  };
+
+  if (DEMO_MODE) {
+    return demoStore.checkIn({
+      workerId: data.workerId,
+      workerNombre: data.workerNombre,
+      shift,
+      qr,
+      estado,
+      entrada,
+      position: data.position,
+    });
+  }
+
+  const ref = await addDoc(collection(getFirestoreDb(), "attendance"), {
+    workerId: data.workerId,
+    workerNombre: data.workerNombre,
+    shiftId: shift.id,
+    siteId: qr.siteId,
+    siteNombre: qr.siteNombre,
+    eventId: qr.eventId,
+    eventNombre: qr.eventNombre,
+    qrId: qr.id,
+    estado,
+    entrada,
+    ubicacionActual: data.position,
+    alertasGeocerca: [],
+    creadoEn: new Date().toISOString(),
+  });
+
+  await addDoc(collection(getFirestoreDb(), "consents"), {
+    workerId: data.workerId,
+    qrId: qr.id,
+    eventId: qr.eventId,
+    timestamp: new Date().toISOString(),
+    aceptado: true,
+    versionDescripcionDatos: qr.descripcionDatos,
+  });
+
+  await updateDoc(doc(getFirestoreDb(), "workers", data.workerId), { estado: "en_sitio" });
+  return ref.id;
+}
+
+export async function checkOut(attendanceId: string, position: GeoPosition): Promise<void> {
+  if (DEMO_MODE) {
+    demoStore.checkOut(attendanceId, position);
+    return;
+  }
+
+  const snap = await getDoc(doc(getFirestoreDb(), "attendance", attendanceId));
+  if (!snap.exists()) throw new Error("Jornada no encontrada");
+  const attendance = snap.data() as Attendance;
+  const siteSnap = await getDoc(doc(getFirestoreDb(), "sites", attendance.siteId));
+  const site = siteSnap.data() as Sitio;
+
+  const dentro = site
+    ? isInsideGeofence(position, { lat: site.lat, lng: site.lng }, site.radioGeocerca)
+    : true;
+
+  await updateDoc(doc(getFirestoreDb(), "attendance", attendanceId), {
+    estado: "cerrado",
+    salida: {
+      timestamp: new Date().toISOString(),
+      lat: position.lat,
+      lng: position.lng,
+      dentroGeocerca: dentro,
+    },
+  });
+
+  await updateDoc(doc(getFirestoreDb(), "workers", attendance.workerId), {
+    estado: "sin_asignar",
+  });
+}
+
+export async function updateAttendanceLocation(
+  attendanceId: string,
+  position: GeoPosition,
+  dentroGeocerca: boolean,
+): Promise<void> {
+  if (DEMO_MODE) {
+    demoStore.updateAttendanceLocation(attendanceId, position, dentroGeocerca);
+    return;
+  }
+
+  const patch: Record<string, unknown> = {
+    ubicacionActual: { lat: position.lat, lng: position.lng },
+    estado: dentroGeocerca ? "activo" : "fuera_geocerca",
+  };
+  await updateDoc(doc(getFirestoreDb(), "attendance", attendanceId), patch);
+}
+
+export async function recordGeofenceAlert(attendanceId: string): Promise<void> {
+  if (DEMO_MODE) {
+    demoStore.recordGeofenceAlert(attendanceId);
+    return;
+  }
+
+  const snap = await getDoc(doc(getFirestoreDb(), "attendance", attendanceId));
+  if (!snap.exists()) return;
+  const data = snap.data();
+  const alertas = (data.alertasGeocerca as string[] | undefined) ?? [];
+  const now = new Date().toISOString();
+  if (alertas.length > 0 && alertas[alertas.length - 1] === now) return;
+
+  await updateDoc(doc(getFirestoreDb(), "attendance", attendanceId), {
+    estado: "fuera_geocerca",
+    alertasGeocerca: [...alertas, now],
+  });
+}
+
+export function getActiveAttendance(
+  attendances: Attendance[],
+  workerId: string,
+): Attendance | null {
+  return (
+    attendances.find(
+      (a) =>
+        a.workerId === workerId &&
+        a.estado !== "cerrado",
+    ) ?? null
+  );
 }

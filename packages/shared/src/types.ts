@@ -28,6 +28,73 @@ export type ShiftEstado =
 
 export type InvitationEstado = "pendiente" | "usada" | "revocada";
 
+export type QrModo = "unico" | "por_jornada" | "rotativo";
+
+export type AttendanceEstado =
+  | "activo"
+  | "fuera_geocerca"
+  | "revision_manual"
+  | "cerrado";
+
+export interface GeoRegistro {
+  timestamp: string;
+  lat: number;
+  lng: number;
+  dentroGeocerca: boolean;
+}
+
+export interface QrCode {
+  id: string;
+  eventId: string;
+  eventNombre?: string;
+  siteId: string;
+  siteNombre?: string;
+  token: string;
+  secret?: string;
+  modo: QrModo;
+  intervaloRotacionSegundos?: number;
+  ventanaInicio: string;
+  ventanaFin: string;
+  radioGeocerca: number;
+  descripcionDatos: string;
+  activo: boolean;
+  creadoEn: string;
+  creadoPor?: string;
+}
+
+export interface Attendance {
+  id: string;
+  workerId: string;
+  workerNombre?: string;
+  shiftId: string;
+  siteId: string;
+  siteNombre?: string;
+  eventId: string;
+  eventNombre?: string;
+  qrId: string;
+  estado: AttendanceEstado;
+  entrada: GeoRegistro;
+  salida?: GeoRegistro;
+  ubicacionActual?: GeoCoord;
+  alertasGeocerca: string[];
+  creadoEn: string;
+}
+
+export interface GeoCoord {
+  lat: number;
+  lng: number;
+}
+
+export interface Consent {
+  id: string;
+  workerId: string;
+  qrId: string;
+  eventId: string;
+  timestamp: string;
+  aceptado: boolean;
+  versionDescripcionDatos: string;
+}
+
 export interface AppUser {
   uid: string;
   email: string;
@@ -143,8 +210,29 @@ export function puedeGestionarCuentas(role: UserRole): boolean {
   return role === "super_admin" || role === "administrador";
 }
 
+export function puedeGestionarQr(role: UserRole): boolean {
+  return role === "super_admin" || role === "administrador" || role === "supervisor_sitio";
+}
+
+export function puedeVerMapaEnVivo(role: UserRole): boolean {
+  return role === "super_admin" || role === "administrador" || role === "supervisor_sitio";
+}
+
 export const INVITATION_LABEL: Record<InvitationEstado, string> = {
   pendiente: "Pendiente",
   usada: "Usada",
   revocada: "Revocada",
+};
+
+export const QR_MODO_LABEL: Record<QrModo, string> = {
+  unico: "Un solo uso",
+  por_jornada: "Por jornada",
+  rotativo: "Rotativo",
+};
+
+export const ATTENDANCE_LABEL: Record<AttendanceEstado, string> = {
+  activo: "En jornada",
+  fuera_geocerca: "Fuera de geocerca",
+  revision_manual: "Revisión manual",
+  cerrado: "Cerrado",
 };

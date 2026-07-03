@@ -188,6 +188,68 @@ async function main(): Promise<void> {
   });
   console.log("+ invitación demo para Ana Gómez (token: inv-ana-demo)");
 
+  const ventanaInicio = new Date();
+  ventanaInicio.setHours(ventanaInicio.getHours() - 1);
+  const ventanaFin = new Date();
+  ventanaFin.setHours(ventanaFin.getHours() + 12);
+
+  await db.collection("qrCodes").doc("qr-site-cocina").set({
+    eventId: "event-festival",
+    eventNombre: "Festival Gastronómico 2026",
+    siteId: "site-cocina",
+    siteNombre: "Cocina central",
+    token: "cocina2026token",
+    modo: "por_jornada",
+    ventanaInicio: ventanaInicio.toISOString(),
+    ventanaFin: ventanaFin.toISOString(),
+    radioGeocerca: 80,
+    descripcionDatos:
+      "Recopilamos tu ubicación GPS solo durante la jornada activa para verificar presencia en el sitio asignado.",
+    activo: true,
+    creadoEn: new Date().toISOString(),
+    creadoPor: uids["admin@eventos.test"] ?? "seed",
+  });
+
+  await db.collection("qrCodes").doc("qr-site-puerta").set({
+    eventId: "event-festival",
+    eventNombre: "Festival Gastronómico 2026",
+    siteId: "site-puerta",
+    siteNombre: "Puerta principal",
+    token: "puerta2026token",
+    modo: "por_jornada",
+    ventanaInicio: ventanaInicio.toISOString(),
+    ventanaFin: ventanaFin.toISOString(),
+    radioGeocerca: 50,
+    descripcionDatos:
+      "Recopilamos tu ubicación GPS solo durante la jornada activa para verificar presencia en el sitio asignado.",
+    activo: true,
+    creadoEn: new Date().toISOString(),
+    creadoPor: uids["admin@eventos.test"] ?? "seed",
+  });
+  console.log("+ códigos QR de sitio (cocina, puerta)");
+
+  await db.collection("attendance").doc("att-juan-activo").set({
+    workerId: "worker-juan",
+    workerNombre: "Juan Pérez",
+    shiftId: "shift-juan-1",
+    siteId: "site-puerta",
+    siteNombre: "Puerta principal",
+    eventId: "event-festival",
+    eventNombre: "Festival Gastronómico 2026",
+    qrId: "qr-site-puerta",
+    estado: "activo",
+    entrada: {
+      timestamp: new Date().toISOString(),
+      lat: 4.654,
+      lng: -74.084,
+      dentroGeocerca: true,
+    },
+    ubicacionActual: { lat: 4.654, lng: -74.084 },
+    alertasGeocerca: [],
+    creadoEn: new Date().toISOString(),
+  });
+  console.log("+ jornada activa demo (Juan Pérez)");
+
   console.log("\n✓ Seed completo. Cuentas:");
   for (const u of USERS) {
     console.log(`  ${u.email} / ${u.password}`);
