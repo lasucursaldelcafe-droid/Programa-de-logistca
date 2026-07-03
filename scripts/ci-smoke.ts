@@ -31,10 +31,16 @@ async function main(): Promise<void> {
     throw new Error(`Se esperaban ≥2 turnos, hay ${shifts.size}`);
   }
 
+  const invitations = await db.collection("invitations").get();
+  if (invitations.size < 1) {
+    throw new Error(`Se esperaba ≥1 invitación, hay ${invitations.size}`);
+  }
+
   console.log("✓ Smoke test OK:", {
     admin: admin.email,
     workers: workers.size,
     shifts: shifts.size,
+    invitations: invitations.size,
   });
 }
 

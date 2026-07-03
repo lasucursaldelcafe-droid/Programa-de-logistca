@@ -1,4 +1,4 @@
-import type { AppUser, Evento, Sitio, Turno, Worker } from "@spe/shared";
+import type { AppUser, Evento, Invitation, Sitio, Turno, Worker } from "@spe/shared";
 
 export const DEMO_ACCOUNTS: Array<{
   email: string;
@@ -13,6 +13,7 @@ export const DEMO_ACCOUNTS: Array<{
       email: "admin@eventos.test",
       nombre: "Admin Principal",
       role: "administrador",
+      perfilCompleto: true,
     },
   },
   {
@@ -23,6 +24,7 @@ export const DEMO_ACCOUNTS: Array<{
       email: "supervisor@eventos.test",
       nombre: "Carlos Supervisor",
       role: "supervisor_sitio",
+      perfilCompleto: true,
     },
   },
   {
@@ -34,6 +36,8 @@ export const DEMO_ACCOUNTS: Array<{
       nombre: "María López",
       role: "trabajador",
       workerId: "worker-maria",
+      telefono: "3001112233",
+      perfilCompleto: true,
     },
   },
   {
@@ -45,6 +49,8 @@ export const DEMO_ACCOUNTS: Array<{
       nombre: "Juan Pérez",
       role: "trabajador",
       workerId: "worker-juan",
+      telefono: "3109988776",
+      perfilCompleto: true,
     },
   },
 ];
@@ -158,6 +164,24 @@ export const INITIAL_SHIFTS: Turno[] = [
   },
 ];
 
+const expira = new Date();
+expira.setDate(expira.getDate() + 7);
+
+export const INITIAL_INVITATIONS: Invitation[] = [
+  {
+    id: "inv-ana-demo",
+    token: "inv-ana-demo",
+    workerId: "worker-ana",
+    workerNombre: "Ana Gómez",
+    email: "ana@eventos.test",
+    estado: "pendiente",
+    creadaEn: new Date().toISOString(),
+    expiraEn: expira.toISOString(),
+    creadaPor: "demo-admin",
+    creadaPorNombre: "Admin Principal",
+  },
+];
+
 type Listener = () => void;
 
 class DemoStore {
@@ -165,6 +189,8 @@ class DemoStore {
   shifts = [...INITIAL_SHIFTS];
   events = [...INITIAL_EVENTS];
   sites = [...INITIAL_SITES];
+  invitations = [...INITIAL_INVITATIONS];
+  accounts = [...DEMO_ACCOUNTS];
   private listeners = new Set<Listener>();
 
   subscribe(listener: Listener): () => void {
@@ -201,6 +227,80 @@ class DemoStore {
     this.shifts = this.shifts.map((s) => (s.id === id ? { ...s, ...patch } : s));
     this.notify();
   }
+
+  getInvitation(token: string): Invitation | null {
+    return this.invitations.find((i) => i.token === token) ?? null;
+  }
+
+  addInvitation(invitation: Invitation): void {
+    this.invitations = [invitation, ...this.invitations];
+    this.notify();
+  }
+
+  updateInvitation(token: string, patch: Partial<Invitation>): void {
+    this.invitations = this.invitations.map((i) =>
+      i.token === token ? { ...i, ...patch } : i,
+    );
+    this.notify();
+  }
+
+  activateAccount(token: string, password: string): void {
+    const invitation = this.getInvitation(token);
+    if (!invitation) throw new Error("Invitación no encontrada");
+    if (invitation.estado !== "pendiente") throw new Error("Esta invitación ya no está disponible");
+    if (new Date(invitation.expiraEn) < new Date()) throw new Error("La invitación ha expirado");
+
+    const worker = this.workers.find((w) => w.id === invitation.workerId);
+    if (!worker) throw new Error("Trabajador no encontrado");
+    if (worker.cuentaCreada) throw new Error("Este trabajador ya tiene cuenta activa");
+
+    const uid = `demo-${invitation.workerId}`;
+    const appUser: AppUser = {
+      uid,
+      email: invitation.email,
+      nombre: invitation.workerNombre,
+      role: "trabajador",
+      workerId: invitation.workerId,
+      perfilCompleto: false,
+    };
+
+    this.accounts = [
+      ...this.accounts,
+      { email: invitation.email, password, user: appUser },
+    ];
+    this.updateWorker(invitation.workerId, { cuentaCreada: true });
+    this.updateInvitation(token, {
+      estado: "usada",
+      usadaEn: new Date().toISOString(),
+      uid,
+    });
+    saveDemoSession(invitation.email);
+  }
+
+  completeProfile(uid: string, data: { nombre: string; telefono: string }): void {
+    this.accounts = this.accounts.map((a) =>
+      a.user.uid === uid
+        ? {
+            ...a,
+            user: {
+              ...a.user,
+              nombre: data.nombre,
+              telefono: data.telefono,
+              perfilCompleto: true,
+            },
+          }
+        : a,
+    );
+    const account = this.accounts.find((a) => a.user.uid === uid);
+    if (account?.user.workerId) {
+      this.updateWorker(account.user.workerId, { telefono: data.telefono, nombre: data.nombre });
+    }
+    this.notify();
+  }
+
+  findAccountByEmail(email: string) {
+    return this.accounts.find((a) => a.email === email);
+  }
 }
 
 export const demoStore = new DemoStore();
@@ -210,7 +310,7 @@ const SESSION_KEY = "spe-demo-user";
 export function loadDemoSession(): AppUser | null {
   const email = sessionStorage.getItem(SESSION_KEY);
   if (!email) return null;
-  return DEMO_ACCOUNTS.find((a) => a.email === email)?.user ?? null;
+  return demoStore.accounts.find((a) => a.email === email)?.user ?? null;
 }
 
 export function saveDemoSession(email: string): void {
@@ -222,7 +322,7 @@ export function clearDemoSession(): void {
 }
 
 export function demoLogin(email: string, password: string): AppUser {
-  const account = DEMO_ACCOUNTS.find((a) => a.email === email && a.password === password);
+  const account = demoStore.accounts.find((a) => a.email === email && a.password === password);
   if (!account) throw new Error("Credenciales inválidas");
   saveDemoSession(email);
   return account.user;

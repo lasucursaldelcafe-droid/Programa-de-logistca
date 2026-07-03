@@ -60,6 +60,7 @@ async function main(): Promise<void> {
       nombre: u.nombre,
       role: u.role,
       workerId: u.workerId ?? null,
+      perfilCompleto: true,
     });
     console.log(`+ usuario ${u.email} (${u.role})`);
   }
@@ -171,6 +172,22 @@ async function main(): Promise<void> {
   });
 
   console.log("+ evento, sitios y turnos de ejemplo");
+
+  const expira = new Date();
+  expira.setDate(expira.getDate() + 7);
+
+  await db.collection("invitations").doc("inv-ana-demo").set({
+    workerId: "worker-ana",
+    workerNombre: "Ana Gómez",
+    email: "ana@eventos.test",
+    estado: "pendiente",
+    creadaEn: new Date().toISOString(),
+    expiraEn: expira.toISOString(),
+    creadaPor: uids["admin@eventos.test"] ?? "seed",
+    creadaPorNombre: "Admin Principal",
+  });
+  console.log("+ invitación demo para Ana Gómez (token: inv-ana-demo)");
+
   console.log("\n✓ Seed completo. Cuentas:");
   for (const u of USERS) {
     console.log(`  ${u.email} / ${u.password}`);

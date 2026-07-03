@@ -2,7 +2,7 @@
 
 Plataforma de gestión de personal para empresas de logística y recreación en eventos (200+ trabajadores). Web + Firebase con emuladores locales para desarrollo.
 
-**Fase 1 (actual):** Auth con roles, módulo Personal, módulo Turnos.
+**Fase 2 (actual):** Auth con roles, Personal, Turnos, Cuentas e invitaciones.
 
 ## Requisitos
 
@@ -85,8 +85,8 @@ firestore.rules        → Permisos por rol
 ## Roles y permisos
 
 - **super_admin / administrador:** gestión completa de personal y turnos
-- **supervisor_sitio:** supervisión en sitio (Fase 2+)
-- **trabajador:** ver y aceptar/rechazar sus turnos
+- **supervisor_sitio:** supervisión en sitio
+- **trabajador:** ver y aceptar/rechazar sus turnos; activación por invitación
 
 ## Diseño
 
@@ -95,7 +95,7 @@ Paleta del prompt maestro: fondo `#0A0A0A`, acento `#E8823C`, positivo `#3DDC97`
 ## Fases pendientes
 
 1. ✅ Auth + Personal + Turnos
-2. Cuentas de trabajadores + invitaciones
+2. ✅ Cuentas de trabajadores + invitaciones
 3. QR + GPS + geocercas
 4. Notificaciones push (FCM)
 5. Nómina

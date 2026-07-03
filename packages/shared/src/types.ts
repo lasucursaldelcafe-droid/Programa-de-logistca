@@ -26,12 +26,31 @@ export type ShiftEstado =
   | "rechazado"
   | "completado";
 
+export type InvitationEstado = "pendiente" | "usada" | "revocada";
+
 export interface AppUser {
   uid: string;
   email: string;
   role: UserRole;
   workerId?: string;
   nombre: string;
+  telefono?: string;
+  perfilCompleto?: boolean;
+}
+
+export interface Invitation {
+  id: string;
+  token: string;
+  workerId: string;
+  workerNombre: string;
+  email: string;
+  estado: InvitationEstado;
+  creadaEn: string;
+  expiraEn: string;
+  creadaPor: string;
+  creadaPorNombre?: string;
+  usadaEn?: string;
+  uid?: string;
 }
 
 export interface Worker {
@@ -119,3 +138,13 @@ export function puedeGestionarPersonal(role: UserRole): boolean {
 export function puedeGestionarTurnos(role: UserRole): boolean {
   return role === "super_admin" || role === "administrador" || role === "supervisor_sitio";
 }
+
+export function puedeGestionarCuentas(role: UserRole): boolean {
+  return role === "super_admin" || role === "administrador";
+}
+
+export const INVITATION_LABEL: Record<InvitationEstado, string> = {
+  pendiente: "Pendiente",
+  usada: "Usada",
+  revocada: "Revocada",
+};

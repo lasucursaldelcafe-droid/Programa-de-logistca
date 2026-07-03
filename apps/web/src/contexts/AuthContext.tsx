@@ -32,6 +32,7 @@ interface AuthContextValue {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -46,6 +47,8 @@ async function loadAppUser(firebaseUser: User): Promise<AppUser | null> {
     role: data.role as UserRole,
     workerId: data.workerId as string | undefined,
     nombre: (data.nombre as string) ?? firebaseUser.email ?? "Usuario",
+    telefono: data.telefono as string | undefined,
+    perfilCompleto: data.perfilCompleto as boolean | undefined,
   };
 }
 
@@ -73,6 +76,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return unsub;
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    if (DEMO_MODE) {
+      setUser(loadDemoSession());
+      return;
+    }
+    const fbUser = getFirebaseAuth().currentUser;
+    if (!fbUser) {
+      setUser(null);
+      return;
+    }
+    const appUser = await loadAppUser(fbUser);
+    setUser(appUser);
+  }, []);
+
   const login = useCallback(async (email: string, password: string) => {
     if (DEMO_MODE) {
       const appUser = demoLogin(email, password);
@@ -92,8 +109,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, loading, login, logout }),
-    [user, loading, login, logout],
+    () => ({ user, loading, login, logout, refreshUser }),
+    [user, loading, login, logout, refreshUser],
   );
 
   return (

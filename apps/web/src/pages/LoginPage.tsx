@@ -4,6 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { Card } from "../components/ui";
 import { DEMO_MODE } from "../lib/mode";
 import { useDeploymentLinks } from "../hooks/useDeploymentLinks";
+import { sendPasswordReset } from "../hooks/useDataStore";
 
 export function LoginPage() {
   const { user, loading, login } = useAuth();
@@ -12,6 +13,7 @@ export function LoginPage() {
   const [email, setEmail] = useState("admin@eventos.test");
   const [password, setPassword] = useState("Admin123!");
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   if (!loading && user) return <Navigate to="/" replace />;
@@ -35,7 +37,7 @@ export function LoginPage() {
       <Card className="w-full max-w-md">
         <h1 className="font-display text-2xl font-bold">Sistema de Personal</h1>
         <p className="mt-1 text-sm text-neutral-400">
-          Gestión de personal para eventos — Fase 1
+          Gestión de personal para eventos — Fase 2
         </p>
         {DEMO_MODE && (
           <p className="mt-2 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-xs text-accent">
@@ -68,12 +70,37 @@ export function LoginPage() {
               {error}
             </p>
           )}
+          {info && (
+            <p className="rounded-lg bg-positive/10 px-3 py-2 text-sm text-positive">
+              {info}
+            </p>
+          )}
           <button
             type="submit"
             disabled={submitting}
             className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50"
           >
             {submitting ? "Entrando…" : "Iniciar sesión"}
+          </button>
+          <button
+            type="button"
+            className="w-full text-sm text-neutral-400 hover:text-accent"
+            onClick={async () => {
+              setError(null);
+              setInfo(null);
+              try {
+                await sendPasswordReset(email);
+                setInfo(
+                  DEMO_MODE
+                    ? "En modo demo no se envía correo; usa las contraseñas del seed."
+                    : "Si el correo existe, recibirás un enlace de recuperación.",
+                );
+              } catch {
+                setError("No se pudo enviar el enlace de recuperación.");
+              }
+            }}
+          >
+            ¿Olvidaste tu contraseña?
           </button>
         </form>
         <div className="mt-6 rounded-lg border border-border bg-bg p-3 text-xs text-neutral-400">
@@ -82,6 +109,7 @@ export function LoginPage() {
             <li>admin@eventos.test / Admin123!</li>
             <li>supervisor@eventos.test / Super123!</li>
             <li>maria@eventos.test / Trab123!</li>
+            <li>ana@eventos.test — activar vía invitación demo</li>
           </ul>
           {deployLinks && (
             <p className="mt-3 border-t border-border pt-3">
