@@ -1,0 +1,52 @@
+name: Publicar app (GitHub Actions Pages)
+
+# Alternativa moderna (sin Jekyll). Requiere en Settings → Pages → Source: GitHub Actions
+# y permitir la rama main en el environment github-pages.
+# Ejecutar manualmente si migras la fuente de Pages a Actions.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-actions-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Construir las 3 plataformas
+        run: npm ci && npm run build:pages
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_PAGES_BASE: ${{ format('/{0}/', github.event.repository.name) }}
+          VITE_DEMO_MODE: "true"
+          VITE_USE_FIREBASE_EMULATORS: "false"
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - name: Desplegar
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: URLs
+        run: |
+          echo "page_url=${{ steps.deployment.outputs.page_url }}"

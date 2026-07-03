@@ -1,6 +1,7 @@
 name: Publicar app (GitHub Pages)
 
-# Despliega Admin + Worker + Master vía GitHub Actions (sin Jekyll legacy).
+# Publica Admin + Worker + Master en gh-pages/docs (fuente: branch gh-pages /docs).
+# Evita Jekyll: cada carpeta incluye .nojekyll generado por prepare-pages.ts.
 on:
   push:
     branches: [main]
@@ -8,8 +9,6 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages-deploy
@@ -19,9 +18,6 @@ jobs:
   deploy:
     if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -45,17 +41,25 @@ jobs:
           VITE_DEMO_MODE: "true"
           VITE_USE_FIREBASE_EMULATORS: "false"
 
-      - name: Configurar GitHub Pages (fuente Actions)
-        uses: actions/configure-pages@v5
+      - name: Verificar artefactos
+        run: |
+          test -f docs/index.html
+          test -f docs/worker/index.html
+          test -f docs/master/index.html
+          test -f docs/.nojekyll
+          test -f docs/worker/.nojekyll
+          test -f docs/master/.nojekyll
+          echo "✓ docs/ listo para publicar"
 
-      - name: Subir artefacto (docs/)
-        uses: actions/upload-pages-artifact@v3
+      - name: Publicar en gh-pages/docs
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          path: docs
-
-      - name: Desplegar en GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          folder: docs
+          branch: gh-pages
+          target-folder: docs
+          clean: true
+          single-commit: true
+          commit-message: "deploy: ${{ github.event.repository.name }} @ ${{ github.sha }}"
 
       - name: Sincronizar docs/ y enlaces en main
         run: |
@@ -67,7 +71,6 @@ jobs:
 
       - name: URLs publicadas
         run: |
-          echo "page_url=${{ steps.deployment.outputs.page_url }}"
-          echo "Admin:  ${{ steps.deployment.outputs.page_url }}"
-          echo "Worker: ${{ steps.deployment.outputs.page_url }}worker/"
-          echo "Master: ${{ steps.deployment.outputs.page_url }}master/"
+          echo "Admin:  https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+          echo "Worker: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/worker/"
+          echo "Master: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/master/"
