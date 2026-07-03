@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useState } from "react";
 import {
   SHIFT_LABEL,
@@ -67,6 +68,14 @@ export function TurnosPage() {
         <h1 className="font-display text-3xl font-bold">Turnos</h1>
         <p className="mt-1 text-neutral-400">
           Asignación por evento/sitio. Los trabajadores pueden aceptar o rechazar.
+          {user?.role === "trabajador" && (
+            <>
+              {" "}
+              <Link to="/marcar-entrada" className="text-accent hover:underline">
+                Marcar entrada con QR
+              </Link>
+            </>
+          )}
         </p>
       </div>
 

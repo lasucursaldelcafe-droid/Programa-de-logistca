@@ -31,10 +31,58 @@ async function main(): Promise<void> {
     throw new Error(`Se esperaban ≥2 turnos, hay ${shifts.size}`);
   }
 
+  const invitations = await db.collection("invitations").get();
+  if (invitations.size < 1) {
+    throw new Error(`Se esperaba ≥1 invitación, hay ${invitations.size}`);
+  }
+
+  const qrCodes = await db.collection("qrCodes").get();
+  if (qrCodes.size < 2) {
+    throw new Error(`Se esperaban ≥2 códigos QR, hay ${qrCodes.size}`);
+  }
+
+  const attendance = await db.collection("attendance").get();
+  if (attendance.size < 1) {
+    throw new Error(`Se esperaba ≥1 jornada, hay ${attendance.size}`);
+  }
+
+  const notifications = await db.collection("notifications").get();
+  if (notifications.size < 2) {
+    throw new Error(`Se esperaban ≥2 notificaciones, hay ${notifications.size}`);
+  }
+
+  const payrollRates = await db.collection("payrollRates").get();
+  if (payrollRates.size < 5) {
+    throw new Error(`Se esperaban ≥5 tarifas de nómina, hay ${payrollRates.size}`);
+  }
+
+  const payroll = await db.collection("payroll").get();
+  if (payroll.size < 1) {
+    throw new Error(`Se esperaba ≥1 registro de nómina, hay ${payroll.size}`);
+  }
+
+  const payrollAudit = await db.collection("payrollAudit").get();
+  if (payrollAudit.size < 1) {
+    throw new Error(`Se esperaba ≥1 entrada de auditoría, hay ${payrollAudit.size}`);
+  }
+
+  const setupConfig = await db.collection("setupConfig").doc("default").get();
+  if (!setupConfig.exists) {
+    throw new Error("setupConfig/default no encontrado");
+  }
+
   console.log("✓ Smoke test OK:", {
     admin: admin.email,
     workers: workers.size,
     shifts: shifts.size,
+    invitations: invitations.size,
+    qrCodes: qrCodes.size,
+    attendance: attendance.size,
+    notifications: notifications.size,
+    payrollRates: payrollRates.size,
+    payroll: payroll.size,
+    payrollAudit: payrollAudit.size,
+    setupConfig: setupConfig.data()?.completado === true,
   });
 }
 

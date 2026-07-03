@@ -20,18 +20,70 @@ service cloud.firestore {
     function isWorker() {
       return signedIn() && role() == 'trabajador';
     }
-    function workerId() {
+    function currentWorkerId() {
       return userDoc().data.workerId;
     }
 
     match /users/{userId} {
       allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
-      allow write: if isAdmin();
+      allow create: if isAdmin()
+        || (signedIn()
+          && request.auth.uid == userId
+          && request.resource.data.role == 'trabajador');
+      allow update: if isAdmin()
+        || (signedIn()
+          && request.auth.uid == userId
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['nombre', 'telefono', 'perfilCompleto']));
+      allow delete: if isAdmin();
     }
 
     match /workers/{workerId} {
       allow read: if signedIn();
-      allow create, update: if isAdmin() || isSupervisor();
+      allow create: if isAdmin() || isSupervisor();
+      allow update: if isAdmin() || isSupervisor()
+        || (isWorker()
+          && currentWorkerId() == workerId
+          && (
+            (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cuentaCreada'])
+              && request.resource.data.cuentaCreada == true)
+            || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado'])
+          ));
+      allow delete: if isAdmin();
+    }
+
+    match /qrCodes/{qrId} {
+      allow read: if signedIn();
+      allow write: if isAdmin() || isSupervisor();
+    }
+
+    match /attendance/{attendanceId} {
+      allow read: if signedIn();
+      allow create: if isWorker();
+      allow update: if isAdmin() || isSupervisor()
+        || (isWorker()
+          && resource.data.workerId == currentWorkerId());
+      allow delete: if isAdmin();
+    }
+
+    match /consents/{consentId} {
+      allow read: if signedIn()
+        && (isAdmin() || isSupervisor() || resource.data.workerId == currentWorkerId());
+      allow create: if isWorker();
+      allow update, delete: if isAdmin();
+    }
+
+    match /invitations/{token} {
+      allow read: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin()
+        || (signedIn()
+          && resource.data.estado == 'pendiente'
+          && request.resource.data.estado == 'usada'
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['estado', 'usadaEn', 'uid']));
       allow delete: if isAdmin();
     }
 
@@ -50,9 +102,53 @@ service cloud.firestore {
       allow create, delete: if isAdmin() || isSupervisor();
       allow update: if isAdmin() || isSupervisor()
         || (isWorker()
-          && resource.data.workerId == workerId()
+          && resource.data.workerId == currentWorkerId()
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado'])
           && request.resource.data.estado in ['confirmado', 'rechazado']);
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if signedIn();
+      allow create: if signedIn();
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['leidaPor']);
+      allow delete: if isAdmin();
+    }
+
+    match /fcmTokens/{userId} {
+      allow read, write: if signedIn() && request.auth.uid == userId;
+    }
+
+    match /breaks/{breakId} {
+      allow read: if signedIn();
+      allow write: if isAdmin() || isSupervisor();
+    }
+
+    match /payrollRates/{rateId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /payroll/{payrollId} {
+      allow read: if signedIn()
+        && (isAdmin() || isSupervisor()
+          || (isWorker() && resource.data.workerId == currentWorkerId()));
+      allow create: if isAdmin();
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['estado', 'pagadoEn']);
+      allow delete: if isAdmin();
+    }
+
+    match /payrollAudit/{auditId} {
+      allow read: if isAdmin() || isSupervisor();
+      allow create: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    match /setupConfig/{configId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
     }
   }
 }

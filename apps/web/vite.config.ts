@@ -37,7 +37,7 @@ function resolvePagesBase(): string {
 }
 
 export default defineConfig({
-  base: resolvePagesBase(),
+  base: process.env.NATIVE_BUILD === "true" ? "./" : resolvePagesBase(),
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

@@ -27,6 +27,13 @@
 dist/
 **/.vite/
 
+# capacitor / electron
+apps/web/android/.gradle/
+apps/web/android/app/build/
+apps/web/android/build/
+apps/web/android/.idea/
+apps/desktop/release/
+
 # misc
 .DS_Store
 *.pem

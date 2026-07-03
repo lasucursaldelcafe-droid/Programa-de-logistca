@@ -1,6 +1,8 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { ROLE_LABEL, puedeGestionarPersonal, puedeGestionarTurnos } from "@spe/shared";
+import { ROLE_LABEL, puedeGestionarCuentas, puedeGestionarConfiguracion, puedeGestionarPersonal, puedeGestionarQr, puedeVerMapaEnVivo, puedeVerNomina } from "@spe/shared";
+import { NotificationBell } from "./NotificationBell";
+import { PlatformBadge } from "./PlatformBadge";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-lg px-3 py-2 text-sm font-medium transition ${
@@ -23,22 +25,54 @@ export function AppLayout() {
             <div className="font-display text-lg font-semibold tracking-tight">
               Personal Eventos
             </div>
-            <div className="text-xs text-neutral-500">
+            <div className="text-xs text-neutral-500 flex items-center gap-2">
               {user.nombre} · {ROLE_LABEL[user.role]}
+              <PlatformBadge />
             </div>
           </div>
           <nav className="flex flex-wrap items-center gap-1">
             <NavLink to="/" end className={linkClass}>
-              Inicio
+              Dashboard
             </NavLink>
             {puedeGestionarPersonal(user.role) && (
               <NavLink to="/personal" className={linkClass}>
                 Personal
               </NavLink>
             )}
+            {puedeGestionarCuentas(user.role) && (
+              <NavLink to="/cuentas" className={linkClass}>
+                Cuentas
+              </NavLink>
+            )}
+            {puedeGestionarQr(user.role) && (
+              <NavLink to="/qr-sitios" className={linkClass}>
+                QR Sitios
+              </NavLink>
+            )}
+            {puedeVerMapaEnVivo(user.role) && (
+              <NavLink to="/mapa" className={linkClass}>
+                Mapa
+              </NavLink>
+            )}
+            {user.role === "trabajador" && (
+              <NavLink to="/marcar-entrada" className={linkClass}>
+                Entrada
+              </NavLink>
+            )}
             <NavLink to="/turnos" className={linkClass}>
               Turnos
             </NavLink>
+            {puedeVerNomina(user.role) && (
+              <NavLink to="/nomina" className={linkClass}>
+                Nómina
+              </NavLink>
+            )}
+            {puedeGestionarConfiguracion(user.role) && (
+              <NavLink to="/configuracion" className={linkClass}>
+                Configuración
+              </NavLink>
+            )}
+            <NotificationBell />
             <button
               type="button"
               onClick={async () => {

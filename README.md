@@ -2,13 +2,15 @@
 
 Plataforma de gestión de personal para empresas de logística y recreación en eventos (200+ trabajadores). Web + Firebase con emuladores locales para desarrollo.
 
-**Fase 1 (actual):** Auth con roles, módulo Personal, módulo Turnos.
+**Fase 8 (actual):** Apps nativas — Capacitor (Android) y Electron (Windows) con GPS nativo y modo demo.
 
 ## Requisitos
 
 - Node.js 22+
 - npm
 - Java (Firebase Emulators)
+- **Android:** Android Studio + SDK (para compilar APK)
+- **Windows:** Windows 10+ (para empaquetar con electron-builder)
 
 ## Inicio rápido (automático)
 
@@ -62,6 +64,8 @@ npm run dev:web      # Terminal C
 
 ```
 apps/web/              → React + Vite + Tailwind (app principal)
+apps/desktop/          → Cliente Windows (Electron)
+apps/web/android/      → Proyecto Capacitor Android
 packages/shared/       → Tipos, permisos, cliente Firebase
 functions/             → Cloud Functions (Fase 2+)
 scripts/               → setup-phase1.ts, seed-emulators.ts
@@ -80,13 +84,41 @@ firestore.rules        → Permisos por rol
 | `npm run seed` | Carga usuarios, trabajadores, eventos y turnos |
 | `npm run dev:web` | Solo servidor Vite |
 | `npm run build` | Build de producción (shared + web) |
+| `npm run build:native` | Build para apps nativas (`base: ./`, modo demo) |
+| `npm run cap:sync` | Sincroniza `dist` → proyecto Android |
+| `npm run cap:android` | Abre Android Studio |
+| `npm run electron` | Lanza cliente Windows (Electron) |
+| `npm run electron:build` | Empaqueta instalador `.exe` (Windows) |
 | `npm run test:smoke` | CI: emuladores + seed + verificación |
+
+## Apps nativas (Fase 8)
+
+Las apps Android y Windows usan **modo demo** (datos en memoria) — ideal para supervisores en campo sin backend propio.
+
+### Android (Capacitor)
+
+```bash
+npm run cap:add:android   # primera vez (ya incluido en el repo)
+npm run cap:sync          # build nativo + copia a android/
+npm run cap:android       # abre Android Studio → Run
+```
+
+GPS en Android usa `@capacitor/geolocation` con permisos en `AndroidManifest.xml`.
+
+### Windows (Electron)
+
+```bash
+npm run electron          # ventana de escritorio con build nativo
+npm run electron:build    # genera instalador en apps/desktop/release/
+```
+
+Electron usa `HashRouter` para rutas locales. El badge **Windows** aparece en la barra superior.
 
 ## Roles y permisos
 
 - **super_admin / administrador:** gestión completa de personal y turnos
-- **supervisor_sitio:** supervisión en sitio (Fase 2+)
-- **trabajador:** ver y aceptar/rechazar sus turnos
+- **supervisor_sitio:** supervisión en sitio
+- **trabajador:** ver y aceptar/rechazar sus turnos; activación por invitación
 
 ## Diseño
 
@@ -95,13 +127,13 @@ Paleta del prompt maestro: fondo `#0A0A0A`, acento `#E8823C`, positivo `#3DDC97`
 ## Fases pendientes
 
 1. ✅ Auth + Personal + Turnos
-2. Cuentas de trabajadores + invitaciones
-3. QR + GPS + geocercas
-4. Notificaciones push (FCM)
-5. Nómina
-6. Dashboard avanzado
-7. Wizard de configuración
-8. Capacitor (Android) + Electron (Windows)
+2. ✅ Cuentas de trabajadores + invitaciones
+3. ✅ QR + GPS + geocercas
+4. ✅ Notificaciones push (FCM) + bandeja en app
+5. ✅ Nómina (horas, tarifas, refrigerios, exportación CSV)
+6. ✅ Dashboard avanzado (KPIs, gráficos, actividad, filtro por evento)
+7. ✅ Wizard de configuración (evento → sitios → tarifas → QR → resumen)
+8. ✅ Capacitor (Android) + Electron (Windows)
 
 ## Prototipo anterior
 

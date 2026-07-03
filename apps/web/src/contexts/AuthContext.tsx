@@ -21,6 +21,7 @@ import {
   type UserRole,
 } from "@spe/shared";
 import { DEMO_MODE } from "../lib/mode";
+import { initPushNotifications } from "../lib/fcm";
 import {
   clearDemoSession,
   demoLogin,
@@ -32,6 +33,7 @@ interface AuthContextValue {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -46,6 +48,8 @@ async function loadAppUser(firebaseUser: User): Promise<AppUser | null> {
     role: data.role as UserRole,
     workerId: data.workerId as string | undefined,
     nombre: (data.nombre as string) ?? firebaseUser.email ?? "Usuario",
+    telefono: data.telefono as string | undefined,
+    perfilCompleto: data.perfilCompleto as boolean | undefined,
   };
 }
 
@@ -68,9 +72,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       const appUser = await loadAppUser(fbUser);
       setUser(appUser);
+      if (appUser) void initPushNotifications(appUser.uid);
       setLoading(false);
     });
     return unsub;
+  }, []);
+
+  const refreshUser = useCallback(async () => {
+    if (DEMO_MODE) {
+      setUser(loadDemoSession());
+      return;
+    }
+    const fbUser = getFirebaseAuth().currentUser;
+    if (!fbUser) {
+      setUser(null);
+      return;
+    }
+    const appUser = await loadAppUser(fbUser);
+    setUser(appUser);
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
@@ -80,6 +99,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
+    const fbUser = getFirebaseAuth().currentUser;
+    if (fbUser) void initPushNotifications(fbUser.uid);
   }, []);
 
   const logout = useCallback(async () => {
@@ -92,8 +113,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, loading, login, logout }),
-    [user, loading, login, logout],
+    () => ({ user, loading, login, logout, refreshUser }),
+    [user, loading, login, logout, refreshUser],
   );
 
   return (
