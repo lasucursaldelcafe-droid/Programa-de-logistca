@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { ROLE_LABEL, puedeGestionarCuentas, puedeGestionarConfiguracion, puedeGestionarPersonal, puedeGestionarQr, puedeVerMapaEnVivo, puedeVerNomina, puedeVerReportesTrabajadores } from "@spe/shared";
+import { ROLE_LABEL, puedeConfigurarIntegraciones, puedeGestionarCuentas, puedeGestionarConfiguracion, puedeGestionarPersonal, puedeGestionarQr, puedeVerMapaEnVivo, puedeVerNomina, puedeVerReportesTrabajadores } from "@spe/shared";
 import { NotificationBell } from "./NotificationBell";
 import { PlatformBadge } from "./PlatformBadge";
 
@@ -35,6 +35,19 @@ export function AppLayout() {
               Dashboard
             </NavLink>
             {puedeGestionarPersonal(user.role) && (
+              <>
+                <NavLink to="/clientes" className={linkClass}>
+                  Clientes
+                </NavLink>
+                <NavLink to="/facturacion" className={linkClass}>
+                  Facturación
+                </NavLink>
+                <NavLink to="/inventario" className={linkClass}>
+                  Inventario
+                </NavLink>
+              </>
+            )}
+            {puedeGestionarPersonal(user.role) && (
               <NavLink to="/personal" className={linkClass}>
                 Personal
               </NavLink>
@@ -61,6 +74,12 @@ export function AppLayout() {
             )}
             <NavLink to="/turnos" className={linkClass}>
               Turnos
+            </NavLink>
+            <NavLink to="/supervision" className={linkClass}>
+              Supervisión
+            </NavLink>
+            <NavLink to="/integraciones" className={linkClass}>
+              {puedeConfigurarIntegraciones(user.role) ? "APIs" : "Integraciones"}
             </NavLink>
             {puedeVerNomina(user.role) && (
               <NavLink to="/nomina" className={linkClass}>

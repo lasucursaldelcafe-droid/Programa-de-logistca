@@ -11,11 +11,14 @@
     "build:linux": "electron-builder --linux"
   },
   "devDependencies": {
+    "app-builder-bin": "5.0.0-alpha.10",
     "electron": "35.7.5",
     "electron-builder": "25.1.8"
   },
   "build": {
     "electronVersion": "35.7.5",
+    "npmRebuild": false,
+    "buildDependenciesFromSource": false,
     "appId": "com.spe.admin",
     "productName": "SPE Admin",
     "directories": {

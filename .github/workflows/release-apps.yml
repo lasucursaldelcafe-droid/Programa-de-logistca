@@ -34,7 +34,17 @@ jobs:
         run: npm ci
 
       - name: Asegurar Electron en desktop
-        run: npm install electron@35.7.5 electron-builder@25.1.8 -w @spe/desktop
+        run: npm install electron@35.7.5 electron-builder@25.1.8 app-builder-bin@5.0.0-alpha.10 -w @spe/desktop
+
+      - name: Verificar app-builder-bin (Windows)
+        shell: pwsh
+        run: |
+          $exe = "node_modules/app-builder-bin/win/x64/app-builder.exe"
+          if (-not (Test-Path $exe)) {
+            npm install app-builder-bin@5.0.0-alpha.10 --no-save --force
+          }
+          if (-not (Test-Path $exe)) { throw "app-builder.exe no encontrado en $exe" }
+          Get-Item $exe
 
       - name: Compilar instalador Windows
         run: npm run electron:build
