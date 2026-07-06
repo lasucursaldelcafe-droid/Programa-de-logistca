@@ -43,6 +43,70 @@ export interface IntegracionConexion {
   mensaje?: string;
 }
 
+/** Credenciales guardadas por el administrador (por integración). */
+export interface CredencialesIntegracion {
+  id: TipoIntegracion;
+  apiKey?: string;
+  apiSecret?: string;
+  token?: string;
+  usuario?: string;
+  webhookUrl?: string;
+  phoneNumberId?: string;
+  businessAccountId?: string;
+  pageId?: string;
+  appId?: string;
+  verifyToken?: string;
+  /** Nombre del archivo JSON/.env subido */
+  archivoNombre?: string;
+  /** Contenido del archivo (JSON stringificado) */
+  archivoJson?: string;
+  actualizadoEn?: string;
+}
+
+export interface CampoCredencial {
+  key: keyof CredencialesIntegracion;
+  label: string;
+  placeholder?: string;
+  type?: "text" | "password" | "url";
+  required?: boolean;
+}
+
+export const CAMPOS_POR_INTEGRACION: Record<TipoIntegracion, CampoCredencial[]> = {
+  siigo: [
+    { key: "usuario", label: "Usuario / email Siigo", placeholder: "contabilidad@tuempresa.com", required: true },
+    { key: "apiKey", label: "API Key Siigo Nube", type: "password", required: true },
+    { key: "apiSecret", label: "Access Key (opcional)", type: "password" },
+  ],
+  whatsapp: [
+    { key: "token", label: "Token permanente Cloud API", type: "password", required: true },
+    { key: "phoneNumberId", label: "Phone Number ID", required: true },
+    { key: "businessAccountId", label: "WhatsApp Business Account ID" },
+    { key: "webhookUrl", label: "URL webhook (tu servidor)", type: "url" },
+    { key: "verifyToken", label: "Verify token webhook", type: "password" },
+  ],
+  facebook: [
+    { key: "appId", label: "App ID Meta", required: true },
+    { key: "apiSecret", label: "App Secret", type: "password", required: true },
+    { key: "token", label: "Page Access Token", type: "password", required: true },
+    { key: "pageId", label: "Page ID", required: true },
+  ],
+  instagram: [
+    { key: "appId", label: "App ID Meta", required: true },
+    { key: "apiSecret", label: "App Secret", type: "password", required: true },
+    { key: "token", label: "Instagram Access Token", type: "password", required: true },
+    { key: "pageId", label: "Instagram Business Account ID", required: true },
+  ],
+  webhook: [
+    { key: "webhookUrl", label: "URL endpoint entrante", type: "url", required: true },
+    { key: "apiSecret", label: "Secret / firma HMAC", type: "password" },
+    { key: "verifyToken", label: "Token verificación", type: "password" },
+  ],
+  web_form: [
+    { key: "webhookUrl", label: "URL formulario / webhook", type: "url", required: true },
+    { key: "apiKey", label: "API Key del sitio web" },
+  ],
+};
+
 export interface MensajeWhatsApp {
   id: string;
   de: string;

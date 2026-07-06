@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { ROLE_LABEL, puedeGestionarPersonal } from "@spe/shared";
+import { ROLE_LABEL, puedeConfigurarIntegraciones, puedeGestionarPersonal } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -18,6 +18,7 @@ export function AppLayout() {
   if (!user) return null;
 
   const isAdmin = puedeGestionarPersonal(user.role);
+  const canConfigApis = puedeConfigurarIntegraciones(user.role);
 
   return (
     <div className="flex min-h-screen bg-bg">
@@ -57,9 +58,15 @@ export function AppLayout() {
             Supervisión en vivo
           </NavLink>
           <div className={sectionClass}>Conexiones</div>
-          <NavLink to="/integraciones" className={linkClass}>
-            APIs e integraciones
-          </NavLink>
+          {canConfigApis ? (
+            <NavLink to="/integraciones" className={linkClass}>
+              Configurar APIs
+            </NavLink>
+          ) : (
+            <NavLink to="/integraciones" className={linkClass}>
+              Estado integraciones
+            </NavLink>
+          )}
         </nav>
         <div className="border-t border-border p-3 text-xs text-neutral-500">
           {user.nombre}

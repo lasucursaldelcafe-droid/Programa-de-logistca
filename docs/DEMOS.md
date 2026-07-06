@@ -91,7 +91,13 @@ Todas las conexiones son simuladas — no requieren credenciales reales.
 | Facebook / Instagram | Comentarios y leads (demo) |
 | Web / Webhooks | Formularios y eventos entrantes (demo) |
 
-En **Integraciones → Conectar**, usa cualquier token demo (ej. `demo-siigo-key`).
+En **Integraciones → Configurar APIs** (solo administrador):
+
+1. Expande cada integración (Siigo, WhatsApp, etc.)
+2. **Sube** un archivo `.json` o `.env`, o ingresa los campos manualmente
+3. Pulsa **Guardar credenciales** o **Guardar y conectar**
+
+Las credenciales se guardan en `localStorage` del navegador (demo).
 
 ## Skills Cursor
 

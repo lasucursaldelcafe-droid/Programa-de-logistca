@@ -1,11 +1,15 @@
 import type { AppUser, Evento, Sitio, Turno, Worker } from "@spe/shared";
-import type { Cliente, Factura, PosicionTrabajador, Producto } from "@spe/shared";
+import type { Cliente, Factura, PosicionTrabajador, Producto, CredencialesIntegracion, TipoIntegracion } from "@spe/shared";
 import {
   INITIAL_CLIENTES,
   INITIAL_FACTURAS,
   INITIAL_POSICIONES,
   INITIAL_PRODUCTOS,
 } from "./business";
+import {
+  loadCredencialesFromStorage,
+  saveCredencialesToStorage,
+} from "./integrations";
 
 export const DEMO_ACCOUNTS: Array<{
   email: string;
@@ -176,6 +180,7 @@ class DemoStore {
   productos = [...INITIAL_PRODUCTOS];
   facturas = [...INITIAL_FACTURAS];
   posiciones = [...INITIAL_POSICIONES];
+  credencialesIntegraciones = loadCredencialesFromStorage();
   private listeners = new Set<Listener>();
 
   subscribe(listener: Listener): () => void {
@@ -220,6 +225,29 @@ class DemoStore {
       lng: p.lng + (Math.random() - 0.5) * 0.0002,
       actualizadoEn: new Date().toISOString(),
     }));
+    this.notify();
+  }
+
+  getCredenciales(id: TipoIntegracion): CredencialesIntegracion {
+    return this.credencialesIntegraciones[id];
+  }
+
+  saveCredenciales(creds: CredencialesIntegracion): void {
+    this.credencialesIntegraciones = {
+      ...this.credencialesIntegraciones,
+      [creds.id]: { ...creds, actualizadoEn: new Date().toISOString() },
+    };
+    saveCredencialesToStorage(this.credencialesIntegraciones);
+    this.notify();
+  }
+
+  clearCredenciales(id: TipoIntegracion): void {
+    const empty = { id } as CredencialesIntegracion;
+    this.credencialesIntegraciones = {
+      ...this.credencialesIntegraciones,
+      [id]: empty,
+    };
+    saveCredencialesToStorage(this.credencialesIntegraciones);
     this.notify();
   }
 }

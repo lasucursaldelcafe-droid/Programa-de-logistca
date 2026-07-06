@@ -119,3 +119,8 @@ export function puedeGestionarPersonal(role: UserRole): boolean {
 export function puedeGestionarTurnos(role: UserRole): boolean {
   return role === "super_admin" || role === "administrador" || role === "supervisor_sitio";
 }
+
+/** Solo administradores pueden subir y editar credenciales de APIs. */
+export function puedeConfigurarIntegraciones(role: UserRole): boolean {
+  return role === "super_admin" || role === "administrador";
+}
