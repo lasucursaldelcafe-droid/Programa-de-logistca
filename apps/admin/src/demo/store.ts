@@ -401,6 +401,7 @@ export const INITIAL_INVITATIONS: Invitation[] = [
     workerId: "worker-ana",
     workerNombre: "Ana Gómez",
     email: "ana@eventos.test",
+    codigoAcceso: "482916",
     estado: "pendiente",
     creadaEn: new Date().toISOString(),
     expiraEn: expira.toISOString(),
@@ -495,6 +496,19 @@ class DemoStore {
     return this.invitations.find((i) => i.token === token) ?? null;
   }
 
+  findInvitationByEmailAndCode(email: string, codigoAcceso: string): Invitation | null {
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedCode = codigoAcceso.replace(/\s/g, "").trim();
+    return (
+      this.invitations.find(
+        (i) =>
+          i.email.trim().toLowerCase() === normalizedEmail &&
+          i.codigoAcceso === normalizedCode &&
+          i.estado === "pendiente",
+      ) ?? null
+    );
+  }
+
   addInvitation(invitation: Invitation): void {
     this.invitations = [invitation, ...this.invitations];
     this.notify();
@@ -507,11 +521,14 @@ class DemoStore {
     this.notify();
   }
 
-  activateAccount(token: string, password: string): void {
+  activateAccount(token: string, password: string, codigoAcceso: string): void {
     const invitation = this.getInvitation(token);
     if (!invitation) throw new Error("Invitación no encontrada");
     if (invitation.estado !== "pendiente") throw new Error("Esta invitación ya no está disponible");
     if (new Date(invitation.expiraEn) < new Date()) throw new Error("La invitación ha expirado");
+    if (invitation.codigoAcceso !== codigoAcceso.replace(/\s/g, "").trim()) {
+      throw new Error("Código de invitación incorrecto");
+    }
 
     const worker = this.workers.find((w) => w.id === invitation.workerId);
     if (!worker) throw new Error("Trabajador no encontrado");

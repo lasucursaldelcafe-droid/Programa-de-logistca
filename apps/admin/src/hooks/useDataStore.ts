@@ -9,6 +9,8 @@ import {
   doc,
   getDoc,
   setDoc,
+  where,
+  getDocs,
 } from "firebase/firestore";
 import {
   createUserWithEmailAndPassword,
@@ -18,6 +20,7 @@ import {
   getFirebaseAuth,
   getFirestoreDb,
   getRotatingToken,
+  generateAccessCode,
   isInsideGeofence,
   isWithinTimeWindow,
   parseQrPayload,
@@ -224,6 +227,30 @@ export async function getInvitationByToken(token: string): Promise<Invitation | 
   return { id: snap.id, token: snap.id, ...snap.data() } as Invitation;
 }
 
+export async function findInvitationByEmailAndCode(
+  email: string,
+  codigoAcceso: string,
+): Promise<Invitation | null> {
+  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedCode = codigoAcceso.replace(/\s/g, "").trim();
+
+  if (DEMO_MODE) {
+    return demoStore.findInvitationByEmailAndCode(normalizedEmail, normalizedCode);
+  }
+
+  const q = query(
+    collection(getFirestoreDb(), "invitations"),
+    where("email", "==", normalizedEmail),
+    where("estado", "==", "pendiente"),
+  );
+  const snaps = await getDocs(q);
+  for (const snap of snaps.docs) {
+    const inv = { id: snap.id, token: snap.id, ...snap.data() } as Invitation;
+    if (inv.codigoAcceso === normalizedCode) return inv;
+  }
+  return null;
+}
+
 function generateToken(): string {
   return crypto.randomUUID().replace(/-/g, "").slice(0, 24);
 }
@@ -234,8 +261,9 @@ export async function createInvitation(data: {
   email: string;
   creadaPor: string;
   creadaPorNombre: string;
-}): Promise<string> {
+}): Promise<{ token: string; codigoAcceso: string }> {
   const token = generateToken();
+  const codigoAcceso = generateAccessCode();
   const now = new Date();
   const expira = new Date(now);
   expira.setDate(expira.getDate() + 7);
@@ -244,7 +272,8 @@ export async function createInvitation(data: {
     token,
     workerId: data.workerId,
     workerNombre: data.workerNombre,
-    email: data.email,
+    email: data.email.trim().toLowerCase(),
+    codigoAcceso,
     estado: "pendiente",
     creadaEn: now.toISOString(),
     expiraEn: expira.toISOString(),
@@ -254,11 +283,11 @@ export async function createInvitation(data: {
 
   if (DEMO_MODE) {
     demoStore.addInvitation({ ...invitation, id: token });
-    return token;
+    return { token, codigoAcceso };
   }
 
   await setDoc(doc(getFirestoreDb(), "invitations", token), invitation);
-  return token;
+  return { token, codigoAcceso };
 }
 
 export async function revokeInvitation(token: string): Promise<void> {
@@ -272,9 +301,10 @@ export async function revokeInvitation(token: string): Promise<void> {
 export async function activateAccountWithInvitation(
   token: string,
   password: string,
+  codigoAcceso: string,
 ): Promise<void> {
   if (DEMO_MODE) {
-    demoStore.activateAccount(token, password);
+    demoStore.activateAccount(token, password, codigoAcceso);
     return;
   }
 
@@ -282,6 +312,9 @@ export async function activateAccountWithInvitation(
   if (!invitation) throw new Error("Invitación no encontrada");
   if (invitation.estado !== "pendiente") throw new Error("Esta invitación ya no está disponible");
   if (new Date(invitation.expiraEn) < new Date()) throw new Error("La invitación ha expirado");
+  if (invitation.codigoAcceso !== codigoAcceso.replace(/\s/g, "").trim()) {
+    throw new Error("Código de invitación incorrecto");
+  }
 
   const cred = await createUserWithEmailAndPassword(
     getFirebaseAuth(),

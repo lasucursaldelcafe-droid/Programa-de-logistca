@@ -136,7 +136,7 @@ export function LoginPage() {
           )}
           <p className="mt-3">
             <Link to="/ayuda" className="text-accent hover:underline">
-              Ver guía de uso →
+              Instrucciones de operación →
             </Link>
           </p>
         </div>

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
+import { InstruccionesOperacion, type Platform } from "../components/InstruccionesOperacion";
 
-type Platform = "admin" | "worker" | "master";
+export type { Platform };
 
 const PLATFORM_TITLE: Record<Platform, string> = {
   admin: "Admin Console",
@@ -54,7 +55,12 @@ export function AyudaPage({ platform }: AyudaPageProps) {
       </div>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-medium text-white">¿Qué hace esta plataforma?</h2>
+        <h2 className="text-lg font-medium text-white">Instrucciones de operación</h2>
+        <InstruccionesOperacion platform={platform} />
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-medium text-white">Resumen rápido</h2>
         <ol className="list-decimal space-y-2 pl-5 text-neutral-300">
           {PLATFORM_STEPS[platform].map((step) => (
             <li key={step}>{step}</li>

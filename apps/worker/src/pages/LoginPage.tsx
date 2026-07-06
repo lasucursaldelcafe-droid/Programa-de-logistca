@@ -35,6 +35,16 @@ export function LoginPage() {
         <p className="mt-1 text-sm text-neutral-400">
           Escanea QR, marca entrada y reporta al supervisor
         </p>
+        <div className="mt-3 rounded-lg border border-border bg-bg p-3 text-xs text-neutral-400">
+          <p className="font-semibold text-neutral-200">¿Primera vez en la empresa?</p>
+          <Link to="/unirse" className="mt-1 inline-block text-accent hover:underline">
+            Unirme con código de invitación →
+          </Link>
+          <span className="mx-2 text-neutral-600">·</span>
+          <Link to="/ayuda" className="text-accent hover:underline">
+            Instrucciones de operación
+          </Link>
+        </div>
         {DEMO_MODE && (
           <p className="mt-2 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-xs text-accent">
             Modo demo — datos en memoria del navegador.

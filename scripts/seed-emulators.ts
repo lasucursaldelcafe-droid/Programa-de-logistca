@@ -178,9 +178,11 @@ async function main(): Promise<void> {
   expira.setDate(expira.getDate() + 7);
 
   await db.collection("invitations").doc("inv-ana-demo").set({
+    token: "inv-ana-demo",
     workerId: "worker-ana",
     workerNombre: "Ana Gómez",
     email: "ana@eventos.test",
+    codigoAcceso: "482916",
     estado: "pendiente",
     creadaEn: new Date().toISOString(),
     expiraEn: expira.toISOString(),
