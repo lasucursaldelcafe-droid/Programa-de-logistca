@@ -111,6 +111,8 @@ export interface Invitation {
   workerId: string;
   workerNombre: string;
   email: string;
+  /** Código de un solo uso enviado por correo; obligatorio para activar. */
+  codigoAcceso: string;
   estado: InvitationEstado;
   creadaEn: string;
   expiraEn: string;

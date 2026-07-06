@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "@core/contexts/AuthContext";
 import { PlatformGate } from "@core/components/PlatformGate";
 import { ActivarCuentaPage } from "@core/pages/ActivarCuentaPage";
+import { UnirseEmpresaPage } from "@core/pages/UnirseEmpresaPage";
 import { CompletarPerfilPage } from "@core/pages/CompletarPerfilPage";
 import { MarcarEntradaPage } from "@core/pages/MarcarEntradaPage";
 import { TurnosPage } from "@core/pages/TurnosPage";
@@ -46,6 +47,7 @@ export function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/ayuda" element={<AyudaPage platform="worker" />} />
+      <Route path="/unirse" element={<UnirseEmpresaPage />} />
       <Route path="/activar/:token" element={<ActivarCuentaPage />} />
       <Route
         path="/completar-perfil"

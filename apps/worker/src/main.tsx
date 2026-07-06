@@ -1,8 +1,9 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, HashRouter } from "react-router-dom";
 import { configureFirebase } from "@spe/shared";
 import { AuthProvider } from "@core/contexts/AuthContext";
+import { isNativePlatform } from "@core/lib/platform";
 import { App } from "./App";
 import "@core/index.css";
 
@@ -16,12 +17,17 @@ configureFirebase({
   useEmulators: import.meta.env.VITE_USE_FIREBASE_EMULATORS === "true",
 });
 
+/** HashRouter evita pantalla en blanco en Capacitor/Android (file:// y rutas SPA). */
+const useHashRouter = isNativePlatform();
+const Router = useHashRouter ? HashRouter : BrowserRouter;
+const routerProps = useHashRouter ? {} : { basename: import.meta.env.BASE_URL };
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <BrowserRouter basename={import.meta.env.BASE_URL}>
+    <Router {...routerProps}>
       <AuthProvider>
         <App />
       </AuthProvider>
-    </BrowserRouter>
+    </Router>
   </StrictMode>,
 );

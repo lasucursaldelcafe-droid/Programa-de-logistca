@@ -4,7 +4,7 @@ import { BrowserRouter, HashRouter } from "react-router-dom";
 import { configureFirebase } from "@spe/shared";
 import { AuthProvider } from "./contexts/AuthContext";
 import { App } from "./App";
-import { isElectron } from "./lib/platform";
+import { isElectron, isNativePlatform } from "./lib/platform";
 import "./index.css";
 
 configureFirebase({
@@ -17,8 +17,8 @@ configureFirebase({
   useEmulators: import.meta.env.VITE_USE_FIREBASE_EMULATORS === "true",
 });
 
-const Router = isElectron() ? HashRouter : BrowserRouter;
-const routerProps = isElectron() ? {} : { basename: import.meta.env.BASE_URL };
+const Router = isElectron() || isNativePlatform() ? HashRouter : BrowserRouter;
+const routerProps = isElectron() || isNativePlatform() ? {} : { basename: import.meta.env.BASE_URL };
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

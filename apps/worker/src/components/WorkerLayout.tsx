@@ -58,6 +58,9 @@ export function WorkerLayout() {
           <NavLink to="/reportar" className={linkClass}>
             Reportar
           </NavLink>
+          <NavLink to="/ayuda" className={linkClass}>
+            Ayuda
+          </NavLink>
         </div>
       </nav>
     </div>

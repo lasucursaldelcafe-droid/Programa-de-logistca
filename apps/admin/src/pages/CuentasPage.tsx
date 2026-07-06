@@ -1,13 +1,17 @@
 import { useState } from "react";
 import {
   INVITATION_LABEL,
+  buildInvitationEmailContent,
+  buildInvitationMailtoUrl,
   puedeGestionarCuentas,
 } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
 import { Badge, Card } from "../components/ui";
 import { buildActivationUrl } from "../lib/urls";
+import { useDeploymentLinks } from "../hooks/useDeploymentLinks";
 import {
   createInvitation,
+  getInvitationByToken,
   revokeInvitation,
   useInvitations,
   useWorkers,
@@ -17,8 +21,10 @@ export function CuentasPage() {
   const { user } = useAuth();
   const workers = useWorkers();
   const invitations = useInvitations();
+  const deployLinks = useDeploymentLinks();
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [busyWorkerId, setBusyWorkerId] = useState<string | null>(null);
+  const [lastSent, setLastSent] = useState<{ token: string; codigo: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   if (!user || !puedeGestionarCuentas(user.role)) {
@@ -45,13 +51,23 @@ export function CuentasPage() {
     setBusyWorkerId(workerId);
     setError(null);
     try {
-      await createInvitation({
+      const { token, codigoAcceso } = await createInvitation({
         workerId: worker.id,
         workerNombre: worker.nombre,
         email: worker.email,
         creadaPor: currentUser.uid,
         creadaPorNombre: currentUser.nombre,
       });
+
+      const workerBase = deployLinks?.workerUrl ?? import.meta.env.VITE_WORKER_APP_URL ?? "/worker/";
+      const activationUrl = buildActivationUrl(token, workerBase);
+      const invitation = await getInvitationByToken(token);
+
+      if (invitation) {
+        const mailto = buildInvitationMailtoUrl(invitation, activationUrl);
+        window.location.href = mailto;
+        setLastSent({ token, codigo: codigoAcceso });
+      }
     } catch {
       setError("No se pudo crear la invitación.");
     } finally {
@@ -60,9 +76,19 @@ export function CuentasPage() {
   }
 
   async function copiarEnlace(token: string) {
-    const url = buildActivationUrl(token);
+    const workerBase = deployLinks?.workerUrl ?? import.meta.env.VITE_WORKER_APP_URL ?? "/worker/";
+    const url = buildActivationUrl(token, workerBase);
     await navigator.clipboard.writeText(url);
     setCopiedToken(token);
+    setTimeout(() => setCopiedToken(null), 2000);
+  }
+
+  async function copiarCorreo(inv: (typeof invitations)[0]) {
+    const workerBase = deployLinks?.workerUrl ?? import.meta.env.VITE_WORKER_APP_URL ?? "/worker/";
+    const activationUrl = buildActivationUrl(inv.token, workerBase);
+    const { subject, body } = buildInvitationEmailContent(inv, activationUrl);
+    await navigator.clipboard.writeText(`Asunto: ${subject}\n\n${body}`);
+    setCopiedToken(inv.token);
     setTimeout(() => setCopiedToken(null), 2000);
   }
 
@@ -73,9 +99,10 @@ export function CuentasPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-display text-3xl font-bold">Cuentas</h1>
+        <h1 className="font-display text-3xl font-bold">Cuentas e invitaciones</h1>
         <p className="mt-1 text-neutral-400">
-          Invita trabajadores sin cuenta y gestiona enlaces de activación.
+          Envía invitaciones por correo con un código de un solo uso. Cada trabajador se registra
+          en la App Trabajador (web, Android o Windows vía navegador).
         </p>
       </div>
 
@@ -83,10 +110,25 @@ export function CuentasPage() {
         <p className="rounded-lg bg-alert/10 px-3 py-2 text-sm text-alert">{error}</p>
       )}
 
+      {lastSent && (
+        <Card className="border-accent/30 bg-accent/5">
+          <h2 className="font-semibold text-accent">Invitación creada</h2>
+          <p className="mt-1 text-sm text-neutral-300">
+            Se abrió tu cliente de correo. Si no se abrió, copia el código y el enlace manualmente.
+          </p>
+          <p className="mt-2 font-mono text-lg tracking-widest text-white">
+            Código: {lastSent.codigo}
+          </p>
+          <p className="mt-1 text-xs text-neutral-500">
+            Este código solo funciona una vez y está ligado al correo del trabajador.
+          </p>
+        </Card>
+      )}
+
       <Card>
         <h2 className="font-display text-lg font-semibold">Trabajadores sin cuenta</h2>
         <p className="mt-1 text-sm text-neutral-400">
-          Genera un enlace de activación para que definan su contraseña.
+          Genera invitación + código único y envía el correo al trabajador.
         </p>
         <div className="mt-4 space-y-3">
           {sinCuenta.length === 0 ? (
@@ -107,7 +149,7 @@ export function CuentasPage() {
                   onClick={() => invitar(w.id)}
                   className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-black disabled:opacity-50"
                 >
-                  {busyWorkerId === w.id ? "Generando…" : "Generar invitación"}
+                  {busyWorkerId === w.id ? "Generando…" : "Enviar invitación por correo"}
                 </button>
               </div>
             ))
@@ -129,6 +171,11 @@ export function CuentasPage() {
                 <div>
                   <div className="font-medium">{inv.workerNombre}</div>
                   <div className="font-mono text-xs text-neutral-500">{inv.email}</div>
+                  {inv.estado === "pendiente" && inv.codigoAcceso && (
+                    <div className="mt-1 font-mono text-sm text-accent">
+                      Código: {inv.codigoAcceso}
+                    </div>
+                  )}
                   <div className="mt-1 text-xs text-neutral-500">
                     Creada {new Date(inv.creadaEn).toLocaleString("es-CO")} · Expira{" "}
                     {new Date(inv.expiraEn).toLocaleDateString("es-CO")}
@@ -147,6 +194,13 @@ export function CuentasPage() {
                         className="rounded-lg border border-border px-3 py-1.5 text-xs hover:border-accent"
                       >
                         {copiedToken === inv.token ? "¡Copiado!" : "Copiar enlace"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => copiarCorreo(inv)}
+                        className="rounded-lg border border-border px-3 py-1.5 text-xs hover:border-accent"
+                      >
+                        Copiar correo
                       </button>
                       <button
                         type="button"
