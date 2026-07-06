@@ -39,8 +39,7 @@
       "target": [
         { "target": "nsis", "arch": ["x64"] },
         { "target": "portable", "arch": ["x64"] }
-      ],
-      "artifactName": "SPE-Admin-${version}-${target}.${ext}"
+      ]
     },
     "linux": {
       "target": ["AppImage"],
@@ -48,7 +47,11 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "SPE-Admin-${version}-nsis.${ext}"
+    },
+    "portable": {
+      "artifactName": "SPE-Admin-${version}-portable.${ext}"
     }
   }
 }
