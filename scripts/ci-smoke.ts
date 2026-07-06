@@ -1,5 +1,5 @@
 /**
- * Smoke test para CI: verifica que seed crea usuarios en emuladores.
+ * Smoke test para CI: verifica seed de plataforma vacía en emuladores.
  */
 import { initializeApp, getApps } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
@@ -17,72 +17,52 @@ if (!getApps().length) {
 const auth = getAuth();
 const db = getFirestore();
 
+async function expectEmpty(collection: string): Promise<number> {
+  const snap = await db.collection(collection).get();
+  if (snap.size !== 0) {
+    throw new Error(`Se esperaba 0 documentos en ${collection}, hay ${snap.size}`);
+  }
+  return snap.size;
+}
+
 async function main(): Promise<void> {
   const admin = await auth.getUserByEmail("admin@eventos.test");
   if (!admin) throw new Error("Usuario admin no encontrado");
 
-  const workers = await db.collection("workers").get();
-  if (workers.size < 3) {
-    throw new Error(`Se esperaban ≥3 trabajadores, hay ${workers.size}`);
-  }
+  const master = await auth.getUserByEmail("master@eventos.test");
+  if (!master) throw new Error("Usuario master no encontrado");
 
-  const shifts = await db.collection("shifts").get();
-  if (shifts.size < 2) {
-    throw new Error(`Se esperaban ≥2 turnos, hay ${shifts.size}`);
-  }
-
-  const invitations = await db.collection("invitations").get();
-  if (invitations.size < 1) {
-    throw new Error(`Se esperaba ≥1 invitación, hay ${invitations.size}`);
-  }
-
-  const qrCodes = await db.collection("qrCodes").get();
-  if (qrCodes.size < 2) {
-    throw new Error(`Se esperaban ≥2 códigos QR, hay ${qrCodes.size}`);
-  }
-
-  const attendance = await db.collection("attendance").get();
-  if (attendance.size < 1) {
-    throw new Error(`Se esperaba ≥1 jornada, hay ${attendance.size}`);
-  }
-
-  const notifications = await db.collection("notifications").get();
-  if (notifications.size < 2) {
-    throw new Error(`Se esperaban ≥2 notificaciones, hay ${notifications.size}`);
-  }
-
-  const payrollRates = await db.collection("payrollRates").get();
-  if (payrollRates.size < 5) {
-    throw new Error(`Se esperaban ≥5 tarifas de nómina, hay ${payrollRates.size}`);
-  }
-
-  const payroll = await db.collection("payroll").get();
-  if (payroll.size < 1) {
-    throw new Error(`Se esperaba ≥1 registro de nómina, hay ${payroll.size}`);
-  }
-
-  const payrollAudit = await db.collection("payrollAudit").get();
-  if (payrollAudit.size < 1) {
-    throw new Error(`Se esperaba ≥1 entrada de auditoría, hay ${payrollAudit.size}`);
-  }
+  const workers = await expectEmpty("workers");
+  const events = await expectEmpty("events");
+  const shifts = await expectEmpty("shifts");
+  const invitations = await expectEmpty("invitations");
+  const qrCodes = await expectEmpty("qrCodes");
+  const attendance = await expectEmpty("attendance");
+  const notifications = await expectEmpty("notifications");
+  const payroll = await expectEmpty("payroll");
+  const payrollAudit = await expectEmpty("payrollAudit");
 
   const setupConfig = await db.collection("setupConfig").doc("default").get();
   if (!setupConfig.exists) {
     throw new Error("setupConfig/default no encontrado");
   }
+  if (setupConfig.data()?.completado === true) {
+    throw new Error("setupConfig debería estar incompleto en plataforma vacía");
+  }
 
-  console.log("✓ Smoke test OK:", {
+  console.log("✓ Smoke test OK (plataforma vacía):", {
     admin: admin.email,
-    workers: workers.size,
-    shifts: shifts.size,
-    invitations: invitations.size,
-    qrCodes: qrCodes.size,
-    attendance: attendance.size,
-    notifications: notifications.size,
-    payrollRates: payrollRates.size,
-    payroll: payroll.size,
-    payrollAudit: payrollAudit.size,
-    setupConfig: setupConfig.data()?.completado === true,
+    master: master.email,
+    workers,
+    events,
+    shifts,
+    invitations,
+    qrCodes,
+    attendance,
+    notifications,
+    payroll,
+    payrollAudit,
+    setupCompletado: false,
   });
 }
 

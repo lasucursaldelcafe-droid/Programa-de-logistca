@@ -7,7 +7,9 @@ import {
 } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
 import { Badge, Card } from "../components/ui";
-import { buildActivationUrl } from "../lib/urls";
+import { buildInvitationUrls } from "../lib/urls";
+import { DEMO_MODE } from "../lib/mode";
+import { InstruccionesOperacion } from "../components/InstruccionesOperacion";
 import { useDeploymentLinks } from "../hooks/useDeploymentLinks";
 import {
   createInvitation,
@@ -36,6 +38,9 @@ export function CuentasPage() {
   const sinCuenta = workers.filter((w) => !w.cuentaCreada);
   const pendientes = invitations.filter((i) => i.estado === "pendiente");
 
+  const workerBase = () =>
+    deployLinks?.workerUrl ?? import.meta.env.VITE_WORKER_APP_URL ?? "/worker/";
+
   async function invitar(workerId: string) {
     const worker = workers.find((w) => w.id === workerId);
     if (!worker) return;
@@ -59,12 +64,11 @@ export function CuentasPage() {
         creadaPorNombre: currentUser.nombre,
       });
 
-      const workerBase = deployLinks?.workerUrl ?? import.meta.env.VITE_WORKER_APP_URL ?? "/worker/";
-      const activationUrl = buildActivationUrl(token, workerBase);
+      const links = buildInvitationUrls(token, workerBase());
       const invitation = await getInvitationByToken(token);
 
       if (invitation) {
-        const mailto = buildInvitationMailtoUrl(invitation, activationUrl);
+        const mailto = buildInvitationMailtoUrl(invitation, links);
         window.location.href = mailto;
         setLastSent({ token, codigo: codigoAcceso });
       }
@@ -76,17 +80,21 @@ export function CuentasPage() {
   }
 
   async function copiarEnlace(token: string) {
-    const workerBase = deployLinks?.workerUrl ?? import.meta.env.VITE_WORKER_APP_URL ?? "/worker/";
-    const url = buildActivationUrl(token, workerBase);
-    await navigator.clipboard.writeText(url);
+    const links = buildInvitationUrls(token, workerBase());
+    const text = [
+      `Web: ${links.webJoin}`,
+      `Android (App): ${links.appJoin}`,
+      `Activación web: ${links.webActivation}`,
+      `Activación App: ${links.appActivation}`,
+    ].join("\n");
+    await navigator.clipboard.writeText(text);
     setCopiedToken(token);
     setTimeout(() => setCopiedToken(null), 2000);
   }
 
   async function copiarCorreo(inv: (typeof invitations)[0]) {
-    const workerBase = deployLinks?.workerUrl ?? import.meta.env.VITE_WORKER_APP_URL ?? "/worker/";
-    const activationUrl = buildActivationUrl(inv.token, workerBase);
-    const { subject, body } = buildInvitationEmailContent(inv, activationUrl);
+    const links = buildInvitationUrls(inv.token, workerBase());
+    const { subject, body } = buildInvitationEmailContent(inv, links);
     await navigator.clipboard.writeText(`Asunto: ${subject}\n\n${body}`);
     setCopiedToken(inv.token);
     setTimeout(() => setCopiedToken(null), 2000);
@@ -105,6 +113,23 @@ export function CuentasPage() {
           en la App Trabajador (web, Android o Windows vía navegador).
         </p>
       </div>
+
+      {DEMO_MODE && (
+        <Card className="border-accent/30 bg-accent/5">
+          <p className="text-sm text-neutral-300">
+            <strong className="text-accent">Modo demo:</strong> las invitaciones se sincronizan entre
+            Admin y Trabajador web en el mismo dominio. En la App Android instale la misma versión
+            demo o use Firebase en producción para sincronizar entre dispositivos.
+          </p>
+        </Card>
+      )}
+
+      <Card>
+        <h2 className="font-display text-lg font-semibold">Cómo invitar personal</h2>
+        <div className="mt-3">
+          <InstruccionesOperacion platform="admin" compact />
+        </div>
+      </Card>
 
       {error && (
         <p className="rounded-lg bg-alert/10 px-3 py-2 text-sm text-alert">{error}</p>

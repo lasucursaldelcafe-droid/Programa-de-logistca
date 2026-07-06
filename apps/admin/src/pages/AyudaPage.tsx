@@ -35,7 +35,6 @@ const DEMO_ACCOUNTS: { platform: Platform; email: string; password: string }[] =
   { platform: "master", email: "master@eventos.test", password: "Master123!" },
   { platform: "admin", email: "admin@eventos.test", password: "Admin123!" },
   { platform: "admin", email: "supervisor@eventos.test", password: "Super123!" },
-  { platform: "worker", email: "maria@eventos.test", password: "Trab123!" },
 ];
 
 interface AyudaPageProps {

@@ -5,6 +5,7 @@ import { configureFirebase } from "@spe/shared";
 import { AuthProvider } from "@core/contexts/AuthContext";
 import { isNativePlatform } from "@core/lib/platform";
 import { App } from "./App";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import "@core/index.css";
 
 configureFirebase({
@@ -24,10 +25,12 @@ const routerProps = useHashRouter ? {} : { basename: import.meta.env.BASE_URL };
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <Router {...routerProps}>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </Router>
+    <ErrorBoundary>
+      <Router {...routerProps}>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </Router>
+    </ErrorBoundary>
   </StrictMode>,
 );

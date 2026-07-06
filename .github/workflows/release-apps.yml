@@ -13,10 +13,11 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  APP_VERSION: "0.2.0"
+  APP_VERSION: "0.2.2"
   VITE_DEMO_MODE: "true"
   VITE_USE_FIREBASE_EMULATORS: "false"
   NATIVE_BUILD: "true"
+  CAPACITOR_SERVER_URL: "https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/worker/"
 
 jobs:
   build-windows:
@@ -92,11 +93,11 @@ jobs:
         working-directory: apps/worker/android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleRelease --no-daemon
 
       - name: Renombrar APK
         run: |
-          cp apps/worker/android/app/build/outputs/apk/debug/app-debug.apk \
+          cp apps/worker/android/app/build/outputs/apk/release/app-release.apk \
             SPE-Trabajador-${APP_VERSION}-android.apk
           ls -la SPE-Trabajador-*.apk
 
@@ -156,13 +157,17 @@ jobs:
             | App | Correo | Contraseña |
             |-----|--------|------------|
             | Admin / Windows | admin@eventos.test | Admin123! |
-            | Trabajador / Android | maria@eventos.test | Trab123! |
             | Master | master@eventos.test | Master123! |
+            | Supervisor | supervisor@eventos.test | Super123! |
+
+            Sin personal precargado — los trabajadores se registran con invitación desde Admin → Cuentas.
 
             ### Instalar Android
             1. Descarga el `.apk`
             2. Permite **orígenes desconocidos** en Ajustes → Seguridad
             3. Abre el archivo e instala
+            4. La app requiere **internet** (carga la versión web actualizada)
+            5. Para registrarte: Admin envía invitación → en la app toca **Unirme con código**
 
             ### Instalar Windows
             1. Descarga `SPE-Admin-*-nsis.exe`

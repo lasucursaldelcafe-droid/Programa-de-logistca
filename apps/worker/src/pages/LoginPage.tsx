@@ -2,13 +2,14 @@ import { FormEvent, useState } from "react";
 import { Navigate, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@core/contexts/AuthContext";
 import { Card } from "@core/components/ui";
+import { LoginAyudaPanel } from "@core/components/LoginAyudaPanel";
 import { DEMO_MODE } from "@core/lib/mode";
 
 export function LoginPage() {
   const { user, loading, login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("maria@eventos.test");
-  const [password, setPassword] = useState("Trab123!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -82,18 +83,7 @@ export function LoginPage() {
             {submitting ? "Entrando…" : "Iniciar sesión"}
           </button>
         </form>
-        <div className="mt-6 rounded-lg border border-border bg-bg p-3 text-xs text-neutral-400">
-          <p className="font-semibold text-neutral-300">Cuentas trabajador (seed)</p>
-          <ul className="mt-2 space-y-1 font-mono">
-            <li>maria@eventos.test / Trab123!</li>
-            <li>juan@eventos.test / Trab123!</li>
-          </ul>
-          <p className="mt-3">
-            <Link to="/ayuda" className="text-accent hover:underline">
-              Ver guía de uso →
-            </Link>
-          </p>
-        </div>
+        <LoginAyudaPanel platform="worker" />
       </Card>
     </div>
   );

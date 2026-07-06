@@ -30,6 +30,7 @@ import {
   loadCredencialesFromStorage,
   saveCredencialesToStorage,
 } from "./integrations";
+import { loadDemoPersistedState, saveDemoPersistedState } from "./persist";
 
 export const DEMO_ACCOUNTS: Array<{
   email: string;
@@ -69,362 +70,41 @@ export const DEMO_ACCOUNTS: Array<{
       perfilCompleto: true,
     },
   },
-  {
-    email: "maria@eventos.test",
-    password: "Trab123!",
-    user: {
-      uid: "demo-maria",
-      email: "maria@eventos.test",
-      nombre: "María López",
-      role: "trabajador",
-      workerId: "worker-maria",
-      telefono: "3001112233",
-      perfilCompleto: true,
-    },
-  },
-  {
-    email: "juan@eventos.test",
-    password: "Trab123!",
-    user: {
-      uid: "demo-juan",
-      email: "juan@eventos.test",
-      nombre: "Juan Pérez",
-      role: "trabajador",
-      workerId: "worker-juan",
-      telefono: "3109988776",
-      perfilCompleto: true,
-    },
-  },
 ];
 
-const inicio = new Date();
-inicio.setHours(inicio.getHours() + 2);
-const fin = new Date(inicio);
-fin.setHours(fin.getHours() + 6);
+export const INITIAL_WORKERS: Worker[] = [];
 
-export const INITIAL_WORKERS: Worker[] = [
-  {
-    id: "worker-maria",
-    nombre: "María López",
-    documento: "1020304050",
-    telefono: "3001112233",
-    email: "maria@eventos.test",
-    perfiles: ["logistica", "montaje"],
-    experienciaAnios: 3,
-    eventosTrabajados: 28,
-    rating: 4.7,
-    estado: "sin_asignar",
-    cuentaCreada: true,
-    certificaciones: [],
-    creadoEn: new Date().toISOString(),
-  },
-  {
-    id: "worker-juan",
-    nombre: "Juan Pérez",
-    documento: "80123456",
-    telefono: "3109988776",
-    email: "juan@eventos.test",
-    perfiles: ["recreacion", "anfitrion"],
-    experienciaAnios: 5,
-    eventosTrabajados: 41,
-    rating: 4.9,
-    estado: "en_sitio",
-    cuentaCreada: true,
-    certificaciones: ["primeros_auxilios"],
-    creadoEn: new Date().toISOString(),
-  },
-  {
-    id: "worker-ana",
-    nombre: "Ana Gómez",
-    documento: "52987654",
-    telefono: "3205544332",
-    email: "ana@eventos.test",
-    perfiles: ["chef", "logistica"],
-    experienciaAnios: 8,
-    eventosTrabajados: 67,
-    rating: 4.8,
-    estado: "descanso",
-    cuentaCreada: false,
-    certificaciones: ["manipulacion_alimentos"],
-    creadoEn: new Date().toISOString(),
-  },
-];
+export const INITIAL_EVENTS: Evento[] = [];
 
-export const INITIAL_EVENTS: Evento[] = [
-  {
-    id: "event-festival",
-    nombre: "Festival Gastronómico 2026",
-    fechaInicio: "2026-07-10T08:00:00.000Z",
-    fechaFin: "2026-07-12T22:00:00.000Z",
-    sitioIds: ["site-cocina", "site-puerta"],
-  },
-];
+export const INITIAL_SITES: Sitio[] = [];
 
-export const INITIAL_SITES: Sitio[] = [
-  {
-    id: "site-cocina",
-    eventId: "event-festival",
-    nombre: "Cocina central",
-    lat: 4.6533,
-    lng: -74.0836,
-    radioGeocerca: 80,
-  },
-  {
-    id: "site-puerta",
-    eventId: "event-festival",
-    nombre: "Puerta principal",
-    lat: 4.654,
-    lng: -74.084,
-    radioGeocerca: 50,
-  },
-];
+export const INITIAL_SHIFTS: Turno[] = [];
 
-export const INITIAL_SHIFTS: Turno[] = [
-  {
-    id: "shift-maria-1",
-    workerId: "worker-maria",
-    workerNombre: "María López",
-    eventId: "event-festival",
-    eventNombre: "Festival Gastronómico 2026",
-    siteId: "site-cocina",
-    siteNombre: "Cocina central",
-    inicio: inicio.toISOString(),
-    fin: fin.toISOString(),
-    estado: "pendiente",
-  },
-  {
-    id: "shift-juan-1",
-    workerId: "worker-juan",
-    workerNombre: "Juan Pérez",
-    eventId: "event-festival",
-    eventNombre: "Festival Gastronómico 2026",
-    siteId: "site-puerta",
-    siteNombre: "Puerta principal",
-    inicio: inicio.toISOString(),
-    fin: fin.toISOString(),
-    estado: "confirmado",
-  },
-];
+export const INITIAL_QR_CODES: QrCode[] = [];
 
-const ventanaInicio = new Date();
-ventanaInicio.setHours(ventanaInicio.getHours() - 1);
-const ventanaFin = new Date();
-ventanaFin.setHours(ventanaFin.getHours() + 12);
+export const INITIAL_ATTENDANCES: Attendance[] = [];
 
-export const INITIAL_QR_CODES: QrCode[] = [
-  {
-    id: "qr-site-cocina",
-    eventId: "event-festival",
-    eventNombre: "Festival Gastronómico 2026",
-    siteId: "site-cocina",
-    siteNombre: "Cocina central",
-    token: "cocina2026token",
-    modo: "por_jornada",
-    ventanaInicio: ventanaInicio.toISOString(),
-    ventanaFin: ventanaFin.toISOString(),
-    radioGeocerca: 80,
-    descripcionDatos:
-      "Recopilamos tu ubicación GPS solo durante la jornada activa para verificar presencia en el sitio asignado.",
-    activo: true,
-    creadoEn: new Date().toISOString(),
-    creadoPor: "demo-admin",
-  },
-  {
-    id: "qr-site-puerta",
-    eventId: "event-festival",
-    eventNombre: "Festival Gastronómico 2026",
-    siteId: "site-puerta",
-    siteNombre: "Puerta principal",
-    token: "puerta2026token",
-    modo: "por_jornada",
-    ventanaInicio: ventanaInicio.toISOString(),
-    ventanaFin: ventanaFin.toISOString(),
-    radioGeocerca: 50,
-    descripcionDatos:
-      "Recopilamos tu ubicación GPS solo durante la jornada activa para verificar presencia en el sitio asignado.",
-    activo: true,
-    creadoEn: new Date().toISOString(),
-    creadoPor: "demo-admin",
-  },
-];
+export const INITIAL_PAYROLL_RATES: PayrollRate[] = [];
 
-export const INITIAL_ATTENDANCES: Attendance[] = [
-  {
-    id: "att-juan-activo",
-    workerId: "worker-juan",
-    workerNombre: "Juan Pérez",
-    shiftId: "shift-juan-1",
-    siteId: "site-puerta",
-    siteNombre: "Puerta principal",
-    eventId: "event-festival",
-    eventNombre: "Festival Gastronómico 2026",
-    qrId: "qr-site-puerta",
-    estado: "activo",
-    entrada: {
-      timestamp: new Date().toISOString(),
-      lat: 4.654,
-      lng: -74.084,
-      dentroGeocerca: true,
-    },
-    ubicacionActual: { lat: 4.654, lng: -74.084 },
-    alertasGeocerca: [],
-    creadoEn: new Date().toISOString(),
-  },
-];
+export const INITIAL_PAYROLL_ENTRIES: PayrollEntry[] = [];
 
-const mariaEntrada = new Date();
-mariaEntrada.setDate(mariaEntrada.getDate() - 2);
-mariaEntrada.setHours(8, 0, 0, 0);
-const mariaSalida = new Date(mariaEntrada);
-mariaSalida.setHours(16, 30, 0, 0);
-
-export const INITIAL_ATTENDANCE_CLOSED: Attendance = {
-  id: "att-maria-cerrada",
-  workerId: "worker-maria",
-  workerNombre: "María López",
-  shiftId: "shift-maria-1",
-  siteId: "site-cocina",
-  siteNombre: "Cocina central",
-  eventId: "event-festival",
-  eventNombre: "Festival Gastronómico 2026",
-  qrId: "qr-site-cocina",
-  estado: "cerrado",
-  entrada: {
-    timestamp: mariaEntrada.toISOString(),
-    lat: 4.6533,
-    lng: -74.0836,
-    dentroGeocerca: true,
-  },
-  salida: {
-    timestamp: mariaSalida.toISOString(),
-    lat: 4.6533,
-    lng: -74.0836,
-    dentroGeocerca: true,
-  },
-  alertasGeocerca: [],
-  creadoEn: mariaEntrada.toISOString(),
-};
-
-export const INITIAL_PAYROLL_RATES: PayrollRate[] = [
-  { id: "rate-logistica", perfil: "logistica", tarifaPorHora: 18_000, costoRefrigerioAlmuerzo: 12_000, costoRefrigerioSnack: 5_000 },
-  { id: "rate-montaje", perfil: "montaje", tarifaPorHora: 20_000, costoRefrigerioAlmuerzo: 12_000, costoRefrigerioCena: 10_000 },
-  { id: "rate-recreacion", perfil: "recreacion", tarifaPorHora: 16_000, costoRefrigerioAlmuerzo: 11_000, costoRefrigerioSnack: 4_500 },
-  { id: "rate-anfitrion", perfil: "anfitrion", tarifaPorHora: 17_000, costoRefrigerioAlmuerzo: 11_000 },
-  { id: "rate-chef", perfil: "chef", tarifaPorHora: 25_000, costoRefrigerioAlmuerzo: 15_000, costoRefrigerioCena: 12_000 },
-  { id: "rate-supervisor", perfil: "supervisor", tarifaPorHora: 28_000, costoRefrigerioAlmuerzo: 15_000, costoRefrigerioCena: 12_000 },
-  { id: "rate-seguridad", perfil: "seguridad", tarifaPorHora: 19_000, costoRefrigerioAlmuerzo: 12_000 },
-];
-
-export const INITIAL_PAYROLL_ENTRIES: PayrollEntry[] = [
-  {
-    id: "pay-maria-demo",
-    workerId: "worker-maria",
-    workerNombre: "María López",
-    eventId: "event-festival",
-    eventNombre: "Festival Gastronómico 2026",
-    siteId: "site-cocina",
-    siteNombre: "Cocina central",
-    attendanceId: "att-maria-cerrada",
-    perfilAplicado: "montaje",
-    periodoInicio: mariaEntrada.toISOString(),
-    periodoFin: mariaSalida.toISOString(),
-    horasTrabajadas: 8.5,
-    tarifaAplicada: 20_000,
-    subtotalHoras: 170_000,
-    refrigerios: [
-      { tipo: "almuerzo", costo: 12_000 },
-      { tipo: "cena", costo: 10_000 },
-    ],
-    totalRefrigerios: 22_000,
-    total: 192_000,
-    estado: "pendiente",
-    calculadoEn: new Date().toISOString(),
-    calculadoPor: "demo-admin",
-    calculadoPorNombre: "Admin Principal",
-  },
-];
-
-export const INITIAL_PAYROLL_AUDIT: PayrollAuditEntry[] = [
-  {
-    id: "audit-maria-1",
-    payrollId: "pay-maria-demo",
-    accion: "calculado",
-    actorUid: "demo-admin",
-    actorNombre: "Admin Principal",
-    timestamp: new Date().toISOString(),
-    detalle: "María López: 8.5h × $20000",
-  },
-];
+export const INITIAL_PAYROLL_AUDIT: PayrollAuditEntry[] = [];
 
 export const INITIAL_SETUP_CONFIG: SetupConfig = {
   id: "default",
-  completado: true,
-  pasoActual: "resumen",
-  pasosCompletados: ["evento", "sitios", "tarifas", "qr", "resumen"],
-  eventoId: "event-festival",
+  completado: false,
+  pasoActual: "evento",
+  pasosCompletados: [],
   actualizadoEn: new Date().toISOString(),
   actualizadoPor: "demo-admin",
   actualizadoPorNombre: "Admin Principal",
 };
 
-export const INITIAL_NOTIFICATIONS: Omit<AppNotification, "id">[] = [
-  {
-    tipo: "turno_asignado",
-    titulo: "Nuevo turno asignado",
-    mensaje: "¿Deseas tomar el turno en Cocina central (Festival Gastronómico 2026)?",
-    timestamp: new Date().toISOString(),
-    urgente: false,
-    destinatarios: ["worker-maria"],
-    shiftId: "shift-maria-1",
-    accionTurno: true,
-    leidaPor: [],
-  },
-  {
-    tipo: "entrada",
-    titulo: "Entrada registrada",
-    mensaje: "Juan Pérez marcó entrada en Puerta principal.",
-    timestamp: new Date().toISOString(),
-    urgente: false,
-    destinatarios: ["_admins", "worker-juan"],
-    attendanceId: "att-juan-activo",
-    leidaPor: [],
-  },
-];
+export const INITIAL_NOTIFICATIONS: Omit<AppNotification, "id">[] = [];
 
-const expira = new Date();
-expira.setDate(expira.getDate() + 7);
+export const INITIAL_INVITATIONS: Invitation[] = [];
 
-export const INITIAL_INVITATIONS: Invitation[] = [
-  {
-    id: "inv-ana-demo",
-    token: "inv-ana-demo",
-    workerId: "worker-ana",
-    workerNombre: "Ana Gómez",
-    email: "ana@eventos.test",
-    codigoAcceso: "482916",
-    estado: "pendiente",
-    creadaEn: new Date().toISOString(),
-    expiraEn: expira.toISOString(),
-    creadaPor: "demo-admin",
-    creadaPorNombre: "Admin Principal",
-  },
-];
-
-export const INITIAL_REPORTES: Reporte[] = [
-  {
-    id: "rep-demo-1",
-    workerId: "worker-maria",
-    workerNombre: "María López",
-    shiftId: "shift-maria-1",
-    siteId: "site-cocina",
-    siteNombre: "Cocina central",
-    eventId: "event-festival",
-    tipo: "retraso",
-    mensaje: "Tráfico en la vía; llegaré 15 minutos tarde.",
-    estado: "abierto",
-    creadoEn: new Date().toISOString(),
-  },
-];
+export const INITIAL_REPORTES: Reporte[] = [];
 
 type Listener = () => void;
 
@@ -435,7 +115,7 @@ class DemoStore {
   sites = [...INITIAL_SITES];
   invitations = [...INITIAL_INVITATIONS];
   qrCodes = [...INITIAL_QR_CODES];
-  attendances = [...INITIAL_ATTENDANCES, INITIAL_ATTENDANCE_CLOSED];
+  attendances = [...INITIAL_ATTENDANCES];
   notifications: AppNotification[] = INITIAL_NOTIFICATIONS.map((n, i) => ({
     ...n,
     id: `notif-${i}`,
@@ -462,7 +142,61 @@ class DemoStore {
 
   private notify(): void {
     this.platformUsers = this.accounts.map((a) => a.user);
+    saveDemoPersistedState({
+      workers: this.workers,
+      shifts: this.shifts,
+      events: this.events,
+      sites: this.sites,
+      invitations: this.invitations,
+      qrCodes: this.qrCodes,
+      attendances: this.attendances,
+      notifications: this.notifications,
+      breaks: this.breaks,
+      payrollRates: this.payrollRates,
+      payrollEntries: this.payrollEntries,
+      payrollAudit: this.payrollAudit,
+      setupConfig: this.setupConfig,
+      reportes: this.reportes,
+      clientes: this.clientes,
+      productos: this.productos,
+      facturas: this.facturas,
+      posiciones: this.posiciones,
+      credencialesIntegraciones: this.credencialesIntegraciones,
+      accounts: this.accounts,
+    });
     for (const listener of this.listeners) listener();
+  }
+
+  hydrateFromStorage(): void {
+    const saved = loadDemoPersistedState();
+    if (!saved) return;
+
+    if (saved.workers) this.workers = saved.workers;
+    if (saved.shifts) this.shifts = saved.shifts;
+    if (saved.events) this.events = saved.events;
+    if (saved.sites) this.sites = saved.sites;
+    if (saved.invitations) this.invitations = saved.invitations;
+    if (saved.qrCodes) this.qrCodes = saved.qrCodes;
+    if (saved.attendances) this.attendances = saved.attendances;
+    if (saved.notifications) this.notifications = saved.notifications;
+    if (saved.breaks) this.breaks = saved.breaks;
+    if (saved.payrollRates) this.payrollRates = saved.payrollRates;
+    if (saved.payrollEntries) this.payrollEntries = saved.payrollEntries;
+    if (saved.payrollAudit) this.payrollAudit = saved.payrollAudit;
+    if (saved.setupConfig !== undefined) this.setupConfig = saved.setupConfig;
+    if (saved.reportes) this.reportes = saved.reportes;
+    if (saved.clientes) this.clientes = saved.clientes;
+    if (saved.productos) this.productos = saved.productos;
+    if (saved.facturas) this.facturas = saved.facturas;
+    if (saved.posiciones) this.posiciones = saved.posiciones;
+    if (saved.credencialesIntegraciones) {
+      this.credencialesIntegraciones = saved.credencialesIntegraciones;
+    }
+
+    const platformEmails = new Set(DEMO_ACCOUNTS.map((a) => a.email));
+    const workerAccounts = (saved.accounts ?? []).filter((a) => !platformEmails.has(a.email));
+    this.accounts = [...DEMO_ACCOUNTS, ...workerAccounts];
+    this.platformUsers = this.accounts.map((a) => a.user);
   }
 
   addWorker(worker: Omit<Worker, "id">): void {
@@ -814,6 +548,7 @@ class DemoStore {
 }
 
 export const demoStore = new DemoStore();
+demoStore.hydrateFromStorage();
 
 const SESSION_KEY = "spe-demo-user";
 

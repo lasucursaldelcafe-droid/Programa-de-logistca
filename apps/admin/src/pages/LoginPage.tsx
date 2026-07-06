@@ -4,6 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { Card } from "../components/ui";
 import { DEMO_MODE } from "../lib/mode";
 import { useDeploymentLinks } from "../hooks/useDeploymentLinks";
+import { LoginAyudaPanel } from "../components/LoginAyudaPanel";
 import { sendPasswordReset } from "../hooks/useDataStore";
 
 export function LoginPage() {
@@ -103,12 +104,17 @@ export function LoginPage() {
             ¿Olvidaste tu contraseña?
           </button>
         </form>
-        <div className="mt-6 rounded-lg border border-border bg-bg p-3 text-xs text-neutral-400">
-          <p className="font-semibold text-neutral-300">Cuentas Admin (seed)</p>
+        <LoginAyudaPanel platform="admin" />
+        <div className="mt-4 rounded-lg border border-border bg-bg p-3 text-xs text-neutral-400">
+          <p className="font-semibold text-neutral-300">Cuentas de plataforma (seed)</p>
           <ul className="mt-2 space-y-1 font-mono">
             <li>admin@eventos.test / Admin123!</li>
             <li>supervisor@eventos.test / Super123!</li>
+            <li>master@eventos.test / Master123!</li>
           </ul>
+          <p className="mt-2 text-neutral-500">
+            Sin eventos ni personal precargados — empieza en Configuración.
+          </p>
           <p className="mt-3 border-t border-border pt-3 text-neutral-500">
             Otras plataformas: Trabajador (5174) · Master (5175)
           </p>
@@ -136,7 +142,7 @@ export function LoginPage() {
           )}
           <p className="mt-3">
             <Link to="/ayuda" className="text-accent hover:underline">
-              Instrucciones de operación →
+              Guía completa →
             </Link>
           </p>
         </div>

@@ -63,7 +63,7 @@ const workerDist = resolve(ROOT, "apps/worker/dist");
 const masterDist = resolve(ROOT, "apps/master/dist");
 
 finalizeSpa(adminDist, ["login", "ayuda", "personal", "turnos", "cuentas", "qr-sitios", "mapa", "reportes", "nomina", "configuracion"]);
-finalizeSpa(workerDist, ["login", "ayuda", "turnos", "entrada", "reportar", "completar-perfil"]);
+finalizeSpa(workerDist, ["login", "ayuda", "unirse", "activar", "turnos", "entrada", "reportar", "completar-perfil"]);
 finalizeSpa(masterDist, ["login", "ayuda", "administradores", "informes", "auditoria"]);
 
 mkdirSync(docs, { recursive: true });

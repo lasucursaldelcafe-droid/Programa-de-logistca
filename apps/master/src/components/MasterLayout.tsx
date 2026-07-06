@@ -40,6 +40,9 @@ export function MasterLayout() {
             <NavLink to="/auditoria" className={linkClass}>
               Auditoría
             </NavLink>
+            <NavLink to="/ayuda" className={linkClass}>
+              Ayuda
+            </NavLink>
             <button
               type="button"
               onClick={async () => {

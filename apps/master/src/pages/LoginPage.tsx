@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { Navigate, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@core/contexts/AuthContext";
 import { Card } from "@core/components/ui";
+import { LoginAyudaPanel } from "@core/components/LoginAyudaPanel";
 import { DEMO_MODE } from "@core/lib/mode";
 
 export function LoginPage() {
@@ -72,7 +73,8 @@ export function LoginPage() {
             {submitting ? "Entrando…" : "Iniciar sesión"}
           </button>
         </form>
-        <div className="mt-6 rounded-lg border border-border bg-bg p-3 text-xs text-neutral-400">
+        <LoginAyudaPanel platform="master" />
+        <div className="mt-4 rounded-lg border border-border bg-bg p-3 text-xs text-neutral-400">
           <p className="font-semibold text-neutral-300">Cuenta Master (seed)</p>
           <p className="mt-2 font-mono">master@eventos.test / Master123!</p>
           <p className="mt-3 border-t border-border pt-3 text-neutral-500">

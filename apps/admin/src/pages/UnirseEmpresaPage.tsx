@@ -89,6 +89,14 @@ export function UnirseEmpresaPage() {
             Ver instrucciones de operación →
           </Link>
         </p>
+        <div className="mt-4 rounded-lg border border-border bg-bg p-3 text-xs text-neutral-400">
+          <p className="font-semibold text-neutral-200">Pasos rápidos</p>
+          <ol className="mt-2 list-decimal space-y-1 pl-4 text-neutral-400">
+            <li>Ingresa correo y código del administrador</li>
+            <li>Crea tu contraseña</li>
+            <li>Completa tu perfil</li>
+          </ol>
+        </div>
       </Card>
     </div>
   );

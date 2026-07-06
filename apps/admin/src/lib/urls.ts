@@ -1,18 +1,37 @@
-import { buildWorkerActivationUrl } from "@spe/shared";
+import {
+  buildInvitationLinks,
+  buildWorkerActivationUrl,
+  buildWorkerJoinUrl,
+} from "@spe/shared";
 import { isNativePlatform } from "./platform";
 import { isElectron } from "./platform";
 
-/** URL de activación en la App Trabajador (web, Android o enlace compartido). */
-export function buildActivationUrl(token: string, workerBaseUrl?: string): string {
-  const useHash = isElectron() || isNativePlatform();
-  const fallback =
+function resolveWorkerBase(workerBaseUrl?: string): string {
+  return (
     workerBaseUrl ??
     import.meta.env.VITE_WORKER_APP_URL ??
     (typeof window !== "undefined"
       ? `${window.location.origin}${guessWorkerPathFromAdmin()}`
-      : "/worker/");
+      : "/worker/")
+  );
+}
 
-  return buildWorkerActivationUrl(token, fallback, { useHashRouter: useHash });
+/** URL de activación en la App Trabajador (web o Android). */
+export function buildActivationUrl(token: string, workerBaseUrl?: string): string {
+  const base = resolveWorkerBase(workerBaseUrl);
+  const useHash = isElectron() || isNativePlatform();
+  return buildWorkerActivationUrl(token, base, { useHashRouter: useHash });
+}
+
+/** Enlaces completos para invitaciones (web + Android + registro manual). */
+export function buildInvitationUrls(token: string, workerBaseUrl?: string) {
+  return buildInvitationLinks(token, resolveWorkerBase(workerBaseUrl));
+}
+
+export function buildJoinUrl(workerBaseUrl?: string): string {
+  const base = resolveWorkerBase(workerBaseUrl);
+  const useHash = isElectron() || isNativePlatform();
+  return buildWorkerJoinUrl(base, { useHashRouter: useHash });
 }
 
 function guessWorkerPathFromAdmin(): string {
