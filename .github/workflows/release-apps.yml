@@ -1,0 +1,178 @@
+name: Publicar instaladores (Windows + Android)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      tag_suffix:
+        description: "Sufijo de versión (opcional, ej. 42)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-apps
+  cancel-in-progress: false
+
+env:
+  APP_VERSION: "0.1.0"
+
+jobs:
+  build-windows:
+    name: Windows (Electron)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Compilar instalador Windows
+        run: npm run electron:build
+        env:
+          VITE_DEMO_MODE: "true"
+          VITE_USE_FIREBASE_EMULATORS: "false"
+
+      - name: Listar artefactos
+        shell: bash
+        run: ls -la apps/desktop/release/
+
+      - name: Subir artefactos Windows
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installers
+          path: |
+            apps/desktop/release/*.exe
+          retention-days: 30
+
+  build-android:
+    name: Android (APK)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Configurar Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Escribir local.properties
+        run: echo "sdk.dir=${ANDROID_HOME}" > apps/web/android/local.properties
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Sincronizar Capacitor
+        run: npm run cap:sync
+        env:
+          VITE_DEMO_MODE: "true"
+          VITE_USE_FIREBASE_EMULATORS: "false"
+
+      - name: Compilar APK
+        working-directory: apps/web/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Renombrar APK
+        run: |
+          cp apps/web/android/app/build/outputs/apk/debug/app-debug.apk \
+            SPE-Negocio-${APP_VERSION}-android.apk
+          ls -la SPE-Negocio-*.apk
+
+      - name: Subir APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: SPE-Negocio-*.apk
+          retention-days: 30
+
+  release:
+    name: GitHub Release
+    needs: [build-windows, build-android]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Descargar Windows
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-installers
+          path: dist/release/windows
+
+      - name: Descargar Android
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+          path: dist/release/android
+
+      - name: Preparar archivos
+        run: |
+          mkdir -p dist/release/all
+          cp dist/release/windows/* dist/release/all/ 2>/dev/null || true
+          cp dist/release/android/* dist/release/all/ 2>/dev/null || true
+          ls -laR dist/release/
+
+      - name: Calcular tag
+        id: tag
+        run: |
+          if [ -n "${{ github.event.inputs.tag_suffix }}" ]; then
+            TAG="v${APP_VERSION}-build.${{ github.event.inputs.tag_suffix }}"
+          else
+            TAG="v${APP_VERSION}-build.${{ github.run_number }}"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Tag: $TAG"
+
+      - name: Crear GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: SPE Negocio v${{ env.APP_VERSION }} (build ${{ github.run_number }})
+          make_latest: true
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          body: |
+            ## Descargas — SPE Negocio
+
+            | Plataforma | Archivo | Uso |
+            |------------|---------|-----|
+            | **Windows (instalador)** | `SPENegocio-*-nsis.exe` | Instalar en PC Windows 10/11 |
+            | **Windows (portable)** | `SPENegocio-*-portable.exe` | Ejecutar sin instalar |
+            | **Android** | `SPE-Negocio-*-android.apk` | Instalar en celular (permite orígenes desconocidos) |
+            | **Web** | [Abrir en navegador](https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/) | Sin instalación |
+
+            ### Cuentas demo
+            - `admin@eventos.test` / `Admin123!`
+
+            ### Android
+            1. Descarga el `.apk`
+            2. En el celular: Configuración → Seguridad → permitir instalar apps desconocidas
+            3. Abre el archivo descargado e instala
+
+            ### Windows
+            1. Descarga `SPENegocio-*-nsis.exe`
+            2. Ejecuta el instalador y sigue el asistente
+
+            ---
+            Build automático desde commit `${{ github.sha }}`.
+          files: dist/release/all/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

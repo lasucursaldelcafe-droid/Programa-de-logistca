@@ -19,12 +19,24 @@ npm start        # todo en uno → http://localhost:5173
 
 ## Demos multiplataforma
 
-Ver guía completa en [docs/DEMOS.md](docs/DEMOS.md).
+Ver guía completa en [docs/DEMOS.md](docs/DEMOS.md) y **descargas** en [docs/DESCARGAS.md](docs/DESCARGAS.md).
 
-| Plataforma | Comando |
+### Descargar instaladores (automático)
+
+**https://github.com/lasucursaldelcafe-droid/Programa-de-logistca/releases/latest**
+
+| Plataforma | Archivo |
+|------------|---------|
+| Windows (instalador) | `SPENegocio-0.1.0-nsis.exe` |
+| Windows (portable) | `SPENegocio-0.1.0-portable.exe` |
+| Android | `SPE-Negocio-0.1.0-android.apk` |
+| Web | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/ |
+
+Cada push a `main` publica un release nuevo vía GitHub Actions.
+
+| Plataforma | Comando local |
 |------------|---------|
 | Web | `npm start` → http://localhost:5173 |
-| GitHub Pages | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/ |
 | Windows | `npm run electron` / `npm run electron:build` |
 | Android | `npm run cap:sync` → `npm run cap:android` |
 

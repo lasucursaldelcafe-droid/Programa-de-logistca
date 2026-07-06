@@ -36,7 +36,22 @@ Tras `npm run build:pages`, la app se publica en:
 
 Modo demo: datos en memoria del navegador (sin Firebase).
 
-## Demo Windows (Electron)
+## Descargar instaladores
+
+**Enlace directo (última versión):**  
+https://github.com/lasucursaldelcafe-droid/Programa-de-logistca/releases/latest
+
+| Plataforma | Archivo en Releases |
+|------------|---------------------|
+| Windows instalador | `SPENegocio-0.1.0-nsis.exe` |
+| Windows portable | `SPENegocio-0.1.0-portable.exe` |
+| Android | `SPE-Negocio-0.1.0-android.apk` |
+
+Guía detallada: [docs/DESCARGAS.md](DESCARGAS.md)
+
+Los instaladores se generan automáticamente al hacer merge a `main` (workflow `release-apps.yml`).
+
+## Demo Windows (local)
 
 ```bash
 # 1. Compilar web para empaquetado nativo

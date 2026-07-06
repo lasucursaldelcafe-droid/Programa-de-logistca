@@ -31,8 +31,11 @@
       }
     ],
     "win": {
-      "target": ["nsis", "portable"],
-      "artifactName": "SPENegocio-${version}-win.${ext}"
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "artifactName": "SPENegocio-${version}-${target}.${ext}"
     },
     "linux": {
       "target": ["AppImage"],
