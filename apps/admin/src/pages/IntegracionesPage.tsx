@@ -4,6 +4,7 @@ import { useIntegrations } from "../hooks/useIntegrations";
 import { puedeConfigurarIntegraciones } from "@spe/shared";
 import type { TipoIntegracion } from "@spe/shared";
 import { AdminIntegracionPanel } from "../components/AdminIntegracionPanel";
+import { IntegracionesAyuda } from "../components/IntegracionesAyuda";
 
 export function IntegracionesPage() {
   const { user } = useAuth();
@@ -32,6 +33,8 @@ export function IntegracionesPage() {
               navegador (demo). En producción irían cifradas en el servidor.
             </p>
           </Card>
+
+          <IntegracionesAyuda />
 
           <div className="space-y-4">
             {conexiones.map((c) => (

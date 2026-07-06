@@ -82,10 +82,10 @@ export function AdminIntegracionPanel({
         const updated: CredencialesIntegracion = {
           ...draft,
           id: conexion.id,
-          apiKey: parsed.api_key ?? parsed.siigo_api_key ?? draft.apiKey,
+          apiKey: parsed.api_key ?? parsed.siigo_api_key ?? parsed.siigo_access_key ?? parsed.access_key ?? draft.apiKey,
           token: parsed.token ?? parsed.whatsapp_token ?? draft.token,
-          apiSecret: parsed.api_secret ?? parsed.app_secret ?? draft.apiSecret,
-          usuario: parsed.usuario ?? parsed.email ?? draft.usuario,
+          apiSecret: parsed.api_secret ?? parsed.app_secret ?? parsed.siigo_partner_id ?? parsed.partner_id ?? draft.apiSecret,
+          usuario: parsed.usuario ?? parsed.email ?? parsed.siigo_username ?? parsed.username ?? draft.usuario,
           webhookUrl: parsed.webhook_url ?? draft.webhookUrl,
           archivoNombre: file.name,
           actualizadoEn: new Date().toISOString(),

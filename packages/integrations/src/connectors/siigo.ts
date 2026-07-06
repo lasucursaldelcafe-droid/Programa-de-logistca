@@ -1,6 +1,19 @@
 import type { IntegracionConexion } from "@spe/shared";
 import type { ConnectorResult, IntegrationConnector, SiigoInvoice } from "../types";
 
+/**
+ * Mapeo objetivo Siigo API → módulos SPE (producción).
+ * Ver docs-source/INTEGRACIONES-APIS.md
+ */
+export const SIIGO_SYNC_MAP = {
+  customers: { endpoint: "GET /v1/customers", speModule: "Clientes", speType: "Cliente" },
+  products: { endpoint: "GET /v1/products", speModule: "Inventario", speType: "Producto" },
+  invoices: { endpoint: "GET /v1/invoices", speModule: "Facturación", speType: "Factura" },
+  creditNotes: { endpoint: "GET /v1/credit-notes", speModule: "Facturación", speType: "Nota crédito" },
+  vouchers: { endpoint: "GET /v1/vouchers", speModule: "Facturación", speType: "Recibo de caja" },
+} as const;
+
+/** Auth: POST https://api.siigo.com/auth { username, access_key } + header Partner-Id */
 export class SiigoConnector implements IntegrationConnector {
   id = "siigo" as const;
   nombre = "Siigo";
@@ -16,9 +29,10 @@ export class SiigoConnector implements IntegrationConnector {
     await delay(800);
     if (!apiKey.trim()) {
       this.status = "error";
-      return { ok: false, error: "API key requerida" };
+      return { ok: false, error: "Access Key requerida" };
     }
     this.status = "conectado";
+    const recursos = Object.values(SIIGO_SYNC_MAP).map((r) => r.speModule).join(", ");
     return {
       ok: true,
       data: {
@@ -27,7 +41,7 @@ export class SiigoConnector implements IntegrationConnector {
         descripcion: this.descripcion,
         estado: "conectado",
         ultimaSync: new Date().toISOString(),
-        mensaje: "Sincronización demo: 12 facturas, 8 clientes",
+        mensaje: `Demo conectado — en producción sincroniza: ${recursos}`,
       },
     };
   }
@@ -39,7 +53,10 @@ export class SiigoConnector implements IntegrationConnector {
 
   async test(): Promise<ConnectorResult<string>> {
     if (this.status !== "conectado") return { ok: false, error: "Siigo no conectado" };
-    return { ok: true, data: "Ping OK — API Siigo Nube (demo)" };
+    return {
+      ok: true,
+      data: "Ping OK — auth POST /auth + Partner-Id (demo; ver INTEGRACIONES-APIS.md)",
+    };
   }
 
   async fetchInvoices(): Promise<SiigoInvoice[]> {

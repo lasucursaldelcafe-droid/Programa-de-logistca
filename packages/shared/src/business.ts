@@ -73,9 +73,9 @@ export interface CampoCredencial {
 
 export const CAMPOS_POR_INTEGRACION: Record<TipoIntegracion, CampoCredencial[]> = {
   siigo: [
-    { key: "usuario", label: "Usuario / email Siigo", placeholder: "contabilidad@tuempresa.com", required: true },
-    { key: "apiKey", label: "API Key Siigo Nube", type: "password", required: true },
-    { key: "apiSecret", label: "Access Key (opcional)", type: "password" },
+    { key: "usuario", label: "Usuario API Siigo (username)", placeholder: "contabilidad@tuempresa.com", required: true },
+    { key: "apiKey", label: "Access Key (access_key)", type: "password", required: true },
+    { key: "apiSecret", label: "Partner-Id (nombre app registrada en Siigo)", placeholder: "speEventosErp" },
   ],
   whatsapp: [
     { key: "token", label: "Token permanente Cloud API", type: "password", required: true },

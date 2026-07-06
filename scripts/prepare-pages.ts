@@ -101,6 +101,7 @@ writeLegacyRedirect(resolve(docs, "worker"), links.pagesUrl);
 writeLegacyRedirect(resolve(docs, "master"), links.pagesUrl);
 
 copyFileSync(resolve(ROOT, "docs-source/GUIA.md"), resolve(docs, "GUIA.md"));
+copyFileSync(resolve(ROOT, "docs-source/INTEGRACIONES-APIS.md"), resolve(docs, "INTEGRACIONES-APIS.md"));
 writeFileSync(resolve(docs, ".nojekyll"), "");
 
 console.log(`✓ GitHub Pages listo (${links.pagesUrl})`);
