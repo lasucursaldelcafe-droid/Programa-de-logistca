@@ -4,6 +4,7 @@ import type {
   Attendance,
   AttendanceEstado,
   BreakSchedule,
+  CredencialesIntegracion,
   Evento,
   GeoRegistro,
   Invitation,
@@ -14,10 +15,21 @@ import type {
   Reporte,
   SetupConfig,
   Sitio,
+  TipoIntegracion,
   Turno,
   Worker,
 } from "@spe/shared";
 import type { GeoPosition } from "../lib/geolocation";
+import {
+  INITIAL_CLIENTES,
+  INITIAL_FACTURAS,
+  INITIAL_POSICIONES,
+  INITIAL_PRODUCTOS,
+} from "./business";
+import {
+  loadCredencialesFromStorage,
+  saveCredencialesToStorage,
+} from "./integrations";
 
 export const DEMO_ACCOUNTS: Array<{
   email: string;
@@ -433,6 +445,11 @@ class DemoStore {
   payrollAudit = [...INITIAL_PAYROLL_AUDIT];
   setupConfig: SetupConfig | null = { ...INITIAL_SETUP_CONFIG };
   reportes = [...INITIAL_REPORTES];
+  clientes = [...INITIAL_CLIENTES];
+  productos = [...INITIAL_PRODUCTOS];
+  facturas = [...INITIAL_FACTURAS];
+  posiciones = [...INITIAL_POSICIONES];
+  credencialesIntegraciones = loadCredencialesFromStorage();
   accounts = [...DEMO_ACCOUNTS];
   platformUsers: AppUser[] = DEMO_ACCOUNTS.map((a) => a.user);
   private listeners = new Set<Listener>();
@@ -743,6 +760,38 @@ class DemoStore {
 
   updateReporte(id: string, patch: Partial<Reporte>): void {
     this.reportes = this.reportes.map((r) => (r.id === id ? { ...r, ...patch } : r));
+    this.notify();
+  }
+
+  tickPosiciones(): void {
+    this.posiciones = this.posiciones.map((p) => ({
+      ...p,
+      lat: p.lat + (Math.random() - 0.5) * 0.0002,
+      lng: p.lng + (Math.random() - 0.5) * 0.0002,
+      actualizadoEn: new Date().toISOString(),
+    }));
+    this.notify();
+  }
+
+  getCredenciales(id: TipoIntegracion): CredencialesIntegracion {
+    return this.credencialesIntegraciones[id];
+  }
+
+  saveCredenciales(creds: CredencialesIntegracion): void {
+    this.credencialesIntegraciones = {
+      ...this.credencialesIntegraciones,
+      [creds.id]: { ...creds, actualizadoEn: new Date().toISOString() },
+    };
+    saveCredencialesToStorage(this.credencialesIntegraciones);
+    this.notify();
+  }
+
+  clearCredenciales(id: TipoIntegracion): void {
+    this.credencialesIntegraciones = {
+      ...this.credencialesIntegraciones,
+      [id]: { id },
+    };
+    saveCredencialesToStorage(this.credencialesIntegraciones);
     this.notify();
   }
 }
