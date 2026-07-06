@@ -1,30 +1,27 @@
 # Guía de uso — Sistema de Personal para Eventos
 
-Plataforma para gestionar personal en eventos de logística y recreación (200+ trabajadores). Hay **tres aplicaciones separadas** según el rol de cada persona.
+Plataforma para gestionar personal en eventos de logística y recreación (200+ trabajadores). **Una sola app**: al iniciar sesión se abre el panel según tu rol.
 
 ## Enlaces en línea (GitHub Pages, modo demo)
 
-| Plataforma | URL | Rol |
-|------------|-----|-----|
-| **Admin Console** | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/ | `administrador`, `supervisor_sitio` |
-| **App Trabajador** | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/worker/ | `trabajador` |
-| **Master Console** | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/master/ | `super_admin` |
+| Recurso | URL |
+|---------|-----|
+| **App unificada SPE** | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/ |
 
 > En modo demo los datos viven en la memoria del navegador. En producción se usa Firebase (Auth + Firestore).
 
 ## Cuentas de plataforma
 
-Plataforma vacía al iniciar — solo cuentas de administración. Crea eventos, personal y turnos desde el Admin.
+Plataforma vacía al iniciar — solo cuentas de administración. Supervisores y trabajadores se crean desde **Personal** (rol) + **Cuentas** (invitación).
 
-| Plataforma | Email | Contraseña |
-|------------|-------|------------|
-| Master | master@eventos.test | Master123! |
-| Admin | admin@eventos.test | Admin123! |
-| Supervisor | supervisor@eventos.test | Super123! |
+| Rol | Email | Contraseña |
+|-----|-------|------------|
+| Master (plataforma) | master@eventos.test | Master123! |
+| **Administrador único** | admin@eventos.test | Admin123! |
 
-Los trabajadores activan su cuenta con la **invitación por correo** (código de un solo uso) enviada desde Admin → Cuentas.
+Cada persona invitada usa **su correo** y crea **su contraseña** al activar. El administrador asigna el rol (Trabajador o Supervisor).
 
-**Importante:** cada plataforma solo acepta el rol correspondiente. Un trabajador no puede iniciar sesión en Admin ni en Master.
+Ver guía completa: [CUENTAS-Y-ROLES.md](./CUENTAS-Y-ROLES.md)
 
 ---
 

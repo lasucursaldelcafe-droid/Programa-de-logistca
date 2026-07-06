@@ -16,7 +16,8 @@ export function AdminsPage() {
       <div>
         <h1 className="font-display text-3xl font-bold">Administradores</h1>
         <p className="mt-1 text-neutral-400">
-          Cuentas con acceso a Admin Console o Master. Crear nuevas desde Firebase Auth o seed.
+          Cuentas operativas. El administrador único crea supervisores y trabajadores desde Personal
+          (asigna rol) y Cuentas (invitación).
         </p>
       </div>
       <Card>

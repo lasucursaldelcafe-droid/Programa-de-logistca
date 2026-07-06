@@ -124,10 +124,17 @@ export async function createWorker(data: {
   telefono: string;
   email: string;
   perfiles: PerfilTrabajo[];
+  rolPlataforma?: "trabajador" | "supervisor_sitio";
 }): Promise<void> {
+  const rolPlataforma = data.rolPlataforma ?? "trabajador";
   if (DEMO_MODE) {
     demoStore.addWorker({
-      ...data,
+      nombre: data.nombre,
+      documento: data.documento,
+      telefono: data.telefono,
+      email: data.email.trim().toLowerCase(),
+      perfiles: data.perfiles,
+      rolPlataforma,
       experienciaAnios: 0,
       eventosTrabajados: 0,
       rating: 0,
@@ -139,7 +146,12 @@ export async function createWorker(data: {
     return;
   }
   await addDoc(collection(getFirestoreDb(), "workers"), {
-    ...data,
+    nombre: data.nombre,
+    documento: data.documento,
+    telefono: data.telefono,
+    email: data.email.trim().toLowerCase(),
+    perfiles: data.perfiles,
+    rolPlataforma,
     experienciaAnios: 0,
     eventosTrabajados: 0,
     rating: 0,
@@ -259,6 +271,7 @@ export async function createInvitation(data: {
   workerId: string;
   workerNombre: string;
   email: string;
+  role: "trabajador" | "supervisor_sitio";
   creadaPor: string;
   creadaPorNombre: string;
 }): Promise<{ token: string; codigoAcceso: string }> {
@@ -274,6 +287,7 @@ export async function createInvitation(data: {
     workerNombre: data.workerNombre,
     email: data.email.trim().toLowerCase(),
     codigoAcceso,
+    role: data.role,
     estado: "pendiente",
     creadaEn: now.toISOString(),
     expiraEn: expira.toISOString(),
@@ -302,10 +316,14 @@ export async function activateAccountWithInvitation(
   token: string,
   password: string,
   codigoAcceso: string,
-): Promise<void> {
+): Promise<AppUser> {
   if (DEMO_MODE) {
     demoStore.activateAccount(token, password, codigoAcceso);
-    return;
+    const invitation = demoStore.getInvitation(token);
+    if (!invitation?.uid) throw new Error("No se pudo activar la cuenta");
+    const account = demoStore.accounts.find((a) => a.user.uid === invitation.uid);
+    if (!account) throw new Error("Cuenta no encontrada tras activación");
+    return account.user;
   }
 
   const invitation = await getInvitationByToken(token);
@@ -322,12 +340,14 @@ export async function activateAccountWithInvitation(
     password,
   );
 
+  const perfilCompleto = (invitation.role ?? "trabajador") === "supervisor_sitio";
+
   await setDoc(doc(getFirestoreDb(), "users", cred.user.uid), {
     email: invitation.email,
     nombre: invitation.workerNombre,
-    role: "trabajador",
+    role: invitation.role ?? "trabajador",
     workerId: invitation.workerId,
-    perfilCompleto: false,
+    perfilCompleto,
   });
 
   await updateDoc(doc(getFirestoreDb(), "workers", invitation.workerId), {
@@ -339,6 +359,15 @@ export async function activateAccountWithInvitation(
     usadaEn: new Date().toISOString(),
     uid: cred.user.uid,
   });
+
+  return {
+    uid: cred.user.uid,
+    email: invitation.email,
+    nombre: invitation.workerNombre,
+    role: invitation.role ?? "trabajador",
+    workerId: invitation.workerId,
+    perfilCompleto,
+  };
 }
 
 export async function completeUserProfile(data: {

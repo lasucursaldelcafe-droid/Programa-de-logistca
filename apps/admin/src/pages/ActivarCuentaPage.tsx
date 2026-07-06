@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { rutaHomePorRol } from "@spe/shared";
 import { Card } from "../components/ui";
 import { useAuth } from "../contexts/AuthContext";
 import {
@@ -50,9 +51,13 @@ export function ActivarCuentaPage() {
     setSubmitting(true);
     setError(null);
     try {
-      await activateAccountWithInvitation(token, password, codigoAcceso);
+      const appUser = await activateAccountWithInvitation(token, password, codigoAcceso);
       await refreshUser();
-      navigate("/completar-perfil", { replace: true });
+      if (appUser.perfilCompleto) {
+        navigate(rutaHomePorRol(appUser.role), { replace: true });
+      } else {
+        navigate("/completar-perfil", { replace: true });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo activar la cuenta.");
     } finally {
@@ -125,8 +130,8 @@ export function ActivarCuentaPage() {
       <Card className="w-full max-w-md">
         <h1 className="font-display text-2xl font-bold">Activar cuenta</h1>
         <p className="mt-1 text-sm text-neutral-400">
-          Hola <span className="text-neutral-200">{invitation.workerNombre}</span>, ingresa el
-          código que recibiste por correo y crea tu contraseña.
+          Hola <span className="text-neutral-200">{invitation.workerNombre}</span>, crea tu
+          contraseña personal para acceder con tu correo.
         </p>
         <p className="mt-2 font-mono text-xs text-neutral-500">{invitation.email}</p>
 

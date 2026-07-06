@@ -1,42 +1,32 @@
 # Sistema de Personal para Eventos
 
-Plataforma de gestión de personal para empresas de logística y recreación en eventos (200+ trabajadores). **Tres plataformas separadas** + Firebase.
+Plataforma de gestión de personal para empresas de logística y recreación en eventos (200+ trabajadores). **Una sola app** — el panel se abre según el rol tras iniciar sesión.
 
-## Las 3 plataformas
+## App unificada
 
-| Plataforma | Puerto local | Rol | Para qué |
-|------------|--------------|-----|----------|
-| **Master Console** | 5175 | `super_admin` | Informes globales, auditoría, administradores |
-| **Admin Console** | 5173 | `administrador`, `supervisor_sitio` | Eventos, turnos, personal, QR, mapa, nómina |
-| **App Trabajador** | 5174 | `trabajador` | Escanear QR, marcar entrada, reportar al supervisor |
-
-Cada plataforma valida el rol al iniciar sesión (`PlatformGate`). Un trabajador **no puede** entrar al Admin; el admin **no puede** entrar al Master.
+| Rol | Panel tras login |
+|-----|------------------|
+| `super_admin` | Master (`/master`) |
+| `administrador`, `supervisor_sitio` | Operativo (`/panel`) |
+| `trabajador` | Trabajador (`/worker`) |
 
 ## Inicio rápido
 
 ```bash
-npm run setup    # primera vez: deps + .env.local (×3 apps)
-npm start        # emuladores + seed + Admin :5173
-```
-
-En otras terminales:
-
-```bash
-npm run dev:worker   # App Trabajador → http://localhost:5174
-npm run dev:master   # Master Console → http://localhost:5175
+npm run setup    # primera vez: deps + .env.local
+npm start        # emuladores + seed + app :5173
 ```
 
 ## Cuentas de plataforma (seed)
 
-Solo cuentas de administración — **sin eventos, personal ni turnos precargados**. Empieza desde **Configuración** en el Admin.
+Solo **Master** y **Administrador único**. Supervisores y trabajadores: Admin → Personal (asignar rol) → Cuentas (invitación).
 
-| Plataforma | Email | Contraseña |
-|------------|-------|------------|
+| Rol | Email | Contraseña |
+|-----|-------|------------|
 | Master | master@eventos.test | Master123! |
-| Admin | admin@eventos.test | Admin123! |
-| Supervisor | supervisor@eventos.test | Super123! |
+| Administrador | admin@eventos.test | Admin123! |
 
-Los trabajadores se registran mediante **invitación** (Admin → Cuentas → enviar correo con código de un solo uso).
+Cada persona invitada activa su cuenta con su correo y elige su contraseña. Ver `docs-source/CUENTAS-Y-ROLES.md`.
 
 ## Ver en línea (GitHub Pages)
 

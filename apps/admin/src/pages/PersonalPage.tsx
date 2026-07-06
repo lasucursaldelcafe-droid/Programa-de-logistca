@@ -2,8 +2,12 @@ import { useState } from "react";
 import {
   ESTADO_LABEL,
   PERFILES_LABEL,
+  ROLE_LABEL,
+  ROLES_ASIGNABLES_ADMIN,
+  puedeAsignarRoles,
   puedeGestionarPersonal,
   type PerfilTrabajo,
+  type RolAsignablePorAdmin,
   type WorkerEstado,
 } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
@@ -33,7 +37,10 @@ export function PersonalPage() {
     telefono: "",
     email: "",
     perfiles: ["logistica"] as PerfilTrabajo[],
+    rolPlataforma: "trabajador" as RolAsignablePorAdmin,
   });
+
+  const adminAsignaRoles = user ? puedeAsignarRoles(user.role) : false;
 
   if (!user || !puedeGestionarPersonal(user.role)) {
     return <p className="text-neutral-400">Sin permisos para gestionar personal.</p>;
@@ -41,8 +48,18 @@ export function PersonalPage() {
 
   async function crearTrabajador(e: React.FormEvent) {
     e.preventDefault();
-    await createWorker(form);
-    setForm({ nombre: "", documento: "", telefono: "", email: "", perfiles: ["logistica"] });
+    await createWorker({
+      ...form,
+      rolPlataforma: adminAsignaRoles ? form.rolPlataforma : "trabajador",
+    });
+    setForm({
+      nombre: "",
+      documento: "",
+      telefono: "",
+      email: "",
+      perfiles: ["logistica"],
+      rolPlataforma: "trabajador",
+    });
   }
 
   async function cambiarEstado(id: string, estado: WorkerEstado) {
@@ -54,12 +71,13 @@ export function PersonalPage() {
       <div>
         <h1 className="font-display text-3xl font-bold">Personal</h1>
         <p className="mt-1 text-neutral-400">
-          Perfiles, estados en vivo y clasificación por etiquetas.
+          Registra personas con su nombre y correo. El administrador asigna el rol; las credenciales
+          las crea cada persona al activar la invitación.
         </p>
       </div>
 
       <Card>
-        <h2 className="font-display text-lg font-semibold">Nuevo trabajador</h2>
+        <h2 className="font-display text-lg font-semibold">Nueva persona</h2>
         <form onSubmit={crearTrabajador} className="mt-4 grid gap-3 sm:grid-cols-2">
           {(["nombre", "documento", "telefono", "email"] as const).map((field) => (
             <label key={field} className="text-sm capitalize">
@@ -92,6 +110,31 @@ export function PersonalPage() {
               ))}
             </select>
           </label>
+          {adminAsignaRoles && (
+            <label className="text-sm sm:col-span-2">
+              <span className="mb-1 block text-neutral-300">Rol en la plataforma</span>
+              <select
+                value={form.rolPlataforma}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    rolPlataforma: e.target.value as RolAsignablePorAdmin,
+                  }))
+                }
+                className="w-full rounded-lg border border-border bg-bg px-3 py-2"
+              >
+                {ROLES_ASIGNABLES_ADMIN.map((rol) => (
+                  <option key={rol} value={rol}>
+                    {ROLE_LABEL[rol]}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-neutral-500">
+                Solo el administrador define roles. La persona elige su contraseña al activar la
+                invitación en Cuentas.
+              </p>
+            </label>
+          )}
           <div className="sm:col-span-2">
             <button
               type="submit"
@@ -110,6 +153,10 @@ export function PersonalPage() {
               <div className="font-display text-lg font-semibold">{w.nombre}</div>
               <div className="mt-1 font-mono text-xs text-neutral-500">
                 {w.documento} · {w.email}
+              </div>
+              <div className="mt-1 text-xs text-neutral-500">
+                Rol: {ROLE_LABEL[w.rolPlataforma ?? "trabajador"]}
+                {w.cuentaCreada ? " · Cuenta activa" : " · Sin activar"}
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {w.perfiles.map((p) => (

@@ -1,4 +1,5 @@
 import type { Invitation } from "./types";
+import { ROLE_LABEL } from "./types";
 
 /** Código numérico de un solo uso (6 dígitos). */
 export function generateAccessCode(): string {
@@ -52,9 +53,10 @@ export function buildInvitationLinks(
 }
 
 export function buildInvitationEmailContent(
-  invitation: Pick<Invitation, "workerNombre" | "email" | "codigoAcceso" | "expiraEn">,
+  invitation: Pick<Invitation, "workerNombre" | "email" | "codigoAcceso" | "expiraEn" | "role">,
   links: InvitationLinks,
 ): { subject: string; body: string } {
+  const rol = invitation.role ?? "trabajador";
   const expira = new Date(invitation.expiraEn).toLocaleDateString("es-CO", {
     dateStyle: "long",
   });
@@ -64,7 +66,7 @@ export function buildInvitationEmailContent(
     body: [
       `Hola ${invitation.workerNombre},`,
       "",
-      "Fuiste invitado/a a unirte como trabajador en el Sistema de Personal para Eventos (SPE).",
+      `Fuiste invitado/a como ${ROLE_LABEL[rol]} en el Sistema de Personal para Eventos (SPE).`,
       "",
       "══ CÓDIGO PERSONAL (un solo uso — no lo compartas) ══",
       invitation.codigoAcceso,
@@ -73,7 +75,8 @@ export function buildInvitationEmailContent(
       "1. Abre la app «SPE Eventos» instalada en tu dispositivo.",
       "2. Toca «Unirme con código de invitación».",
       "3. Ingresa tu correo y el código de arriba.",
-      "4. Crea tu contraseña y completa tu perfil.",
+      "4. Crea tu contraseña personal (solo tú la conocerás).",
+      "5. Completa tu perfil si aplica a tu rol.",
       "",
       "══ OPCIÓN B — Navegador web ══",
       `1. Abre: ${links.webJoin}`,
@@ -96,7 +99,7 @@ export function buildInvitationEmailContent(
 }
 
 export function buildInvitationMailtoUrl(
-  invitation: Pick<Invitation, "workerNombre" | "email" | "codigoAcceso" | "expiraEn">,
+  invitation: Pick<Invitation, "workerNombre" | "email" | "codigoAcceso" | "expiraEn" | "role">,
   links: InvitationLinks,
 ): string {
   const { subject, body } = buildInvitationEmailContent(invitation, links);

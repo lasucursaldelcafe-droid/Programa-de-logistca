@@ -10,11 +10,11 @@ const ADMIN_INSTRUCCIONES = [
     ],
   },
   {
-    title: "2. Registrar personal",
+    title: "2. Registrar personal y roles",
     steps: [
-      "En Personal da de alta a cada trabajador con su correo.",
-      "En Cuentas envía la invitación por correo (código de un solo uso).",
-      "El trabajador activa su cuenta en la App Trabajador (web o Android).",
+      "En Personal registra cada persona con su nombre, documento y correo.",
+      "El administrador asigna el rol: Trabajador o Supervisor de sitio.",
+      "En Cuentas envía la invitación; la persona crea su contraseña al activar.",
     ],
   },
   {

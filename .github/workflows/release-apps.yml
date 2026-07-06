@@ -156,11 +156,10 @@ jobs:
             ### Cuentas demo
             | Rol | Correo | Contraseña |
             |-----|--------|------------|
-            | Admin | admin@eventos.test | Admin123! |
-            | Master | master@eventos.test | Master123! |
-            | Supervisor | supervisor@eventos.test | Super123! |
+            | Master (plataforma) | master@eventos.test | Master123! |
+            | **Administrador único** | admin@eventos.test | Admin123! |
 
-            Sin personal precargado — los trabajadores se registran con invitación desde Admin → Cuentas.
+            Supervisores y trabajadores: Admin → Personal (rol) → Cuentas (invitación con datos personales).
 
             ### Instalar Android
             1. Descarga el `.apk`

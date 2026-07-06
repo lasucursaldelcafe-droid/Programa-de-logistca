@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   INVITATION_LABEL,
+  ROLE_LABEL,
   buildInvitationEmailContent,
   buildInvitationMailtoUrl,
   puedeGestionarCuentas,
@@ -62,6 +63,7 @@ export function CuentasPage() {
         workerId: worker.id,
         workerNombre: worker.nombre,
         email: worker.email,
+        role: worker.rolPlataforma ?? "trabajador",
         creadaPor: currentUser.uid,
         creadaPorNombre: currentUser.nombre,
       });
@@ -111,8 +113,8 @@ export function CuentasPage() {
       <div>
         <h1 className="font-display text-3xl font-bold">Cuentas e invitaciones</h1>
         <p className="mt-1 text-neutral-400">
-          Envía invitaciones por correo con un código de un solo uso. Cada trabajador se registra
-          en la App Trabajador (web, Android o Windows vía navegador).
+          El administrador envía invitaciones con el correo y rol de cada persona. Ellos crean su
+          contraseña personal al activar la cuenta (código de un solo uso).
         </p>
       </div>
 
@@ -153,9 +155,10 @@ export function CuentasPage() {
       )}
 
       <Card>
-        <h2 className="font-display text-lg font-semibold">Trabajadores sin cuenta</h2>
+        <h2 className="font-display text-lg font-semibold">Personal sin cuenta activa</h2>
         <p className="mt-1 text-sm text-neutral-400">
-          Genera invitación + código único y envía el correo al trabajador.
+          Genera invitación con el rol ya asignado en Personal. La persona usa su correo y elige
+          contraseña al activar.
         </p>
         <div className="mt-4 space-y-3">
           {sinCuenta.length === 0 ? (
@@ -169,6 +172,9 @@ export function CuentasPage() {
                 <div>
                   <div className="font-medium">{w.nombre}</div>
                   <div className="font-mono text-xs text-neutral-500">{w.email}</div>
+                  <div className="mt-1 text-xs text-neutral-500">
+                    Rol: {ROLE_LABEL[w.rolPlataforma ?? "trabajador"]}
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -198,6 +204,9 @@ export function CuentasPage() {
                 <div>
                   <div className="font-medium">{inv.workerNombre}</div>
                   <div className="font-mono text-xs text-neutral-500">{inv.email}</div>
+                  <div className="mt-1 text-xs text-neutral-500">
+                    Rol: {ROLE_LABEL[inv.role]}
+                  </div>
                   {inv.estado === "pendiente" && inv.codigoAcceso && (
                     <div className="mt-1 font-mono text-sm text-accent">
                       Código: {inv.codigoAcceso}

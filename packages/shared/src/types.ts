@@ -118,6 +118,8 @@ export interface Invitation {
   expiraEn: string;
   creadaPor: string;
   creadaPorNombre?: string;
+  /** Rol de acceso asignado por el administrador al invitar. */
+  role: "trabajador" | "supervisor_sitio";
   usadaEn?: string;
   uid?: string;
 }
@@ -135,6 +137,8 @@ export interface Worker {
   rating: number;
   estado: WorkerEstado;
   cuentaCreada: boolean;
+  /** Rol en la plataforma; lo asigna el administrador al registrar. */
+  rolPlataforma: "trabajador" | "supervisor_sitio";
   certificaciones: string[];
   creadoEn: string;
 }

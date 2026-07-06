@@ -8,3 +8,4 @@ export * from "./setup";
 export * from "./platforms";
 export * from "./business";
 export * from "./invitations";
+export * from "./accounts";

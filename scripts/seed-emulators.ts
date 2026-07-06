@@ -27,8 +27,7 @@ interface SeedUser {
 
 const USERS: SeedUser[] = [
   { email: "master@eventos.test", password: "Master123!", nombre: "Master Plataforma", role: "super_admin" },
-  { email: "admin@eventos.test", password: "Admin123!", nombre: "Admin Principal", role: "administrador" },
-  { email: "supervisor@eventos.test", password: "Super123!", nombre: "Carlos Supervisor", role: "supervisor_sitio" },
+  { email: "admin@eventos.test", password: "Admin123!", nombre: "Administrador", role: "administrador" },
 ];
 
 async function upsertAuthUser(u: SeedUser): Promise<string> {
@@ -69,7 +68,7 @@ async function main(): Promise<void> {
     pasosCompletados: [],
     actualizadoEn: new Date().toISOString(),
     actualizadoPor: uids["admin@eventos.test"] ?? "seed",
-    actualizadoPorNombre: "Admin Principal",
+    actualizadoPorNombre: "Administrador",
   });
   console.log("+ configuración inicial (asistente pendiente)");
 
@@ -78,7 +77,7 @@ async function main(): Promise<void> {
   for (const u of USERS) {
     console.log(`    ${u.email} / ${u.password}`);
   }
-  console.log("\n  Los trabajadores se registran vía invitación desde Admin → Cuentas.");
+  console.log("\n  Supervisores y trabajadores: Admin → Personal (rol) → Cuentas (invitación).");
 }
 
 main().catch((err: unknown) => {

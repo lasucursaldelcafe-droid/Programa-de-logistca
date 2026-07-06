@@ -31,46 +31,23 @@ import {
   saveCredencialesToStorage,
 } from "./integrations";
 import { loadDemoPersistedState, saveDemoPersistedState } from "./persist";
+import { PLATFORM_SEED_ACCOUNTS } from "@spe/shared";
 
 export const DEMO_ACCOUNTS: Array<{
   email: string;
   password: string;
   user: AppUser;
-}> = [
-  {
-    email: "master@eventos.test",
-    password: "Master123!",
-    user: {
-      uid: "demo-master",
-      email: "master@eventos.test",
-      nombre: "Master Plataforma",
-      role: "super_admin",
-      perfilCompleto: true,
-    },
+}> = PLATFORM_SEED_ACCOUNTS.map((a) => ({
+  email: a.email,
+  password: a.password,
+  user: {
+    uid: a.role === "super_admin" ? "demo-master" : "demo-admin",
+    email: a.email,
+    nombre: a.nombre,
+    role: a.role,
+    perfilCompleto: true,
   },
-  {
-    email: "admin@eventos.test",
-    password: "Admin123!",
-    user: {
-      uid: "demo-admin",
-      email: "admin@eventos.test",
-      nombre: "Admin Principal",
-      role: "administrador",
-      perfilCompleto: true,
-    },
-  },
-  {
-    email: "supervisor@eventos.test",
-    password: "Super123!",
-    user: {
-      uid: "demo-super",
-      email: "supervisor@eventos.test",
-      nombre: "Carlos Supervisor",
-      role: "supervisor_sitio",
-      perfilCompleto: true,
-    },
-  },
-];
+}));
 
 export const INITIAL_WORKERS: Worker[] = [];
 
@@ -269,13 +246,14 @@ class DemoStore {
     if (worker.cuentaCreada) throw new Error("Este trabajador ya tiene cuenta activa");
 
     const uid = `demo-${invitation.workerId}`;
+    const assignedRole = invitation.role ?? "trabajador";
     const appUser: AppUser = {
       uid,
       email: invitation.email,
       nombre: invitation.workerNombre,
-      role: "trabajador",
+      role: assignedRole,
       workerId: invitation.workerId,
-      perfilCompleto: false,
+      perfilCompleto: assignedRole === "supervisor_sitio",
     };
 
     this.accounts = [

@@ -109,12 +109,14 @@ export function LoginPage() {
         </form>
         <LoginAyudaPanel platform="admin" />
         <div className="mt-4 rounded-lg border border-border bg-bg p-3 text-xs text-neutral-400">
-          <p className="font-semibold text-neutral-300">Cuentas de plataforma (seed)</p>
+          <p className="font-semibold text-neutral-300">Cuenta de administración (única)</p>
           <ul className="mt-2 space-y-1 font-mono">
             <li>admin@eventos.test / Admin123!</li>
-            <li>supervisor@eventos.test / Super123!</li>
-            <li>master@eventos.test / Master123!</li>
           </ul>
+          <p className="mt-2 text-xs text-neutral-500">
+            Master plataforma: master@eventos.test / Master123! — Supervisores y trabajadores se
+            crean desde Personal + Cuentas con sus datos personales.
+          </p>
           <p className="mt-2 text-neutral-500">
             Sin eventos ni personal precargados — empieza en Configuración.
           </p>
