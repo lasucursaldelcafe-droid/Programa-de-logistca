@@ -26,15 +26,17 @@ npm run dev:worker   # App Trabajador → http://localhost:5174
 npm run dev:master   # Master Console → http://localhost:5175
 ```
 
-## Cuentas de prueba (seed)
+## Cuentas de plataforma (seed)
+
+Solo cuentas de administración — **sin eventos, personal ni turnos precargados**. Empieza desde **Configuración** en el Admin.
 
 | Plataforma | Email | Contraseña |
 |------------|-------|------------|
 | Master | master@eventos.test | Master123! |
 | Admin | admin@eventos.test | Admin123! |
 | Supervisor | supervisor@eventos.test | Super123! |
-| Trabajador | maria@eventos.test | Trab123! |
-| Trabajador | juan@eventos.test | Trab123! |
+
+Los trabajadores se registran mediante **invitación** (Admin → Cuentas → enviar correo con código de un solo uso).
 
 ## Ver en línea (GitHub Pages)
 

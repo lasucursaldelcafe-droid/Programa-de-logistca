@@ -156,8 +156,10 @@ jobs:
             | App | Correo | Contraseña |
             |-----|--------|------------|
             | Admin / Windows | admin@eventos.test | Admin123! |
-            | Trabajador / Android | maria@eventos.test | Trab123! |
             | Master | master@eventos.test | Master123! |
+            | Supervisor | supervisor@eventos.test | Super123! |
+
+            Sin personal precargado — los trabajadores se registran con invitación desde Admin → Cuentas.
 
             ### Instalar Android
             1. Descarga el `.apk`

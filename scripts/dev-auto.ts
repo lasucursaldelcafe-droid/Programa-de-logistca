@@ -107,7 +107,7 @@ function startAdmin(): void {
   console.log("\n  Plataformas:");
   console.log("    Master     → npm run dev:master  (5175)  master@eventos.test / Master123!");
   console.log("    Admin      → http://localhost:5173      admin@eventos.test / Admin123!");
-  console.log("    Trabajador → npm run dev:worker (5174)  maria@eventos.test / Trab123!\n");
+  console.log("    Trabajador → npm run dev:worker (5174)  (cuenta vía invitación desde Admin)\n");
 
   webProc = spawnProc("npm", ["run", "dev:admin"], "Admin");
 }

@@ -12,15 +12,17 @@ Plataforma para gestionar personal en eventos de logística y recreación (200+ 
 
 > En modo demo los datos viven en la memoria del navegador. En producción se usa Firebase (Auth + Firestore).
 
-## Cuentas de prueba
+## Cuentas de plataforma
+
+Plataforma vacía al iniciar — solo cuentas de administración. Crea eventos, personal y turnos desde el Admin.
 
 | Plataforma | Email | Contraseña |
 |------------|-------|------------|
 | Master | master@eventos.test | Master123! |
 | Admin | admin@eventos.test | Admin123! |
 | Supervisor | supervisor@eventos.test | Super123! |
-| Trabajador | maria@eventos.test | Trab123! |
-| Trabajador | juan@eventos.test | Trab123! |
+
+Los trabajadores activan su cuenta con la **invitación por correo** (código de un solo uso) enviada desde Admin → Cuentas.
 
 **Importante:** cada plataforma solo acepta el rol correspondiente. Un trabajador no puede iniciar sesión en Admin ni en Master.
 
