@@ -31,6 +31,7 @@ import {
   saveCredencialesToStorage,
 } from "./integrations";
 import { loadDemoPersistedState, saveDemoPersistedState } from "./persist";
+import { appendChangeLog, type DemoChangeAction, type DemoChangeEntry } from "./changeLog";
 import { PLATFORM_SEED_ACCOUNTS } from "@spe/shared";
 
 export const DEMO_ACCOUNTS: Array<{
@@ -110,6 +111,7 @@ class DemoStore {
   credencialesIntegraciones = loadCredencialesFromStorage();
   accounts = [...DEMO_ACCOUNTS];
   platformUsers: AppUser[] = DEMO_ACCOUNTS.map((a) => a.user);
+  changeLog: DemoChangeEntry[] = [];
   private listeners = new Set<Listener>();
 
   subscribe(listener: Listener): () => void {
@@ -140,6 +142,7 @@ class DemoStore {
       posiciones: this.posiciones,
       credencialesIntegraciones: this.credencialesIntegraciones,
       accounts: this.accounts,
+      changeLog: this.changeLog,
     });
     for (const listener of this.listeners) listener();
   }
@@ -174,18 +177,72 @@ class DemoStore {
     const workerAccounts = (saved.accounts ?? []).filter((a) => !platformEmails.has(a.email));
     this.accounts = [...DEMO_ACCOUNTS, ...workerAccounts];
     this.platformUsers = this.accounts.map((a) => a.user);
+    if (saved.changeLog) this.changeLog = saved.changeLog;
   }
 
-  addWorker(worker: Omit<Worker, "id">): void {
+  private recordChange(
+    action: DemoChangeAction,
+    targetId: string,
+    opts?: { targetLabel?: string; actorNombre?: string; detail?: string },
+  ): void {
+    this.changeLog = appendChangeLog(this.changeLog, {
+      action,
+      targetId,
+      targetLabel: opts?.targetLabel,
+      actorNombre: opts?.actorNombre,
+      detail: opts?.detail,
+    });
+  }
+
+  addWorker(worker: Omit<Worker, "id">, actorNombre?: string): void {
     const id = `worker-${Date.now()}`;
     this.workers = [...this.workers, { ...worker, id }].sort((a, b) =>
       a.nombre.localeCompare(b.nombre),
     );
+    this.recordChange("worker.create", id, {
+      targetLabel: worker.nombre,
+      actorNombre,
+    });
     this.notify();
   }
 
-  updateWorker(id: string, patch: Partial<Worker>): void {
+  updateWorker(id: string, patch: Partial<Worker>, actorNombre?: string): void {
+    const prev = this.workers.find((w) => w.id === id);
     this.workers = this.workers.map((w) => (w.id === id ? { ...w, ...patch } : w));
+    if (prev && Object.keys(patch).length > 0) {
+      this.recordChange("worker.update", id, {
+        targetLabel: prev.nombre,
+        actorNombre,
+        detail: Object.keys(patch).join(", "),
+      });
+    }
+    this.notify();
+  }
+
+  removeWorker(id: string, actorNombre?: string): void {
+    const worker = this.workers.find((w) => w.id === id);
+    if (!worker) return;
+
+    const jornadaActiva = this.attendances.some(
+      (a) => a.workerId === id && a.estado !== "cerrado",
+    );
+    if (jornadaActiva) {
+      throw new Error("No se puede eliminar: tiene una jornada activa. Cierra la jornada primero.");
+    }
+
+    const platformEmails = new Set(DEMO_ACCOUNTS.map((a) => a.email));
+
+    this.workers = this.workers.filter((w) => w.id !== id);
+    this.invitations = this.invitations.filter((i) => i.workerId !== id);
+    this.shifts = this.shifts.filter((s) => s.workerId !== id);
+    this.accounts = this.accounts.filter(
+      (a) => platformEmails.has(a.email) || a.user.workerId !== id,
+    );
+
+    this.recordChange("worker.delete", id, {
+      targetLabel: worker.nombre,
+      actorNombre,
+    });
     this.notify();
   }
 

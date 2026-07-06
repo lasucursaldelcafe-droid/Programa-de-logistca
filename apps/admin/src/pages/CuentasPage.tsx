@@ -119,9 +119,10 @@ export function CuentasPage() {
       {DEMO_MODE && (
         <Card className="border-accent/30 bg-accent/5">
           <p className="text-sm text-neutral-300">
-            <strong className="text-accent">Modo demo:</strong> las invitaciones se sincronizan entre
-            Admin y Trabajador web en el mismo dominio. En la App Android instale la misma versión
-            demo o use Firebase en producción para sincronizar entre dispositivos.
+            <strong className="text-accent">Datos guardados automáticamente</strong> en este
+            navegador o app. Web, Android y Windows (con internet) comparten datos al usar la URL
+            publicada. Los cambios de código se actualizan con cada despliegue en{" "}
+            <code className="text-neutral-400">main</code>.
           </p>
         </Card>
       )}

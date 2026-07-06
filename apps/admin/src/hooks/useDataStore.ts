@@ -6,6 +6,7 @@ import {
   query,
   addDoc,
   updateDoc,
+  deleteDoc,
   doc,
   getDoc,
   setDoc,
@@ -118,31 +119,37 @@ export function useSites(): Sitio[] {
   return DEMO_MODE ? demoSites : sites;
 }
 
-export async function createWorker(data: {
-  nombre: string;
-  documento: string;
-  telefono: string;
-  email: string;
-  perfiles: PerfilTrabajo[];
-  rolPlataforma?: "trabajador" | "supervisor_sitio";
-}): Promise<void> {
+export async function createWorker(
+  data: {
+    nombre: string;
+    documento: string;
+    telefono: string;
+    email: string;
+    perfiles: PerfilTrabajo[];
+    rolPlataforma?: "trabajador" | "supervisor_sitio";
+  },
+  actorNombre?: string,
+): Promise<void> {
   const rolPlataforma = data.rolPlataforma ?? "trabajador";
   if (DEMO_MODE) {
-    demoStore.addWorker({
-      nombre: data.nombre,
-      documento: data.documento,
-      telefono: data.telefono,
-      email: data.email.trim().toLowerCase(),
-      perfiles: data.perfiles,
-      rolPlataforma,
-      experienciaAnios: 0,
-      eventosTrabajados: 0,
-      rating: 0,
-      estado: "sin_asignar",
-      cuentaCreada: false,
-      certificaciones: [],
-      creadoEn: new Date().toISOString(),
-    });
+    demoStore.addWorker(
+      {
+        nombre: data.nombre,
+        documento: data.documento,
+        telefono: data.telefono,
+        email: data.email.trim().toLowerCase(),
+        perfiles: data.perfiles,
+        rolPlataforma,
+        experienciaAnios: 0,
+        eventosTrabajados: 0,
+        rating: 0,
+        estado: "sin_asignar",
+        cuentaCreada: false,
+        certificaciones: [],
+        creadoEn: new Date().toISOString(),
+      },
+      actorNombre,
+    );
     return;
   }
   await addDoc(collection(getFirestoreDb(), "workers"), {
@@ -162,12 +169,51 @@ export async function createWorker(data: {
   });
 }
 
-export async function updateWorkerEstado(id: string, estado: WorkerEstado): Promise<void> {
+export async function updateWorkerEstado(
+  id: string,
+  estado: WorkerEstado,
+  actorNombre?: string,
+): Promise<void> {
   if (DEMO_MODE) {
-    demoStore.updateWorker(id, { estado });
+    demoStore.updateWorker(id, { estado }, actorNombre);
     return;
   }
   await updateDoc(doc(getFirestoreDb(), "workers", id), { estado });
+}
+
+export async function deleteWorker(id: string, actorNombre?: string): Promise<void> {
+  if (DEMO_MODE) {
+    demoStore.removeWorker(id, actorNombre);
+    return;
+  }
+
+  const db = getFirestoreDb();
+  const activeSnap = await getDocs(
+    query(collection(db, "attendance"), where("workerId", "==", id)),
+  );
+  const hasActive = activeSnap.docs.some((d) => {
+    const data = d.data() as Attendance;
+    return data.estado !== "cerrado";
+  });
+  if (hasActive) {
+    throw new Error("No se puede eliminar: tiene una jornada activa. Cierra la jornada primero.");
+  }
+
+  const shiftSnap = await getDocs(
+    query(collection(db, "shifts"), where("workerId", "==", id)),
+  );
+  await Promise.all(shiftSnap.docs.map((d) => deleteDoc(d.ref)));
+
+  const invSnap = await getDocs(
+    query(collection(db, "invitations"), where("workerId", "==", id)),
+  );
+  await Promise.all(invSnap.docs.map((d) => deleteDoc(d.ref)));
+
+  await deleteDoc(doc(db, "workers", id));
+}
+
+export function useChangeLog() {
+  return useDemoSnapshot(() => demoStore.changeLog);
 }
 
 export async function createShift(data: Omit<Turno, "id">): Promise<string> {

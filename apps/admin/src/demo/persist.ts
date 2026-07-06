@@ -22,6 +22,8 @@ import type {
   Worker,
 } from "@spe/shared";
 
+import type { DemoChangeEntry } from "./changeLog";
+
 const STORAGE_KEY = "spe-demo-store-v1";
 
 export interface DemoPersistedAccount {
@@ -51,6 +53,7 @@ export interface DemoPersistedState {
   posiciones: PosicionTrabajador[];
   credencialesIntegraciones: Record<TipoIntegracion, CredencialesIntegracion>;
   accounts: DemoPersistedAccount[];
+  changeLog: DemoChangeEntry[];
 }
 
 export function loadDemoPersistedState(): Partial<DemoPersistedState> | null {
