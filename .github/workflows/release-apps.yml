@@ -1,0 +1,165 @@
+name: Publicar instaladores (Windows + Android)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-apps
+  cancel-in-progress: false
+
+env:
+  APP_VERSION: "0.2.0"
+
+jobs:
+  build-windows:
+    name: Windows — SPE Admin
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Compilar instalador Windows
+        run: npm run electron:build
+        env:
+          VITE_DEMO_MODE: "true"
+          VITE_USE_FIREBASE_EMULATORS: "false"
+
+      - name: Listar artefactos
+        shell: bash
+        run: ls -la apps/desktop/release/
+
+      - name: Subir artefactos Windows
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installers
+          path: apps/desktop/release/*.exe
+          retention-days: 90
+
+  build-android:
+    name: Android — SPE Trabajador
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Configurar Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Escribir local.properties
+        run: echo "sdk.dir=${ANDROID_HOME}" > apps/worker/android/local.properties
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Sincronizar Capacitor (worker)
+        run: npm run cap:sync
+        env:
+          VITE_DEMO_MODE: "true"
+          VITE_USE_FIREBASE_EMULATORS: "false"
+
+      - name: Compilar APK
+        working-directory: apps/worker/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Renombrar APK
+        run: |
+          cp apps/worker/android/app/build/outputs/apk/debug/app-debug.apk \
+            SPE-Trabajador-${APP_VERSION}-android.apk
+          ls -la SPE-Trabajador-*.apk
+
+      - name: Subir APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: SPE-Trabajador-*.apk
+          retention-days: 90
+
+  release:
+    name: GitHub Release
+    needs: [build-windows, build-android]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Descargar Windows
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-installers
+          path: dist/release/windows
+
+      - name: Descargar Android
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+          path: dist/release/android
+
+      - name: Preparar archivos
+        run: |
+          mkdir -p dist/release/all
+          cp dist/release/windows/* dist/release/all/ 2>/dev/null || true
+          cp dist/release/android/* dist/release/all/ 2>/dev/null || true
+          ls -laR dist/release/
+
+      - name: Crear GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.APP_VERSION }}-build.${{ github.run_number }}
+          name: SPE v${{ env.APP_VERSION }} — build ${{ github.run_number }}
+          make_latest: true
+          generate_release_notes: true
+          body: |
+            ## Descargas
+
+            | Plataforma | App | Archivo |
+            |------------|-----|---------|
+            | **Windows** | Consola Admin | `SPE-Admin-*-nsis.exe` (instalador) |
+            | **Windows** | Consola Admin | `SPE-Admin-*-portable.exe` (sin instalar) |
+            | **Android** | App Trabajador | `SPE-Trabajador-*-android.apk` |
+            | **Web Admin** | Navegador | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/ |
+            | **Web Trabajador** | Navegador | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/worker/ |
+            | **Web Master** | Navegador | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/master/ |
+
+            ### Cuentas demo
+            | App | Correo | Contraseña |
+            |-----|--------|------------|
+            | Admin / Windows | admin@eventos.test | Admin123! |
+            | Trabajador / Android | maria@eventos.test | Trab123! |
+            | Master | master@eventos.test | Master123! |
+
+            ### Instalar Android
+            1. Descarga el `.apk`
+            2. Permite **orígenes desconocidos** en Ajustes → Seguridad
+            3. Abre el archivo e instala
+
+            ### Instalar Windows
+            1. Descarga `SPE-Admin-*-nsis.exe`
+            2. Ejecuta el instalador
+
+            ---
+            Build: `${{ github.sha }}`
+          files: dist/release/all/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

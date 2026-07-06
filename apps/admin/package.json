@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:native": "tsc -b && NATIVE_BUILD=true vite build",
     "build:pages": "vite build",
     "preview": "vite preview"
   },
