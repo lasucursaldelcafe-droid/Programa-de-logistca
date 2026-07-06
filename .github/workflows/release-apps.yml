@@ -33,6 +33,9 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
+      - name: Asegurar Electron en desktop
+        run: npm install electron@35.7.5 electron-builder@25.1.8 -w @spe/desktop
+
       - name: Compilar instalador Windows
         run: npm run electron:build
 
