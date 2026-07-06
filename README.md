@@ -43,14 +43,12 @@ Los trabajadores se registran mediante **invitación** (Admin → Cuentas → en
 <!-- DEPLOY_LINKS_START -->
 | Recurso | URL |
 |---------|-----|
-| **Admin Console** | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/ |
-| **App Trabajador** | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/worker/ |
-| **Master Console** | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/master/ |
+| **App unificada (web)** | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/ |
 | **Guía (markdown)** | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/GUIA.md |
 | **Repositorio** | https://github.com/lasucursaldelcafe-droid/Programa-de-logistca |
 | **Actions (CI)** | https://github.com/lasucursaldelcafe-droid/Programa-de-logistca/actions |
 
-> Enlaces generados automáticamente por `npm run sync:links` desde el repo `lasucursaldelcafe-droid/Programa-de-logistca`.
+> Una sola app: Admin, Master y Trabajador en la misma URL. Enlaces generados por `npm run sync:links`.
 <!-- DEPLOY_LINKS_END -->
 
 GitHub Pages publica las **tres plataformas** en modo demo:

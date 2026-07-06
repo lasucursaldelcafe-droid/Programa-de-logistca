@@ -4,6 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { Card } from "../components/ui";
 import { DEMO_MODE } from "../lib/mode";
 import { useDeploymentLinks } from "../hooks/useDeploymentLinks";
+import { rutaHomePorRol } from "@spe/shared";
 import { LoginAyudaPanel } from "../components/LoginAyudaPanel";
 import { sendPasswordReset } from "../hooks/useDataStore";
 
@@ -17,15 +18,17 @@ export function LoginPage() {
   const [info, setInfo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  if (!loading && user) return <Navigate to="/" replace />;
+  if (!loading && user) {
+    return <Navigate to={rutaHomePorRol(user.role)} replace />;
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
     try {
-      await login(email, password);
-      navigate("/");
+      const appUser = await login(email, password);
+      navigate(rutaHomePorRol(appUser.role));
     } catch {
       setError("Credenciales inválidas. Usa las cuentas de prueba del seed.");
     } finally {
@@ -36,9 +39,9 @@ export function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg px-4">
       <Card className="w-full max-w-md">
-        <h1 className="font-display text-2xl font-bold">Admin Console</h1>
+        <h1 className="font-display text-2xl font-bold">SPE — Personal Eventos</h1>
         <p className="mt-1 text-sm text-neutral-400">
-          Gestión de eventos, personal, turnos y supervisión en sitio
+          Una sola app: entra con tu usuario y se abre tu panel (Admin, Master o Trabajador)
         </p>
         {DEMO_MODE && (
           <p className="mt-2 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-xs text-accent">
@@ -115,32 +118,25 @@ export function LoginPage() {
           <p className="mt-2 text-neutral-500">
             Sin eventos ni personal precargados — empieza en Configuración.
           </p>
-          <p className="mt-3 border-t border-border pt-3 text-neutral-500">
-            Otras plataformas: Trabajador (5174) · Master (5175)
-          </p>
           {deployLinks && (
             <div className="mt-3 space-y-1 border-t border-border pt-3">
               <p>
-                Admin:{" "}
+                App web unificada:{" "}
                 <a href={deployLinks.pagesUrl} className="text-accent hover:underline" target="_blank" rel="noreferrer">
                   {deployLinks.pagesUrl}
                 </a>
               </p>
-              <p>
-                Trabajador:{" "}
-                <a href={deployLinks.workerUrl} className="text-accent hover:underline" target="_blank" rel="noreferrer">
-                  {deployLinks.workerUrl}
-                </a>
-              </p>
-              <p>
-                Master:{" "}
-                <a href={deployLinks.masterUrl} className="text-accent hover:underline" target="_blank" rel="noreferrer">
-                  {deployLinks.masterUrl}
-                </a>
+              <p className="text-neutral-500">
+                Windows y Android usan la misma app: al iniciar sesión se abre tu panel según tu rol.
               </p>
             </div>
           )}
           <p className="mt-3">
+            <Link to="/unirse" className="text-accent hover:underline">
+              ¿Trabajador nuevo? Unirme con código de invitación →
+            </Link>
+          </p>
+          <p className="mt-2">
             <Link to="/ayuda" className="text-accent hover:underline">
               Guía completa →
             </Link>

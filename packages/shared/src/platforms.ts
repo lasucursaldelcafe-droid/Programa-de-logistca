@@ -23,6 +23,30 @@ export function puedeAccederPlataforma(role: UserRole, platform: AppPlatform): b
   }
 }
 
+/** Panel principal según rol del usuario autenticado. */
+export function plataformaParaRol(role: UserRole): AppPlatform {
+  if (role === "super_admin") return "master";
+  if (role === "trabajador") return "worker";
+  return "admin";
+}
+
+/** Ruta de inicio tras login en la app unificada. */
+export function rutaHomePorRol(role: UserRole): string {
+  const platform = plataformaParaRol(role);
+  switch (platform) {
+    case "master":
+      return "/master";
+    case "worker":
+      return "/worker";
+    case "admin":
+      return "/panel";
+    default: {
+      const _exhaustive: never = platform;
+      return _exhaustive;
+    }
+  }
+}
+
 /** Master: gestión global de la plataforma y administradores */
 export function puedeGestionarPlataforma(role: UserRole): boolean {
   return role === "super_admin";

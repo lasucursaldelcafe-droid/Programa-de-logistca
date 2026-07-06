@@ -38,8 +38,10 @@ export function CuentasPage() {
   const sinCuenta = workers.filter((w) => !w.cuentaCreada);
   const pendientes = invitations.filter((i) => i.estado === "pendiente");
 
-  const workerBase = () =>
-    deployLinks?.workerUrl ?? import.meta.env.VITE_WORKER_APP_URL ?? "/worker/";
+  const appBase = () =>
+    deployLinks?.pagesUrl ??
+    import.meta.env.VITE_APP_URL ??
+    (typeof window !== "undefined" ? `${window.location.origin}/` : "/");
 
   async function invitar(workerId: string) {
     const worker = workers.find((w) => w.id === workerId);
@@ -64,7 +66,7 @@ export function CuentasPage() {
         creadaPorNombre: currentUser.nombre,
       });
 
-      const links = buildInvitationUrls(token, workerBase());
+      const links = buildInvitationUrls(token, appBase());
       const invitation = await getInvitationByToken(token);
 
       if (invitation) {
@@ -80,7 +82,7 @@ export function CuentasPage() {
   }
 
   async function copiarEnlace(token: string) {
-    const links = buildInvitationUrls(token, workerBase());
+    const links = buildInvitationUrls(token, appBase());
     const text = [
       `Web: ${links.webJoin}`,
       `Android (App): ${links.appJoin}`,
@@ -93,7 +95,7 @@ export function CuentasPage() {
   }
 
   async function copiarCorreo(inv: (typeof invitations)[0]) {
-    const links = buildInvitationUrls(inv.token, workerBase());
+    const links = buildInvitationUrls(inv.token, appBase());
     const { subject, body } = buildInvitationEmailContent(inv, links);
     await navigator.clipboard.writeText(`Asunto: ${subject}\n\n${body}`);
     setCopiedToken(inv.token);

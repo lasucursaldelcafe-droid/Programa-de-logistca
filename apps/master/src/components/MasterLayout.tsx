@@ -28,19 +28,19 @@ export function MasterLayout() {
             </div>
           </div>
           <nav className="flex flex-wrap items-center gap-1">
-            <NavLink to="/" end className={linkClass}>
+            <NavLink to="/master" end className={linkClass}>
               Panel
             </NavLink>
-            <NavLink to="/administradores" className={linkClass}>
+            <NavLink to="/master/administradores" className={linkClass}>
               Administradores
             </NavLink>
-            <NavLink to="/informes" className={linkClass}>
+            <NavLink to="/master/informes" className={linkClass}>
               Informes
             </NavLink>
-            <NavLink to="/auditoria" className={linkClass}>
+            <NavLink to="/master/auditoria" className={linkClass}>
               Auditoría
             </NavLink>
-            <NavLink to="/ayuda" className={linkClass}>
+            <NavLink to="/master/ayuda" className={linkClass}>
               Ayuda
             </NavLink>
             <button

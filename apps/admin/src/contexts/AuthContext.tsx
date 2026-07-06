@@ -31,7 +31,7 @@ import {
 interface AuthContextValue {
   user: AppUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<AppUser>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -92,15 +92,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(appUser);
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string): Promise<AppUser> => {
     if (DEMO_MODE) {
       const appUser = demoLogin(email, password);
       setUser(appUser);
-      return;
+      return appUser;
     }
     await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
     const fbUser = getFirebaseAuth().currentUser;
+    if (!fbUser) throw new Error("No se pudo iniciar sesión");
     if (fbUser) void initPushNotifications(fbUser.uid);
+    const appUser = await loadAppUser(fbUser);
+    if (!appUser) throw new Error("Usuario no registrado en el sistema");
+    setUser(appUser);
+    return appUser;
   }, []);
 
   const logout = useCallback(async () => {

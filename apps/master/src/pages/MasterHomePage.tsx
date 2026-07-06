@@ -37,8 +37,8 @@ export function MasterHomePage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard label="Eventos" value={String(events.length)} />
         <MetricCard label="Trabajadores" value={String(workers.length)} />
-        <MetricCard label="Jornadas activas" value={String(activos)} variant="positive" />
-        <MetricCard label="Reportes abiertos" value={String(reportesAbiertos)} variant="warning" />
+        <MetricCard label="Jornadas activas" value={String(activos)} tone="positive" />
+        <MetricCard label="Reportes abiertos" value={String(reportesAbiertos)} tone="alert" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

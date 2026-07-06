@@ -1,7 +1,9 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { rutaHomePorRol } from "@spe/shared";
 import { useAuth } from "./contexts/AuthContext";
 import { AppLayout } from "./components/AppLayout";
 import { PlatformGate } from "./components/PlatformGate";
+import { RoleHomeRedirect } from "./components/RoleHomeRedirect";
 import { LoginPage } from "./pages/LoginPage";
 import { HomePage } from "./pages/HomePage";
 import { PersonalPage } from "./pages/PersonalPage";
@@ -19,8 +21,13 @@ import { FacturacionPage } from "./pages/FacturacionPage";
 import { InventarioPage } from "./pages/InventarioPage";
 import { IntegracionesPage } from "./pages/IntegracionesPage";
 import { SupervisionPage } from "./pages/SupervisionPage";
+import { ActivarCuentaPage } from "./pages/ActivarCuentaPage";
+import { UnirseEmpresaPage } from "./pages/UnirseEmpresaPage";
+import { CompletarPerfilPage } from "./pages/CompletarPerfilPage";
+import { MasterRoutes } from "./routes/MasterRoutes";
+import { WorkerRoutes } from "./routes/WorkerRoutes";
 
-function Protected({ children }: { children: React.ReactNode }) {
+function AdminProtected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) {
     return (
@@ -30,9 +37,23 @@ function Protected({ children }: { children: React.ReactNode }) {
     );
   }
   if (!user) return <Navigate to="/login" replace />;
-  return (
-    <PlatformGate platform="admin">{children}</PlatformGate>
-  );
+  return <PlatformGate platform="admin">{children}</PlatformGate>;
+}
+
+function WorkerOnboardingGate({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-neutral-400">
+        Cargando…
+      </div>
+    );
+  }
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.perfilCompleto === true) {
+    return <Navigate to={rutaHomePorRol(user.role)} replace />;
+  }
+  return <>{children}</>;
 }
 
 export function App() {
@@ -40,14 +61,29 @@ export function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/ayuda" element={<AyudaPage platform="admin" />} />
+      <Route path="/unirse" element={<UnirseEmpresaPage />} />
+      <Route path="/activar/:token" element={<ActivarCuentaPage />} />
+      <Route
+        path="/completar-perfil"
+        element={
+          <WorkerOnboardingGate>
+            <CompletarPerfilPage />
+          </WorkerOnboardingGate>
+        }
+      />
+
+      <Route path="/master/*" element={<MasterRoutes />} />
+      <Route path="/worker/*" element={<WorkerRoutes />} />
+
+      <Route path="/" element={<RoleHomeRedirect />} />
       <Route
         element={
-          <Protected>
+          <AdminProtected>
             <AppLayout />
-          </Protected>
+          </AdminProtected>
         }
       >
-        <Route index element={<HomePage />} />
+        <Route path="panel" element={<HomePage />} />
         <Route path="clientes" element={<ClientesPage />} />
         <Route path="facturacion" element={<FacturacionPage />} />
         <Route path="inventario" element={<InventarioPage />} />
@@ -64,7 +100,8 @@ export function App() {
         <Route path="configuracion" element={<ConfiguracionPage />} />
         <Route path="ayuda" element={<AyudaPage platform="admin" />} />
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
+
+      <Route path="*" element={<RoleHomeRedirect />} />
     </Routes>
   );
 }

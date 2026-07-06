@@ -46,19 +46,19 @@ export function WorkerLayout() {
       </main>
       <nav className="fixed bottom-0 left-0 right-0 border-t border-border bg-surface/95 backdrop-blur">
         <div className="mx-auto flex max-w-lg justify-around px-2 py-2">
-          <NavLink to="/" end className={linkClass}>
+          <NavLink to="/worker" end className={linkClass}>
             Inicio
           </NavLink>
-          <NavLink to="/turnos" className={linkClass}>
+          <NavLink to="/worker/turnos" className={linkClass}>
             Turnos
           </NavLink>
-          <NavLink to="/entrada" className={linkClass}>
+          <NavLink to="/worker/entrada" className={linkClass}>
             Escanear
           </NavLink>
-          <NavLink to="/reportar" className={linkClass}>
+          <NavLink to="/worker/reportar" className={linkClass}>
             Reportar
           </NavLink>
-          <NavLink to="/ayuda" className={linkClass}>
+          <NavLink to="/worker/ayuda" className={linkClass}>
             Ayuda
           </NavLink>
         </div>

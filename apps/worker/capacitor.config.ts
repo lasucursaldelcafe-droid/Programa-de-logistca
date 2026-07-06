@@ -1,16 +1,15 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 /**
- * Si CAPACITOR_SERVER_URL está definida, la app Android carga la versión web
- * (GitHub Pages) en lugar del bundle embebido. Esto sincroniza invitaciones demo
- * vía localStorage con el Admin web en el mismo dominio.
+ * App unificada SPE: Android carga la versión web (GitHub Pages) o el bundle
+ * embebido de apps/admin/dist. Tras login, el panel se elige según el rol.
  */
 const remoteUrl = process.env.CAPACITOR_SERVER_URL?.trim();
 
 const config: CapacitorConfig = {
   appId: "com.spe.personaleventos",
-  appName: "Trabajador SPE",
-  webDir: "dist",
+  appName: "SPE Eventos",
+  webDir: "../admin/dist",
   android: {
     allowMixedContent: true,
   },

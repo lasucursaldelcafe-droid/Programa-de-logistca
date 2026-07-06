@@ -26,10 +26,25 @@ function finalizeSpa(distDir: string, extraRoutes: string[] = []): void {
   if (extraRoutes.length > 0) mirrorSpaRoutes(distDir, extraRoutes);
 }
 
-function appBase(subpath?: string): string {
-  const root = resolvePagesBase();
-  if (!subpath) return root;
-  return `${root}${subpath.replace(/^\//, "")}/`;
+function writeLegacyRedirect(targetDir: string, redirectTo: string): void {
+  mkdirSync(targetDir, { recursive: true });
+  writeFileSync(
+    resolve(targetDir, "index.html"),
+    `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="refresh" content="0;url=${redirectTo}" />
+  <script>location.replace(${JSON.stringify(redirectTo)});</script>
+  <title>SPE — redirigiendo…</title>
+</head>
+<body><p>Redirigiendo a la app unificada SPE…</p></body>
+</html>`,
+  );
+}
+
+function appBase(): string {
+  return resolvePagesBase();
 }
 
 const links = getDeploymentLinks();
@@ -37,55 +52,57 @@ writeDeploymentJson(links);
 updateReadme(links);
 updateRootIndex(links);
 
-console.log("→ Build Admin Console…");
+console.log("→ Build app unificada (Admin + Master + Trabajador)…");
 run("npm run build -w @spe/shared && npm run build -w @spe/admin", {
   GITHUB_PAGES_BASE: appBase(),
   VITE_DEMO_MODE: process.env.VITE_DEMO_MODE ?? "true",
   VITE_USE_FIREBASE_EMULATORS: process.env.VITE_USE_FIREBASE_EMULATORS ?? "false",
 });
 
-console.log("→ Build App Trabajador…");
-run("npm run build -w @spe/worker", {
-  GITHUB_PAGES_BASE: appBase("worker"),
-  VITE_DEMO_MODE: process.env.VITE_DEMO_MODE ?? "true",
-  VITE_USE_FIREBASE_EMULATORS: process.env.VITE_USE_FIREBASE_EMULATORS ?? "false",
-});
-
-console.log("→ Build Master Console…");
-run("npm run build -w @spe/master", {
-  GITHUB_PAGES_BASE: appBase("master"),
-  VITE_DEMO_MODE: process.env.VITE_DEMO_MODE ?? "true",
-  VITE_USE_FIREBASE_EMULATORS: process.env.VITE_USE_FIREBASE_EMULATORS ?? "false",
-});
-
 const adminDist = resolve(ROOT, "apps/admin/dist");
-const workerDist = resolve(ROOT, "apps/worker/dist");
-const masterDist = resolve(ROOT, "apps/master/dist");
 
-finalizeSpa(adminDist, ["login", "ayuda", "personal", "turnos", "cuentas", "qr-sitios", "mapa", "reportes", "nomina", "configuracion"]);
-finalizeSpa(workerDist, ["login", "ayuda", "unirse", "activar", "turnos", "entrada", "reportar", "completar-perfil"]);
-finalizeSpa(masterDist, ["login", "ayuda", "administradores", "informes", "auditoria"]);
+finalizeSpa(adminDist, [
+  "login",
+  "ayuda",
+  "unirse",
+  "completar-perfil",
+  "panel",
+  "personal",
+  "turnos",
+  "cuentas",
+  "qr-sitios",
+  "mapa",
+  "reportes",
+  "nomina",
+  "configuracion",
+  "clientes",
+  "facturacion",
+  "inventario",
+  "integraciones",
+  "supervision",
+  "master",
+  "master/administradores",
+  "master/informes",
+  "master/auditoria",
+  "worker",
+  "worker/turnos",
+  "worker/entrada",
+  "worker/reportar",
+]);
 
 mkdirSync(docs, { recursive: true });
 rmSync(docs, { recursive: true, force: true });
 mkdirSync(docs, { recursive: true });
 
 cpSync(adminDist, docs, { recursive: true });
-mkdirSync(resolve(docs, "worker"), { recursive: true });
-cpSync(workerDist, resolve(docs, "worker"), { recursive: true });
-mkdirSync(resolve(docs, "master"), { recursive: true });
-cpSync(masterDist, resolve(docs, "master"), { recursive: true });
 
-const deploymentJson = resolve(ROOT, "apps/admin/public/deployment.json");
-copyFileSync(deploymentJson, resolve(docs, "worker/deployment.json"));
-copyFileSync(deploymentJson, resolve(docs, "master/deployment.json"));
+// Compatibilidad: URLs antiguas /worker/ y /master/ redirigen a la app unificada
+writeLegacyRedirect(resolve(docs, "worker"), links.pagesUrl);
+writeLegacyRedirect(resolve(docs, "master"), links.pagesUrl);
 
-// Guía estática accesible sin SPA
 copyFileSync(resolve(ROOT, "docs-source/GUIA.md"), resolve(docs, "GUIA.md"));
 writeFileSync(resolve(docs, ".nojekyll"), "");
 
 console.log(`✓ GitHub Pages listo (${links.pagesUrl})`);
-console.log(`  Admin:    ${links.pagesUrl}`);
-console.log(`  Worker:   ${links.workerUrl}`);
-console.log(`  Master:   ${links.masterUrl}`);
-console.log("  docs/ + worker/ + master/ + 404.html + .nojekyll");
+console.log("  App unificada — login único, panel según rol (Admin / Master / Trabajador)");
+console.log("  Redirecciones legacy: /worker/ y /master/ → raíz");

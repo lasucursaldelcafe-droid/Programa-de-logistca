@@ -17,11 +17,11 @@ env:
   VITE_DEMO_MODE: "true"
   VITE_USE_FIREBASE_EMULATORS: "false"
   NATIVE_BUILD: "true"
-  CAPACITOR_SERVER_URL: "https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/worker/"
+  CAPACITOR_SERVER_URL: "https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/"
 
 jobs:
   build-windows:
-    name: Windows — SPE Admin
+    name: Windows — SPE Eventos
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -62,7 +62,7 @@ jobs:
           retention-days: 90
 
   build-android:
-    name: Android — SPE Trabajador
+    name: Android — SPE Eventos
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -86,7 +86,7 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Sincronizar Capacitor (worker)
+      - name: Sincronizar Capacitor (app unificada)
         run: npm run cap:sync
 
       - name: Compilar APK
@@ -98,14 +98,14 @@ jobs:
       - name: Renombrar APK
         run: |
           cp apps/worker/android/app/build/outputs/apk/release/app-release.apk \
-            SPE-Trabajador-${APP_VERSION}-android.apk
-          ls -la SPE-Trabajador-*.apk
+            SPE-Eventos-${APP_VERSION}-android.apk
+          ls -la SPE-Eventos-*.apk
 
       - name: Subir APK
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: SPE-Trabajador-*.apk
+          path: SPE-Eventos-*.apk
           retention-days: 90
 
   release:
@@ -146,17 +146,17 @@ jobs:
 
             | Plataforma | App | Archivo |
             |------------|-----|---------|
-            | **Windows** | Consola Admin | `SPE-Admin-*-nsis.exe` (instalador) |
-            | **Windows** | Consola Admin | `SPE-Admin-*-portable.exe` (sin instalar) |
-            | **Android** | App Trabajador | `SPE-Trabajador-*-android.apk` |
-            | **Web Admin** | Navegador | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/ |
-            | **Web Trabajador** | Navegador | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/worker/ |
-            | **Web Master** | Navegador | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/master/ |
+            | **Windows** | SPE Eventos (unificada) | `SPE-Admin-*-nsis.exe` (instalador) |
+            | **Windows** | SPE Eventos (unificada) | `SPE-Admin-*-portable.exe` (sin instalar) |
+            | **Android** | SPE Eventos (unificada) | `SPE-Eventos-*-android.apk` |
+            | **Web** | Navegador | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/ |
+
+            **Una sola app:** descarga Windows o Android, inicia sesión y se abre tu panel (Admin, Master o Trabajador) según tu rol.
 
             ### Cuentas demo
-            | App | Correo | Contraseña |
+            | Rol | Correo | Contraseña |
             |-----|--------|------------|
-            | Admin / Windows | admin@eventos.test | Admin123! |
+            | Admin | admin@eventos.test | Admin123! |
             | Master | master@eventos.test | Master123! |
             | Supervisor | supervisor@eventos.test | Super123! |
 
@@ -167,7 +167,7 @@ jobs:
             2. Permite **orígenes desconocidos** en Ajustes → Seguridad
             3. Abre el archivo e instala
             4. La app requiere **internet** (carga la versión web actualizada)
-            5. Para registrarte: Admin envía invitación → en la app toca **Unirme con código**
+            5. Inicia sesión o regístrate con invitación → se abre tu panel según tu rol
 
             ### Instalar Windows
             1. Descarga `SPE-Admin-*-nsis.exe`

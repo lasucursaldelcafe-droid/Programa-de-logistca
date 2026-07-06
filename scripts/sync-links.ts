@@ -96,14 +96,12 @@ function updateReadme(links: DeploymentLinks): boolean {
   const block = `${markerStart}
 | Recurso | URL |
 |---------|-----|
-| **Admin Console** | ${links.pagesUrl} |
-| **App Trabajador** | ${links.workerUrl} |
-| **Master Console** | ${links.masterUrl} |
+| **App unificada (web)** | ${links.pagesUrl} |
 | **Guía (markdown)** | ${links.guiaUrl} |
 | **Repositorio** | ${links.repoUrl} |
 | **Actions (CI)** | ${links.actionsUrl} |
 
-> Enlaces generados automáticamente por \`npm run sync:links\` desde el repo \`${links.owner}/${links.repo}\`.
+> Una sola app: Admin, Master y Trabajador en la misma URL. Enlaces generados por \`npm run sync:links\`.
 ${markerEnd}`;
 
   const sectionRe = new RegExp(

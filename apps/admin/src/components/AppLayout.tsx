@@ -31,7 +31,7 @@ export function AppLayout() {
             </div>
           </div>
           <nav className="flex flex-wrap items-center gap-1">
-            <NavLink to="/" end className={linkClass}>
+            <NavLink to="/panel" end className={linkClass}>
               Dashboard
             </NavLink>
             {puedeGestionarPersonal(user.role) && (

@@ -9,6 +9,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@core": path.resolve(__dirname, "./src"),
+      "@master": path.resolve(__dirname, "../master/src"),
+      "@worker": path.resolve(__dirname, "../worker/src"),
     },
   },
   server: {
