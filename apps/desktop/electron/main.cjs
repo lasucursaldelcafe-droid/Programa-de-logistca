@@ -7,7 +7,7 @@ function resolveIndexHtml() {
   if (app.isPackaged) {
     return path.join(process.resourcesPath, "web", "index.html");
   }
-  return path.join(__dirname, "..", "..", "worker", "dist", "index.html");
+  return path.join(__dirname, "..", "..", "admin", "dist", "index.html");
 }
 
 function createWindow() {
@@ -16,7 +16,7 @@ function createWindow() {
     height: 840,
     minWidth: 900,
     minHeight: 600,
-    title: "Personal Eventos",
+    title: "SPE Admin",
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),

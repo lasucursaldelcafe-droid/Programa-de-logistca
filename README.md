@@ -61,13 +61,25 @@ GitHub Pages publica las **tres plataformas** en modo demo:
 
 Guía completa: `docs-source/GUIA.md` o `/ayuda` dentro de cada app.
 
+## Descargar instaladores (Windows + Android)
+
+**https://github.com/lasucursaldelcafe-droid/Programa-de-logistca/releases/latest**
+
+| Archivo | Plataforma |
+|---------|------------|
+| `SPE-Admin-*-nsis.exe` | Windows — consola Admin |
+| `SPE-Admin-*-portable.exe` | Windows — portable |
+| `SPE-Trabajador-*-android.apk` | Android — app Trabajador |
+
+Guía: [docs/DESCARGAS.md](docs/DESCARGAS.md). Se publica automáticamente en cada push a `main`.
+
 ## Estructura del monorepo
 
 ```
 apps/admin/            → Admin Console (antes apps/web)
 apps/worker/           → App Trabajador (móvil + Capacitor Android)
 apps/master/           → Master Console
-apps/desktop/          → Electron (empaqueta App Trabajador)
+apps/desktop/          → Electron (empaqueta Admin Console para Windows)
 packages/shared/       → Tipos, permisos, plataformas, geo, nómina
 scripts/               → setup, seed, dev-auto
 ```
@@ -88,6 +100,7 @@ scripts/               → setup, seed, dev-auto
 | `npm run dev:worker` | Solo App Trabajador |
 | `npm run dev:master` | Solo Master Console |
 | `npm run build` | Build de las 3 plataformas |
+| `npm run electron:build` | Instalador Windows (Admin) |
 | `npm run cap:android` | Android (App Trabajador) |
 | `npm run seed` | Datos y cuentas de prueba |
 
@@ -103,8 +116,8 @@ Desplegar cada app en su URL/subdominio con HTTPS (GPS requiere HTTPS).
 
 ## Apps nativas
 
-- **Android:** `npm run cap:sync` + `npm run cap:android` (proyecto en `apps/worker/android/`)
-- **Windows:** `npm run electron` (cliente con App Trabajador)
+- **Android:** descarga el APK en [Releases](https://github.com/lasucursaldelcafe-droid/Programa-de-logistca/releases/latest) o compila con `npm run cap:sync` + `npm run cap:android`
+- **Windows:** descarga el `.exe` en [Releases](https://github.com/lasucursaldelcafe-droid/Programa-de-logistca/releases/latest) o compila con `npm run electron:build`
 
 ## Prototipo anterior
 
