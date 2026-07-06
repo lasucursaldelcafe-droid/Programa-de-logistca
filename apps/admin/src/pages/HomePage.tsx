@@ -31,6 +31,7 @@ import { usePayrollEntries } from "../hooks/usePayroll";
 import { useNotifications } from "../hooks/useNotifications";
 import { DEMO_MODE } from "../lib/mode";
 import { SetupBanner } from "../components/SetupBanner";
+import { PageHeader } from "../components/nav/PageHeader";
 
 export function HomePage() {
   const { user } = useAuth();
@@ -106,13 +107,10 @@ export function HomePage() {
   if (esTrabajador && workerKpis) {
     return (
       <div className="space-y-8">
-        <div>
-          <h1 className="font-display text-3xl font-bold">Mi panel</h1>
-          <p className="mt-1 text-neutral-400">
-            Resumen personal de turnos, jornada y nómina
-            {DEMO_MODE ? " (modo demo)" : ""}.
-          </p>
-        </div>
+        <PageHeader
+          title="Mi panel"
+          description={`Turnos, jornada y nómina${DEMO_MODE ? " · demo" : ""}`}
+        />
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <MetricCard
@@ -172,21 +170,17 @@ export function HomePage() {
   return (
     <div className="space-y-8">
       {user && puedeGestionarConfiguracion(user.role) && <SetupBanner />}
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl font-bold">Dashboard operativo</h1>
-          <p className="mt-1 text-neutral-400">
-            Métricas en tiempo real de personal, turnos, GPS y nómina
-            {DEMO_MODE ? " (modo demo)" : " (Firestore)"}.
-          </p>
-        </div>
+      <PageHeader
+        title="Resumen"
+        description={`Personal, turnos, GPS y nómina${DEMO_MODE ? " · demo" : ""}`}
+      >
         {esOperativo && events.length > 0 && (
           <label className="text-sm">
-            Evento
+            <span className="sr-only">Evento</span>
             <select
               value={filtroEvento}
               onChange={(e) => setFiltroEvento(e.target.value)}
-              className="mt-1 block rounded-lg border border-border bg-bg px-3 py-2"
+              className="rounded-lg border border-border bg-bg px-3 py-2 text-sm"
             >
               <option value="">Todos los eventos</option>
               {events.map((ev) => (
@@ -197,7 +191,7 @@ export function HomePage() {
             </select>
           </label>
         )}
-      </div>
+      </PageHeader>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
         <MetricCard value={kpis.workersTotal} label="Trabajadores" />
@@ -266,20 +260,6 @@ export function HomePage() {
           </div>
         </Card>
       </div>
-
-      {esOperativo && (
-        <Card>
-          <h2 className="font-display text-lg font-semibold">Accesos operativos</h2>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <QuickLink to="/personal" label="Personal" />
-            <QuickLink to="/turnos" label="Turnos" />
-            <QuickLink to="/mapa" label="Mapa en vivo" />
-            <QuickLink to="/nomina" label="Nómina" />
-            <QuickLink to="/qr-sitios" label="QR sitios" />
-            <QuickLink to="/cuentas" label="Cuentas" />
-          </div>
-        </Card>
-      )}
     </div>
   );
 }

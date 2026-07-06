@@ -19,6 +19,7 @@ import {
   useInvitations,
   useWorkers,
 } from "../hooks/useDataStore";
+import { PageHeader } from "../components/nav/PageHeader";
 
 export function CuentasPage() {
   const { user } = useAuth();
@@ -110,13 +111,10 @@ export function CuentasPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-display text-3xl font-bold">Cuentas e invitaciones</h1>
-        <p className="mt-1 text-neutral-400">
-          El administrador envía invitaciones con el correo y rol de cada persona. Ellos crean su
-          contraseña personal al activar la cuenta (código de un solo uso).
-        </p>
-      </div>
+      <PageHeader
+        title="Cuentas"
+        description="Invitaciones por correo. Cada persona elige su contraseña al activar."
+      />
 
       {DEMO_MODE && (
         <Card className="border-accent/30 bg-accent/5">

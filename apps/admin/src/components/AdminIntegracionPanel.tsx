@@ -13,14 +13,15 @@ import {
 } from "../hooks/useIntegrationConfig";
 import { credencialesToSecret } from "../demo/integrations";
 import { integrationHub } from "@spe/integrations";
+import { NavIcon } from "./nav/NavIcons";
 
-const ICONS: Record<TipoIntegracion, string> = {
-  siigo: "📊",
-  whatsapp: "💬",
-  facebook: "📘",
-  instagram: "📸",
-  webhook: "🌐",
-  web_form: "📝",
+const INTEGRATION_ICONS: Partial<Record<TipoIntegracion, string>> = {
+  siigo: "receipt",
+  whatsapp: "mail",
+  facebook: "building",
+  instagram: "building",
+  webhook: "plug",
+  web_form: "flag",
 };
 
 interface Props {
@@ -113,8 +114,10 @@ export function AdminIntegracionPanel({
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center justify-between text-left"
       >
-        <div className="flex items-center gap-2">
-          <span className="text-xl">{ICONS[conexion.id]}</span>
+        <div className="flex items-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-neutral-800 text-neutral-400">
+            <NavIcon name={INTEGRATION_ICONS[conexion.id] ?? "plug"} className="h-4 w-4" />
+          </span>
           <div>
             <h2 className="font-display text-lg font-semibold">{conexion.nombre}</h2>
             <p className="text-xs text-neutral-500">
@@ -124,7 +127,7 @@ export function AdminIntegracionPanel({
             </p>
           </div>
         </div>
-        <span className="text-neutral-500">{expanded ? "▲" : "▼"}</span>
+        <span className="text-xs text-neutral-500">{expanded ? "▲" : "▼"}</span>
       </button>
 
       {expanded && (

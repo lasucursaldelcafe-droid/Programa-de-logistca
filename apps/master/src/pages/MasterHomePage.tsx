@@ -9,6 +9,7 @@ import {
   useWorkers,
 } from "@core/hooks/useDataStore";
 import { usePayrollEntries } from "@core/hooks/usePayroll";
+import { PageHeader } from "@core/components/nav/PageHeader";
 
 export function MasterHomePage() {
   const workers = useWorkers();
@@ -27,12 +28,10 @@ export function MasterHomePage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-display text-3xl font-bold">Panel Master</h1>
-        <p className="mt-1 text-neutral-400">
-          Vista global de la plataforma — todos los eventos y operación
-        </p>
-      </div>
+      <PageHeader
+        title="Resumen"
+        description="Vista global de eventos y operación"
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard label="Eventos" value={String(events.length)} />

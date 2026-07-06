@@ -5,6 +5,7 @@ import { puedeConfigurarIntegraciones } from "@spe/shared";
 import type { TipoIntegracion } from "@spe/shared";
 import { AdminIntegracionPanel } from "../components/AdminIntegracionPanel";
 import { IntegracionesAyuda } from "../components/IntegracionesAyuda";
+import { PageHeader } from "../components/nav/PageHeader";
 
 export function IntegracionesPage() {
   const { user } = useAuth();
@@ -13,30 +14,20 @@ export function IntegracionesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-3xl font-bold">APIs e integraciones</h1>
-        <p className="mt-1 text-neutral-400">
-          {isAdmin
-            ? "Configura y sube las credenciales de Siigo, WhatsApp, redes sociales y webhooks."
-            : "Estado de las conexiones activas. Solo el administrador puede modificar credenciales."}
-        </p>
-      </div>
+      <PageHeader
+        title={isAdmin ? "APIs" : "Integraciones"}
+        description={
+          isAdmin
+            ? "Credenciales y conexiones con servicios externos."
+            : "Estado de las conexiones activas."
+        }
+      />
 
       {isAdmin ? (
         <>
-          <Card className="border-accent/30 bg-accent/5">
-            <h2 className="font-display text-lg font-semibold text-accent">
-              Panel de administrador — Configurar APIs
-            </h2>
-            <p className="mt-1 text-sm text-neutral-400">
-              Guarda tus API keys, tokens y archivos JSON/.env. Las credenciales se almacenan en este
-              navegador (demo). En producción irían cifradas en el servidor.
-            </p>
-          </Card>
-
           <IntegracionesAyuda />
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {conexiones.map((c) => (
               <AdminIntegracionPanel
                 key={c.id}
@@ -50,7 +41,7 @@ export function IntegracionesPage() {
           </div>
         </>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-3 lg:grid-cols-2">
           {conexiones.map((c) => (
             <ConexionSoloLectura key={c.id} conexion={c} />
           ))}
@@ -59,8 +50,8 @@ export function IntegracionesPage() {
 
       {log.length > 0 && (
         <Card>
-          <h2 className="font-display text-lg font-semibold">Registro de actividad</h2>
-          <ul className="mt-3 max-h-48 space-y-1 overflow-y-auto font-mono text-xs text-neutral-400">
+          <h2 className="font-display text-sm font-semibold text-neutral-300">Actividad</h2>
+          <ul className="mt-2 max-h-40 space-y-0.5 overflow-y-auto font-mono text-xs text-neutral-500">
             {log.map((line, i) => (
               <li key={i}>{line}</li>
             ))}
@@ -82,28 +73,17 @@ function ConexionSoloLectura({
     mensaje?: string;
   };
 }) {
-  const ICONS: Record<string, string> = {
-    siigo: "📊",
-    whatsapp: "💬",
-    facebook: "📘",
-    instagram: "📸",
-    webhook: "🌐",
-  };
-
   return (
     <Card>
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">{ICONS[conexion.id] ?? "🔌"}</span>
-          <div>
-            <h2 className="font-display font-semibold">{conexion.nombre}</h2>
-            <p className="text-sm text-neutral-400">{conexion.descripcion}</p>
-          </div>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="font-display font-semibold">{conexion.nombre}</h2>
+          <p className="mt-0.5 text-xs text-neutral-500">{conexion.descripcion}</p>
         </div>
         <EstadoBadge estado={conexion.estado} />
       </div>
       {conexion.mensaje && (
-        <p className="mt-3 text-xs text-neutral-500">{conexion.mensaje}</p>
+        <p className="mt-2 text-xs text-neutral-500">{conexion.mensaje}</p>
       )}
     </Card>
   );
@@ -118,7 +98,7 @@ function EstadoBadge({ estado }: { estado: string }) {
   };
   return (
     <span
-      className={`rounded-full px-2.5 py-1 text-xs font-medium ${colors[estado] ?? colors.desconectado}`}
+      className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${colors[estado] ?? colors.desconectado}`}
     >
       {estado}
     </span>

@@ -17,6 +17,7 @@ import {
   updateWorkerEstado,
   useWorkers,
 } from "../hooks/useDataStore";
+import { PageHeader } from "../components/nav/PageHeader";
 
 const PERFILES: PerfilTrabajo[] = [
   "logistica",
@@ -68,13 +69,10 @@ export function PersonalPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-display text-3xl font-bold">Personal</h1>
-        <p className="mt-1 text-neutral-400">
-          Registra personas con su nombre y correo. El administrador asigna el rol; las credenciales
-          las crea cada persona al activar la invitación.
-        </p>
-      </div>
+      <PageHeader
+        title="Personal"
+        description="Registra personas y asigna roles. Las credenciales las crea cada uno al activar la invitación."
+      />
 
       <Card>
         <h2 className="font-display text-lg font-semibold">Nueva persona</h2>

@@ -1,45 +1,42 @@
+import { useState } from "react";
 import { Card } from "./ui";
 import { useDeploymentLinks } from "../hooks/useDeploymentLinks";
+import { NavIcon } from "./nav/NavIcons";
 
-const INTEGRACIONES_RESUMEN = [
+const INTEGRACIONES = [
   {
     id: "siigo",
-    icon: "📊",
     nombre: "Siigo Nube",
-    obtener: "Siigo Nube → Alianzas → Mi credencial API (usuario + access_key + Partner-Id)",
-    alConectar: "Sincroniza clientes, inventario y facturas hacia Clientes, Inventario y Facturación.",
+    destino: "Clientes · Inventario · Facturación",
+    obtener: "Siigo → Alianzas → credencial API",
     doc: "https://developers.siigo.com/docs/siigoapi/",
   },
   {
     id: "whatsapp",
-    icon: "💬",
-    nombre: "WhatsApp Cloud API",
-    obtener: "Meta for Developers → App → WhatsApp → API Setup (token + Phone Number ID)",
-    alConectar: "Envío de plantillas y recepción de mensajes vía webhook en servidor.",
+    nombre: "WhatsApp",
+    destino: "Mensajería y plantillas",
+    obtener: "Meta → WhatsApp → API Setup",
     doc: "https://developers.facebook.com/docs/whatsapp/cloud-api/",
   },
   {
     id: "facebook",
-    icon: "📘",
     nombre: "Facebook",
-    obtener: "Meta for Developers → App ID, App Secret, Page Access Token, Page ID",
-    alConectar: "Lectura de actividad y mensajes de la página.",
+    destino: "Página y mensajes",
+    obtener: "Meta → App ID + Page Token",
     doc: "https://developers.facebook.com/docs/graph-api/",
   },
   {
     id: "instagram",
-    icon: "📸",
     nombre: "Instagram",
-    obtener: "Misma app Meta + Instagram Business Account ID y token",
-    alConectar: "Actividad y mensajes directos de cuenta profesional.",
+    destino: "Cuenta profesional",
+    obtener: "Meta → Instagram Business ID",
     doc: "https://developers.facebook.com/docs/instagram-api/",
   },
   {
     id: "webhook",
-    icon: "🌐",
-    nombre: "Webhook entrante",
-    obtener: "URL HTTPS de tu servidor + secret HMAC + verify token",
-    alConectar: "Recibe eventos externos y los registra en SPE.",
+    nombre: "Webhook",
+    destino: "Eventos externos → SPE",
+    obtener: "URL HTTPS + secret HMAC",
     doc: undefined,
   },
 ] as const;
@@ -49,64 +46,81 @@ export function IntegracionesAyuda() {
   const guiaUrl = deployLinks?.pagesUrl
     ? `${deployLinks.pagesUrl}INTEGRACIONES-APIS.md`
     : "/INTEGRACIONES-APIS.md";
+  const [open, setOpen] = useState(false);
 
   return (
-    <Card className="border-border bg-bg/80">
-      <h2 className="font-display text-lg font-semibold">Registro de APIs — cómo obtenerlas y qué conectan</h2>
-      <p className="mt-1 text-sm text-neutral-400">
-        Guía completa con autenticación Siigo, restricciones y mapeo a módulos SPE.{" "}
-        <a href={guiaUrl} className="text-accent hover:underline" target="_blank" rel="noreferrer">
-          Abrir documento completo →
-        </a>
-      </p>
-
-      <div className="mt-4 space-y-3">
-        {INTEGRACIONES_RESUMEN.map((item) => (
-          <div
-            key={item.id}
-            className="rounded-lg border border-border bg-bg px-3 py-3 text-sm"
-          >
-            <p className="font-semibold text-neutral-200">
-              {item.icon} {item.nombre}
+    <Card className="border-border bg-bg/50">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center justify-between gap-3 text-left"
+      >
+        <div className="flex items-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10 text-accent">
+            <NavIcon name="help" className="h-4 w-4" />
+          </span>
+          <div>
+            <p className="font-display text-sm font-semibold text-neutral-200">
+              Guía de credenciales
             </p>
-            <p className="mt-1 text-neutral-400">
-              <span className="text-neutral-500">Obtener: </span>
-              {item.obtener}
+            <p className="text-xs text-neutral-500">
+              Dónde obtener cada API y qué módulo alimenta
             </p>
-            <p className="mt-1 text-neutral-400">
-              <span className="text-neutral-500">Al conectar: </span>
-              {item.alConectar}
-            </p>
-            {item.doc && (
-              <p className="mt-1">
-                <a
-                  href={item.doc}
-                  className="text-xs text-accent hover:underline"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Documentación oficial →
-                </a>
-              </p>
-            )}
           </div>
-        ))}
-      </div>
+        </div>
+        <span className="text-xs text-neutral-500">{open ? "Ocultar" : "Ver"}</span>
+      </button>
 
-      <div className="mt-4 rounded-lg border border-accent/20 bg-accent/5 px-3 py-3 text-xs text-neutral-400">
-        <p className="font-semibold text-accent">Siigo — conexión de datos</p>
-        <p className="mt-1">
-          Con credenciales válidas, SPE consulta <code className="text-neutral-300">/v1/customers</code>,{" "}
-          <code className="text-neutral-300">/v1/products</code> y{" "}
-          <code className="text-neutral-300">/v1/invoices</code> (paginado, Partner-Id y JWT 24 h).
-          Los datos alimentan <strong className="text-neutral-300">Clientes</strong>,{" "}
-          <strong className="text-neutral-300">Inventario</strong> y{" "}
-          <strong className="text-neutral-300">Facturación</strong>, respetando permisos y límites de la API Siigo.
-        </p>
-        <p className="mt-2 text-neutral-500">
-          Modo actual: demo (sin HTTP real). Al activar producción, el sync escribe en la base de datos del tenant.
-        </p>
-      </div>
+      {open && (
+        <div className="mt-4 border-t border-border pt-4">
+          <a
+            href={guiaUrl}
+            className="text-xs text-accent hover:underline"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Documento completo →
+          </a>
+
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full min-w-[320px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-border text-xs uppercase tracking-wide text-neutral-500">
+                  <th className="pb-2 pr-3 font-medium">API</th>
+                  <th className="pb-2 pr-3 font-medium">Conecta con</th>
+                  <th className="pb-2 font-medium">Obtener en</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {INTEGRACIONES.map((item) => (
+                  <tr key={item.id}>
+                    <td className="py-2.5 pr-3 font-medium text-neutral-200">
+                      {item.nombre}
+                      {item.doc && (
+                        <a
+                          href={item.doc}
+                          className="ml-2 text-[10px] text-accent hover:underline"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          docs
+                        </a>
+                      )}
+                    </td>
+                    <td className="py-2.5 pr-3 text-xs text-neutral-400">{item.destino}</td>
+                    <td className="py-2.5 text-xs text-neutral-500">{item.obtener}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <p className="mt-3 text-xs text-neutral-500">
+            Modo demo: sin HTTP real. En producción, Siigo sincroniza clientes, productos y facturas
+            hacia los módulos de negocio.
+          </p>
+        </div>
+      )}
     </Card>
   );
 }
