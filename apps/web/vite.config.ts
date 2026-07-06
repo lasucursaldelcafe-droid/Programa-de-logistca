@@ -6,7 +6,7 @@ import path from "node:path";
 const pagesBase = process.env.GITHUB_PAGES_BASE ?? "/";
 
 export default defineConfig({
-  base: pagesBase,
+  base: process.env.NATIVE_BUILD === "true" ? "./" : pagesBase,
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

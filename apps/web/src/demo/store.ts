@@ -1,4 +1,11 @@
 import type { AppUser, Evento, Sitio, Turno, Worker } from "@spe/shared";
+import type { Cliente, Factura, PosicionTrabajador, Producto } from "@spe/shared";
+import {
+  INITIAL_CLIENTES,
+  INITIAL_FACTURAS,
+  INITIAL_POSICIONES,
+  INITIAL_PRODUCTOS,
+} from "./business";
 
 export const DEMO_ACCOUNTS: Array<{
   email: string;
@@ -165,6 +172,10 @@ class DemoStore {
   shifts = [...INITIAL_SHIFTS];
   events = [...INITIAL_EVENTS];
   sites = [...INITIAL_SITES];
+  clientes = [...INITIAL_CLIENTES];
+  productos = [...INITIAL_PRODUCTOS];
+  facturas = [...INITIAL_FACTURAS];
+  posiciones = [...INITIAL_POSICIONES];
   private listeners = new Set<Listener>();
 
   subscribe(listener: Listener): () => void {
@@ -199,6 +210,16 @@ class DemoStore {
 
   updateShift(id: string, patch: Partial<Turno>): void {
     this.shifts = this.shifts.map((s) => (s.id === id ? { ...s, ...patch } : s));
+    this.notify();
+  }
+
+  tickPosiciones(): void {
+    this.posiciones = this.posiciones.map((p) => ({
+      ...p,
+      lat: p.lat + (Math.random() - 0.5) * 0.0002,
+      lng: p.lng + (Math.random() - 0.5) * 0.0002,
+      actualizadoEn: new Date().toISOString(),
+    }));
     this.notify();
   }
 }

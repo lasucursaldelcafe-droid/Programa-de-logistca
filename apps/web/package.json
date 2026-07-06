@@ -6,10 +6,19 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:native": "tsc -b && NATIVE_BUILD=true vite build",
     "build:pages": "tsc -b && vite build && tsx ../../scripts/prepare-pages.ts",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "cap:sync": "cap sync",
+    "cap:open": "cap open",
+    "cap:add:android": "cap add android"
   },
   "dependencies": {
+    "@capacitor/android": "^7.4.2",
+    "@capacitor/app": "^7.0.2",
+    "@capacitor/core": "^7.4.2",
+    "@capacitor/geolocation": "^7.1.4",
+    "@spe/integrations": "*",
     "@spe/shared": "*",
     "firebase": "^11.6.0",
     "react": "^19.1.0",
@@ -17,6 +26,7 @@
     "react-router-dom": "^7.6.2"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.4.2",
     "@tailwindcss/vite": "^4.1.8",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.5",

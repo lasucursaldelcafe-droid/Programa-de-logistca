@@ -5,6 +5,11 @@ import { LoginPage } from "./pages/LoginPage";
 import { HomePage } from "./pages/HomePage";
 import { PersonalPage } from "./pages/PersonalPage";
 import { TurnosPage } from "./pages/TurnosPage";
+import { ClientesPage } from "./pages/ClientesPage";
+import { FacturacionPage } from "./pages/FacturacionPage";
+import { InventarioPage } from "./pages/InventarioPage";
+import { IntegracionesPage } from "./pages/IntegracionesPage";
+import { SupervisionPage } from "./pages/SupervisionPage";
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -31,6 +36,11 @@ export function App() {
         }
       >
         <Route index element={<HomePage />} />
+        <Route path="clientes" element={<ClientesPage />} />
+        <Route path="facturacion" element={<FacturacionPage />} />
+        <Route path="inventario" element={<InventarioPage />} />
+        <Route path="integraciones" element={<IntegracionesPage />} />
+        <Route path="supervision" element={<SupervisionPage />} />
         <Route path="personal" element={<PersonalPage />} />
         <Route path="turnos" element={<TurnosPage />} />
       </Route>
