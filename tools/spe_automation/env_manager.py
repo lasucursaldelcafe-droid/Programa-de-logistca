@@ -26,9 +26,14 @@ def write_env(path: Path, values: dict[str, str], demo_mode: bool = False) -> No
     merged = parse_env(path) if path.is_file() else {}
     merged.update(values)
     merged["VITE_DEMO_MODE"] = "true" if demo_mode else "false"
-    merged["VITE_USE_FIREBASE_EMULATORS"] = "false" if not demo_mode else merged.get(
-        "VITE_USE_FIREBASE_EMULATORS", "false"
-    )
+    if demo_mode:
+        merged["VITE_USE_FIREBASE_EMULATORS"] = values.get(
+            "VITE_USE_FIREBASE_EMULATORS", merged.get("VITE_USE_FIREBASE_EMULATORS", "true")
+        )
+    else:
+        merged["VITE_USE_FIREBASE_EMULATORS"] = values.get(
+            "VITE_USE_FIREBASE_EMULATORS", merged.get("VITE_USE_FIREBASE_EMULATORS", "false")
+        )
 
     keys_order = [
         "VITE_DEMO_MODE",
@@ -76,11 +81,16 @@ def firebase_status() -> dict[str, object]:
     data = parse_env(admin_env)
     missing = [k for k in FIREBASE_KEYS if not data.get(k)]
     placeholder = [k for k in FIREBASE_KEYS if data.get(k) in ("", "demo-api-key", "demo-personal-eventos")]
+    emulators = data.get("VITE_USE_FIREBASE_EMULATORS") == "true"
+    demo = data.get("VITE_DEMO_MODE") == "true"
+    emulator_ready = emulators and data.get("VITE_FIREBASE_API_KEY") == "demo-api-key"
     return {
         "configured": len(missing) == 0 and len(placeholder) == 0,
         "missing": missing,
         "placeholder": placeholder,
-        "demo_mode": data.get("VITE_DEMO_MODE") == "true",
+        "demo_mode": demo,
+        "emulators": emulators,
+        "emulator_ready": emulator_ready,
         "env_exists": admin_env.is_file(),
     }
 

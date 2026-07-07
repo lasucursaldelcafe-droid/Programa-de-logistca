@@ -19,13 +19,19 @@ if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
 from spe_automation.config import FIREBASE_KEYS, OPTIONAL_KEYS, ROOT, find_chrome  # noqa: E402
+from spe_automation.credentials import (  # noqa: E402
+    DEMO_ACCOUNTS,
+    parse_firebase_config,
+    push_github_secrets,
+    validate_production_config,
+)
 from spe_automation.env_manager import (  # noqa: E402
-    apply_firebase_to_all_apps,
     github_secrets_template,
     parse_env,
 )
 from spe_automation.health import run_health_report  # noqa: E402
 from spe_automation.pdf_export import generate_faltantes_pdf, generate_informe_pdf  # noqa: E402
+from spe_automation.setup_full import run_demo_setup, run_production_setup  # noqa: E402
 
 REPO_ROOT = ROOT
 FIREBASE_KEYS = [*FIREBASE_KEYS, *OPTIONAL_KEYS]
@@ -76,17 +82,61 @@ class SpeToolkitApp(tk.Tk):
 
     def _tab_firebase(self, notebook: ttk.Notebook) -> None:
         frame = ttk.Frame(notebook, padding=12)
-        notebook.add(frame, text="Firebase")
+        notebook.add(frame, text="Firebase / Credenciales")
 
         ttk.Label(
             frame,
-            text="Configura .env.local en admin, master y worker.\n"
-            "Los mismos valores van a GitHub Secrets para producción.",
+            text="Configura las apps al 100%: desarrollo local (emuladores) o producción (Firebase real).",
             wraplength=800,
         ).pack(anchor=tk.W, pady=(0, 8))
 
-        form = ttk.Frame(frame)
-        form.pack(fill=tk.X)
+        quick = ttk.LabelFrame(frame, text="Inicio rápido", padding=8)
+        quick.pack(fill=tk.X, pady=(0, 10))
+
+        ttk.Button(
+            quick,
+            text="1. Desarrollo local 100% (emuladores + cuentas)",
+            command=lambda: self._run_async(self._task_demo_setup),
+        ).pack(anchor=tk.W, pady=2, fill=tk.X)
+
+        ttk.Label(
+            quick,
+            text="Crea .env en admin/master/worker, instala deps y deja listo npm run dev:full",
+            foreground="#555",
+            font=("Segoe UI", 8),
+        ).pack(anchor=tk.W)
+
+        ttk.Button(
+            quick,
+            text="2. Iniciar dev:full (emuladores + seed + admin)",
+            command=lambda: self._run_async(lambda: self._run_npm("npm run dev:full")),
+        ).pack(anchor=tk.W, pady=(8, 2), fill=tk.X)
+
+        paste_frame = ttk.LabelFrame(frame, text="Producción — pegar config Firebase Console", padding=8)
+        paste_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 8))
+
+        self.firebase_paste = scrolledtext.ScrolledText(paste_frame, height=6, font=("Consolas", 9))
+        self.firebase_paste.pack(fill=tk.BOTH, expand=True)
+        self.firebase_paste.insert(
+            tk.END,
+            'Pega aquí el bloque firebaseConfig o JSON con apiKey, authDomain, projectId…\n'
+            'O guarda como firebase-web-config.json en la raíz del proyecto.',
+        )
+
+        paste_btns = ttk.Frame(paste_frame)
+        paste_btns.pack(fill=tk.X, pady=6)
+        ttk.Button(paste_btns, text="Importar desde archivo JSON", command=self._import_firebase_json).pack(
+            side=tk.LEFT, padx=(0, 8)
+        )
+        ttk.Button(paste_btns, text="Aplicar producción", command=self._apply_production_paste).pack(
+            side=tk.LEFT, padx=(0, 8)
+        )
+        ttk.Button(paste_btns, text="Subir GitHub Secrets (gh)", command=self._push_github_secrets).pack(
+            side=tk.LEFT
+        )
+
+        form = ttk.LabelFrame(frame, text="Variables (edición manual)", padding=8)
+        form.pack(fill=tk.X, pady=(0, 4))
 
         existing = parse_env(REPO_ROOT / "apps" / "admin" / ".env.local")
         labels = {
@@ -113,16 +163,23 @@ class SpeToolkitApp(tk.Tk):
         form.columnconfigure(1, weight=1)
 
         btn_row = ttk.Frame(frame)
-        btn_row.pack(fill=tk.X, pady=12)
-        ttk.Button(btn_row, text="Guardar en apps", command=self._save_firebase).pack(
+        btn_row.pack(fill=tk.X, pady=8)
+        ttk.Button(btn_row, text="Guardar producción", command=self._save_firebase).pack(
             side=tk.LEFT, padx=(0, 8)
         )
         ttk.Button(
             btn_row, text="Plantilla GitHub Secrets", command=self._show_github_template
         ).pack(side=tk.LEFT, padx=(0, 8))
-        ttk.Button(btn_row, text="Abrir Firebase Console", command=self._open_firebase).pack(
-            side=tk.LEFT
-        )
+        ttk.Button(btn_row, text="Firebase Console", command=self._open_firebase).pack(side=tk.LEFT)
+
+        acc_frame = ttk.LabelFrame(frame, text="Cuentas tras dev:full (emuladores)", padding=6)
+        acc_frame.pack(fill=tk.X, pady=4)
+        for acc in DEMO_ACCOUNTS:
+            ttk.Label(
+                acc_frame,
+                text=f"{acc['email']} / {acc['password']}  —  {acc['app']}",
+                font=("Consolas", 9),
+            ).pack(anchor=tk.W)
 
     def _tab_informes(self, notebook: ttk.Notebook) -> None:
         frame = ttk.Frame(notebook, padding=12)
@@ -161,11 +218,13 @@ class SpeToolkitApp(tk.Tk):
 
         scripts = [
             ("npm install", "Instalar dependencias"),
-            ("npm run dev:full", "Servidor desarrollo (admin+master+worker)"),
+            ("npm run dev:full", "Desarrollo completo (emuladores + seed + admin)"),
+            ("npm run dev:master", "Solo Master (puerto 5175)"),
+            ("npm run dev:worker", "Solo Trabajador (puerto 5174)"),
             ("npm run build", "Build producción"),
             ("npm run build:pages", "Build GitHub Pages"),
-            ("npm run desktop", "App escritorio Electron"),
-            ("npm run pdf:informe", "PDF informe (Node)"),
+            ("npm run electron", "App escritorio Electron"),
+            ("npm run seed:production", "Crear cuentas Firebase producción (service-account.json)"),
         ]
 
         for cmd, label in scripts:
@@ -224,19 +283,81 @@ class SpeToolkitApp(tk.Tk):
 
     def _save_firebase(self) -> None:
         values = {k: v.get().strip() for k, v in self.firebase_vars.items()}
-        required = [k for k in FIREBASE_KEYS if k != "VITE_FIREBASE_VAPID_KEY"]
-        missing = [k for k in required if not values.get(k)]
-        if missing:
-            messagebox.showwarning(
-                "Campos vacíos",
-                "Completa al menos:\n" + "\n".join(missing),
-            )
+        ok, errors = validate_production_config(values)
+        if not ok:
+            messagebox.showwarning("Configuración inválida", "\n".join(errors))
             return
-        paths = apply_firebase_to_all_apps(values)
-        self._log("Firebase guardado en:")
-        for p in paths:
+        result = run_production_setup(values)
+        self._log("Firebase producción guardado:")
+        for p in result["env_paths"]:
             self._log(f"  {p}")
-        messagebox.showinfo("Listo", "Credenciales guardadas en las 3 apps.")
+        self._log(f"Plantilla GitHub: {result['github_template']}")
+        messagebox.showinfo(
+            "Listo",
+            f"Credenciales en 3 apps.\nVer {result['credentials_file']}",
+        )
+
+    def _task_demo_setup(self) -> None:
+        self._log("Configurando desarrollo local 100%...")
+        result = run_demo_setup()
+        for p in result["env_paths"]:
+            self._log(f"  {p}")
+        self._log(f"Credenciales: {result['credentials_file']}")
+        for acc in DEMO_ACCOUNTS:
+            self._log(f"  {acc['email']} / {acc['password']}")
+        msg = (
+            "Desarrollo listo.\n\n"
+            "Ejecuta: npm run dev:full\n\n"
+            "admin@eventos.test / Admin123!\n"
+            "master@eventos.test / Master123!"
+        )
+        self.after(0, lambda: messagebox.showinfo("Desarrollo configurado", msg))
+
+    def _import_firebase_json(self) -> None:
+        path = filedialog.askopenfilename(
+            title="firebase-web-config.json",
+            filetypes=[("JSON", "*.json"), ("Todos", "*.*")],
+        )
+        if not path:
+            return
+        text = Path(path).read_text(encoding="utf-8")
+        self.firebase_paste.delete("1.0", tk.END)
+        self.firebase_paste.insert(tk.END, text)
+        values = parse_firebase_config(text)
+        for key, var in self.firebase_vars.items():
+            if key in values:
+                var.set(values[key])
+
+    def _apply_production_paste(self) -> None:
+        text = self.firebase_paste.get("1.0", tk.END)
+        values = parse_firebase_config(text)
+        if not values:
+            messagebox.showwarning("Sin datos", "Pega el config de Firebase Console primero.")
+            return
+        for key, var in self.firebase_vars.items():
+            if key in values:
+                var.set(values[key])
+        ok, errors = validate_production_config(values)
+        if not ok:
+            messagebox.showwarning("Inválido", "\n".join(errors))
+            return
+        result = run_production_setup(values)
+        self._log("Producción aplicada desde paste")
+        messagebox.showinfo("Listo", f"Guardado en 3 apps.\n{result['credentials_file']}")
+
+    def _push_github_secrets(self) -> None:
+        values = {k: v.get().strip() for k, v in self.firebase_vars.items()}
+        if not values.get("VITE_FIREBASE_API_KEY"):
+            text = self.firebase_paste.get("1.0", tk.END)
+            values = parse_firebase_config(text)
+        ok, msg = push_github_secrets(values)
+        self._log(msg)
+        if ok:
+            messagebox.showinfo("GitHub Secrets", msg)
+        else:
+            tpl = github_secrets_template(values)
+            (REPO_ROOT / "github-secrets-commands.txt").write_text(tpl, encoding="utf-8")
+            messagebox.showwarning("GitHub Secrets", f"{msg}\n\nPlantilla: github-secrets-commands.txt")
 
     def _show_github_template(self) -> None:
         values = {k: v.get().strip() for k, v in self.firebase_vars.items()}

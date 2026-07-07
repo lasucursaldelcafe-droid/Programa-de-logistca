@@ -64,5 +64,8 @@ next-env.d.ts
 # SPE toolkit (generados localmente)
 spe-health-report.json
 github-secrets-commands.txt
+CREDENCIALES-SPE.txt
+service-account.json
+firebase-web-config.json
 __pycache__/
 *.pyc

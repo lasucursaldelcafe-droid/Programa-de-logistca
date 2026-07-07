@@ -29,14 +29,16 @@ def check_python_deps() -> tuple[bool, str]:
 
 def check_firebase_env() -> tuple[bool, str]:
     st = firebase_status()
+    if st["demo_mode"] and st.get("emulators"):
+        return True, "Modo desarrollo: emuladores Firebase (npm run dev:full)"
     if st["demo_mode"]:
         return True, "Modo demo activo en .env.local"
     if st["configured"]:
-        return True, "Firebase configurado en apps/admin/.env.local"
+        return True, "Firebase producción configurado en apps/admin/.env.local"
     missing = st.get("missing", [])
     if missing:
         return False, f"Faltan variables: {', '.join(missing)}"
-    return False, "Firebase con valores de prueba — configura credenciales reales"
+    return False, "Firebase con valores de prueba — usa SPE Toolkit → Configurar"
 
 
 def check_site_live() -> tuple[bool, str]:

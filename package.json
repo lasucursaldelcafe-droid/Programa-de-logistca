@@ -31,6 +31,7 @@
     "sync:links": "tsx scripts/sync-links.ts",
     "emulators": "firebase emulators:start --only auth,firestore --project demo-personal-eventos",
     "seed": "tsx scripts/seed-emulators.ts",
+    "seed:production": "tsx scripts/seed-production.ts",
     "setup": "tsx scripts/setup-phase1.ts",
     "setup:all": "npm run setup && npm run seed",
     "test:smoke": "firebase emulators:exec --only auth,firestore --project demo-personal-eventos \"npm run seed && tsx scripts/ci-smoke.ts\"",
@@ -41,6 +42,9 @@
     "toolkit:health": "node scripts/run-toolkit-cli.mjs health",
     "toolkit:pdf": "node scripts/run-toolkit-cli.mjs pdf",
     "toolkit:setup": "node scripts/run-toolkit-cli.mjs setup",
+    "toolkit:demo": "node scripts/run-toolkit-cli.mjs demo",
+    "toolkit:init": "node scripts/run-toolkit-cli.mjs init",
+    "toolkit:secrets": "node scripts/run-toolkit-cli.mjs secrets",
     "pdf:informe": "npm run build:informe-pdf"
   },
   "devDependencies": {
