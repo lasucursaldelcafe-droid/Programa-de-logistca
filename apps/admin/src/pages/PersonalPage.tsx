@@ -15,6 +15,7 @@ import { Badge, Card, PerfilTag } from "../components/ui";
 import {
   createWorker,
   deleteWorker,
+  setWorkerHabilitado,
   updateWorkerEstado,
   useChangeLog,
   useWorkers,
@@ -91,6 +92,10 @@ export function PersonalPage() {
     } finally {
       setDeletingId(null);
     }
+  }
+
+  async function toggleHabilitado(id: string, habilitado: boolean) {
+    await setWorkerHabilitado(id, habilitado, currentUser.nombre);
   }
 
   return (
@@ -191,6 +196,7 @@ export function PersonalPage() {
               <div className="mt-1 text-xs text-neutral-500">
                 Rol: {ROLE_LABEL[w.rolPlataforma ?? "trabajador"]}
                 {w.cuentaCreada ? " · Cuenta activa" : " · Sin activar"}
+                {w.habilitado === false ? " · Inhabilitado" : ""}
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {w.perfiles.map((p) => (
@@ -211,6 +217,17 @@ export function PersonalPage() {
                   </option>
                 ))}
               </select>
+              <button
+                type="button"
+                onClick={() => toggleHabilitado(w.id, w.habilitado === false)}
+                className={`rounded-lg border px-3 py-1.5 text-xs ${
+                  w.habilitado === false
+                    ? "border-positive/40 text-positive hover:bg-positive/10"
+                    : "border-neutral-600 text-neutral-400 hover:border-alert/40 hover:text-alert"
+                }`}
+              >
+                {w.habilitado === false ? "Habilitar acceso" : "Inhabilitar acceso"}
+              </button>
               {confirmDeleteId === w.id ? (
                 <div className="flex items-center gap-1">
                   <button

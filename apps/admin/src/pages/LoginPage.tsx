@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Navigate, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Card } from "../components/ui";
@@ -6,6 +6,8 @@ import { DEMO_MODE } from "../lib/mode";
 import { useDeploymentLinks } from "../hooks/useDeploymentLinks";
 import { rutaHomePorRol } from "@spe/shared";
 import { LoginAyudaPanel } from "../components/LoginAyudaPanel";
+import { BiometricLoginButton } from "../components/BiometricLogin";
+import { isBiometricAvailable, saveBiometricCredentials } from "../lib/biometricAuth";
 import { sendPasswordReset } from "../hooks/useDataStore";
 
 export function LoginPage() {
@@ -17,6 +19,12 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [enableBiometric, setEnableBiometric] = useState(false);
+
+  useEffect(() => {
+    void isBiometricAvailable().then(setBiometricAvailable);
+  }, []);
 
   if (!loading && user) {
     return <Navigate to={rutaHomePorRol(user.role)} replace />;
@@ -28,9 +36,12 @@ export function LoginPage() {
     setError(null);
     try {
       const appUser = await login(email, password);
+      if (enableBiometric && biometricAvailable) {
+        await saveBiometricCredentials(email, password);
+      }
       navigate(rutaHomePorRol(appUser.role));
-    } catch {
-      setError("Credenciales inválidas. Usa las cuentas de prueba del seed.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Credenciales inválidas.");
     } finally {
       setSubmitting(false);
     }
@@ -86,6 +97,25 @@ export function LoginPage() {
           >
             {submitting ? "Entrando…" : "Iniciar sesión"}
           </button>
+          <BiometricLoginButton
+            onLogin={async (e, p) => {
+              setEmail(e);
+              setPassword(p);
+              const appUser = await login(e, p);
+              navigate(rutaHomePorRol(appUser.role));
+            }}
+            onError={setError}
+          />
+          {biometricAvailable && (
+            <label className="flex items-center gap-2 text-xs text-neutral-400">
+              <input
+                type="checkbox"
+                checked={enableBiometric}
+                onChange={(e) => setEnableBiometric(e.target.checked)}
+              />
+              Activar ingreso con huella o rostro en este dispositivo
+            </label>
+          )}
           <button
             type="button"
             className="w-full text-sm text-neutral-400 hover:text-accent"

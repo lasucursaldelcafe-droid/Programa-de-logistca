@@ -138,6 +138,7 @@ export function getWorkerNavItems(): NavLinkItem[] {
     { to: "/worker/turnos", label: "Turnos", icon: "calendar" },
     { to: "/worker/entrada", label: "Escanear", icon: "qr" },
     { to: "/worker/reportar", label: "Reportar", icon: "flag" },
+    { to: "/worker/notificaciones", label: "Alertas", icon: "mail" },
     { to: "/worker/ayuda", label: "Ayuda", icon: "help" },
   ];
 }

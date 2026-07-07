@@ -11,6 +11,7 @@ import {
   puedeGestionarConfiguracion,
   puedeVerDashboardOperativo,
   shiftStatusBars,
+  workerPath,
   workerStatusBars,
 } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
@@ -139,10 +140,9 @@ export function HomePage() {
           <Card>
             <h2 className="font-display text-lg font-semibold">Accesos rápidos</h2>
             <div className="mt-4 flex flex-wrap gap-3">
-              <QuickLink to="/turnos" label="Mis turnos" />
-              <QuickLink to="/marcar-entrada" label="Marcar entrada" />
-              <QuickLink to="/nomina" label="Mi nómina" />
-              <QuickLink to="/notificaciones" label="Notificaciones" />
+              <QuickLink to={workerPath("turnos")} label="Mis turnos" />
+              <QuickLink to={workerPath("entrada")} label="Marcar entrada" />
+              <QuickLink to={workerPath("notificaciones")} label="Notificaciones" />
             </div>
             {workerKpis.alertaGeocerca && (
               <p className="mt-4 rounded-lg border border-alert/40 bg-alert/10 px-3 py-2 text-sm text-alert">

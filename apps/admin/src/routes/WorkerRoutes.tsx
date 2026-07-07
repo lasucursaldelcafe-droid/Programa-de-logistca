@@ -4,6 +4,7 @@ import { PlatformGate } from "../components/PlatformGate";
 import { MarcarEntradaPage } from "../pages/MarcarEntradaPage";
 import { TurnosPage } from "../pages/TurnosPage";
 import { AyudaPage } from "../pages/AyudaPage";
+import { NotificacionesPage } from "../pages/NotificacionesPage";
 import { WorkerLayout } from "@worker/components/WorkerLayout";
 import { WorkerHomePage } from "@worker/pages/WorkerHomePage";
 import { ReportarPage } from "@worker/pages/ReportarPage";
@@ -27,7 +28,6 @@ function WorkerProtected({ children }: { children: React.ReactNode }) {
 export function WorkerRoutes() {
   return (
     <Routes>
-      <Route path="ayuda" element={<AyudaPage platform="worker" />} />
       <Route
         element={
           <WorkerProtected>
@@ -39,6 +39,7 @@ export function WorkerRoutes() {
         <Route path="turnos" element={<TurnosPage />} />
         <Route path="entrada" element={<MarcarEntradaPage />} />
         <Route path="reportar" element={<ReportarPage />} />
+        <Route path="notificaciones" element={<NotificacionesPage />} />
         <Route path="ayuda" element={<AyudaPage platform="worker" />} />
       </Route>
     </Routes>

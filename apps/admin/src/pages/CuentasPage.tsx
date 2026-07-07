@@ -18,6 +18,8 @@ import {
   revokeInvitation,
   useInvitations,
   useWorkers,
+  resetWorkerPassword,
+  setWorkerHabilitado,
 } from "../hooks/useDataStore";
 import { PageHeader } from "../components/nav/PageHeader";
 
@@ -30,6 +32,8 @@ export function CuentasPage() {
   const [busyWorkerId, setBusyWorkerId] = useState<string | null>(null);
   const [lastSent, setLastSent] = useState<{ token: string; codigo: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [resetEmail, setResetEmail] = useState<string | null>(null);
+  const [newPassword, setNewPassword] = useState("");
 
   if (!user || !puedeGestionarCuentas(user.role)) {
     return <p className="text-neutral-400">Sin permisos para gestionar cuentas.</p>;
@@ -38,6 +42,7 @@ export function CuentasPage() {
   const currentUser = user;
 
   const sinCuenta = workers.filter((w) => !w.cuentaCreada);
+  const conCuenta = workers.filter((w) => w.cuentaCreada);
   const pendientes = invitations.filter((i) => i.estado === "pendiente");
 
   const appBase = () =>
@@ -187,6 +192,96 @@ export function CuentasPage() {
             ))
           )}
         </div>
+      </Card>
+
+      <Card>
+        <h2 className="font-display text-lg font-semibold">Cuentas activas</h2>
+        <p className="mt-1 text-sm text-neutral-400">
+          Restablece contraseña o inhabilita el acceso. La biometría del empleado se configura en su
+          dispositivo tras iniciar sesión.
+        </p>
+        <div className="mt-4 space-y-3">
+          {conCuenta.length === 0 ? (
+            <p className="text-sm text-neutral-500">No hay cuentas activas aún.</p>
+          ) : (
+            conCuenta.map((w) => (
+              <div
+                key={w.id}
+                className="flex flex-col gap-2 rounded-lg border border-border bg-bg px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div>
+                  <div className="font-medium">{w.nombre}</div>
+                  <div className="font-mono text-xs text-neutral-500">{w.email}</div>
+                  <div className="mt-1 text-xs text-neutral-500">
+                    {w.habilitado === false ? "Acceso inhabilitado" : "Acceso habilitado"}
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setResetEmail(w.email);
+                      setNewPassword("");
+                    }}
+                    className="rounded-lg border border-border px-3 py-1.5 text-xs hover:border-accent"
+                  >
+                    Nueva contraseña
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setWorkerHabilitado(w.id, w.habilitado === false, currentUser.nombre)
+                    }
+                    className="rounded-lg border border-border px-3 py-1.5 text-xs hover:border-accent"
+                  >
+                    {w.habilitado === false ? "Habilitar" : "Inhabilitar"}
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+        {resetEmail && (
+          <form
+            className="mt-4 flex flex-wrap items-end gap-2 border-t border-border pt-4"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (newPassword.length < 6) {
+                setError("La contraseña debe tener al menos 6 caracteres.");
+                return;
+              }
+              await resetWorkerPassword(resetEmail, newPassword);
+              setResetEmail(null);
+              setNewPassword("");
+              setError(null);
+            }}
+          >
+            <label className="text-sm">
+              <span className="mb-1 block text-neutral-400">Nueva contraseña para {resetEmail}</span>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="rounded-lg border border-border bg-bg px-3 py-2"
+                required
+                minLength={6}
+              />
+            </label>
+            <button
+              type="submit"
+              className="rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-black"
+            >
+              Guardar
+            </button>
+            <button
+              type="button"
+              onClick={() => setResetEmail(null)}
+              className="rounded-lg border border-border px-3 py-2 text-sm"
+            >
+              Cancelar
+            </button>
+          </form>
+        )}
       </Card>
 
       <Card>

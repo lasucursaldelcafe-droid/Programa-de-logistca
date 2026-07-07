@@ -1,8 +1,9 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import {
   SHIFT_LABEL,
   puedeGestionarTurnos,
+  resolveEntradaPath,
   type ShiftEstado,
 } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
@@ -18,6 +19,7 @@ import {
 
 export function TurnosPage() {
   const { user } = useAuth();
+  const { pathname } = useLocation();
   const shifts = useShifts();
   const workers = useWorkers();
   const events = useEvents();
@@ -71,7 +73,7 @@ export function TurnosPage() {
           {user?.role === "trabajador" && (
             <>
               {" "}
-              <Link to="/marcar-entrada" className="text-accent hover:underline">
+              <Link to={resolveEntradaPath(pathname)} className="text-accent hover:underline">
                 Marcar entrada con QR
               </Link>
             </>

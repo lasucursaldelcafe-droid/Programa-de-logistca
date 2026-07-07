@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { workerPath } from "@spe/shared";
 import { useAuth } from "@core/contexts/AuthContext";
 import { Card } from "@core/components/ui";
 import {
@@ -33,7 +34,7 @@ export function WorkerHomePage() {
           <p className="text-sm font-medium text-positive">Jornada activa</p>
           <p className="mt-1 text-neutral-300">{activo.siteNombre}</p>
           <Link
-            to="/entrada"
+            to={workerPath("entrada")}
             className="mt-3 inline-block text-sm text-accent hover:underline"
           >
             Ver entrada / marcar salida
@@ -43,7 +44,7 @@ export function WorkerHomePage() {
         <Card>
           <p className="text-sm text-neutral-400">Sin jornada activa</p>
           <Link
-            to="/entrada"
+            to={workerPath("entrada")}
             className="mt-2 inline-block rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black"
           >
             Escanear QR de entrada
@@ -61,7 +62,7 @@ export function WorkerHomePage() {
               </li>
             ))}
           </ul>
-          <Link to="/turnos" className="mt-3 text-sm text-accent hover:underline">
+          <Link to={workerPath("turnos")} className="mt-3 text-sm text-accent hover:underline">
             Ir a turnos
           </Link>
         </Card>

@@ -94,9 +94,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string): Promise<AppUser> => {
     if (DEMO_MODE) {
-      const appUser = demoLogin(email, password);
-      setUser(appUser);
-      return appUser;
+      try {
+        const appUser = demoLogin(email, password);
+        setUser(appUser);
+        return appUser;
+      } catch (err) {
+        throw err instanceof Error ? err : new Error("Credenciales inválidas");
+      }
     }
     await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
     const fbUser = getFirebaseAuth().currentUser;

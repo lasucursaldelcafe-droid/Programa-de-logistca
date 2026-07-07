@@ -311,6 +311,7 @@ class DemoStore {
       role: assignedRole,
       workerId: invitation.workerId,
       perfilCompleto: assignedRole === "supervisor_sitio",
+      habilitado: true,
     };
 
     this.accounts = [
@@ -580,6 +581,26 @@ class DemoStore {
     saveCredencialesToStorage(this.credencialesIntegraciones);
     this.notify();
   }
+
+  setAccountPassword(email: string, newPassword: string): void {
+    this.accounts = this.accounts.map((a) =>
+      a.email === email ? { ...a, password: newPassword } : a,
+    );
+    this.notify();
+  }
+
+  setAccountHabilitado(email: string, habilitado: boolean): void {
+    this.accounts = this.accounts.map((a) =>
+      a.email === email
+        ? { ...a, user: { ...a.user, habilitado } }
+        : a,
+    );
+    const account = this.accounts.find((a) => a.email === email);
+    if (account?.user.workerId) {
+      this.updateWorker(account.user.workerId, { habilitado });
+    }
+    this.notify();
+  }
 }
 
 export const demoStore = new DemoStore();
@@ -604,6 +625,29 @@ export function clearDemoSession(): void {
 export function demoLogin(email: string, password: string): AppUser {
   const account = demoStore.accounts.find((a) => a.email === email && a.password === password);
   if (!account) throw new Error("Credenciales inválidas");
+
+  if (account.user.habilitado === false) {
+    throw new Error("Cuenta inhabilitada. Contacta al administrador.");
+  }
+
+  if (account.user.workerId) {
+    const worker = demoStore.workers.find((w) => w.id === account.user.workerId);
+    if (worker && worker.habilitado === false) {
+      throw new Error("Tu acceso fue inhabilitado por el administrador.");
+    }
+    if (worker && worker.estado === "inactivo") {
+      throw new Error("Tu perfil está inactivo. Contacta al administrador.");
+    }
+  }
+
   saveDemoSession(email);
   return account.user;
+}
+
+export function setDemoAccountPassword(email: string, newPassword: string): void {
+  demoStore.setAccountPassword(email, newPassword);
+}
+
+export function setDemoAccountHabilitado(email: string, habilitado: boolean): void {
+  demoStore.setAccountHabilitado(email, habilitado);
 }

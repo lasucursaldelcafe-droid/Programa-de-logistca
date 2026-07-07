@@ -62,6 +62,11 @@ export function MapaEnVivoPage() {
                   <div className="font-medium">{a.workerNombre}</div>
                   <div className="text-xs text-neutral-500">
                     {a.siteNombre} · {a.eventNombre}
+                    {a.ubicacionActual && (
+                      <span className="ml-2 font-mono text-neutral-400">
+                        {a.ubicacionActual.lat.toFixed(5)}, {a.ubicacionActual.lng.toFixed(5)}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <Badge label={ATTENDANCE_LABEL[a.estado]} tone={a.estado === "fuera_geocerca" ? "rechazado" : "confirmado"} />

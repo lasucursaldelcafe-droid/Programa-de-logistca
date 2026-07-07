@@ -44,7 +44,7 @@ import {
 } from "@spe/shared";
 import type { GeoPosition } from "../lib/geolocation";
 import { DEMO_MODE } from "../lib/mode";
-import { demoStore } from "../demo/store";
+import { demoStore, setDemoAccountHabilitado, setDemoAccountPassword } from "../demo/store";
 import {
   notifyCheckIn,
   notifyCheckOut,
@@ -145,6 +145,7 @@ export async function createWorker(
         rating: 0,
         estado: "sin_asignar",
         cuentaCreada: false,
+        habilitado: true,
         certificaciones: [],
         creadoEn: new Date().toISOString(),
       },
@@ -164,6 +165,7 @@ export async function createWorker(
     rating: 0,
     estado: "sin_asignar" satisfies WorkerEstado,
     cuentaCreada: false,
+    habilitado: true,
     certificaciones: [],
     creadoEn: new Date().toISOString(),
   });
@@ -214,6 +216,33 @@ export async function deleteWorker(id: string, actorNombre?: string): Promise<vo
 
 export function useChangeLog() {
   return useDemoSnapshot(() => demoStore.changeLog);
+}
+
+export async function setWorkerHabilitado(
+  workerId: string,
+  habilitado: boolean,
+  actorNombre?: string,
+): Promise<void> {
+  if (DEMO_MODE) {
+    demoStore.updateWorker(workerId, { habilitado }, actorNombre);
+    const worker = demoStore.workers.find((w) => w.id === workerId);
+    if (worker?.cuentaCreada) {
+      setDemoAccountHabilitado(worker.email, habilitado);
+    }
+    return;
+  }
+  await updateDoc(doc(getFirestoreDb(), "workers", workerId), { habilitado });
+}
+
+export async function resetWorkerPassword(
+  email: string,
+  newPassword: string,
+): Promise<void> {
+  if (DEMO_MODE) {
+    setDemoAccountPassword(email, newPassword);
+    return;
+  }
+  throw new Error("Restablecer contraseña en producción requiere Firebase Auth admin.");
 }
 
 export async function createShift(data: Omit<Turno, "id">): Promise<string> {

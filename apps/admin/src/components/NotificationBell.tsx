@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { notificationsPath } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
 import { useUnreadCount } from "../hooks/useNotifications";
 
@@ -10,7 +11,7 @@ export function NotificationBell() {
 
   return (
     <NavLink
-      to="/notificaciones"
+      to={notificationsPath(user.role)}
       className="relative rounded-lg px-3 py-2 text-sm font-medium text-neutral-400 transition hover:bg-neutral-800 hover:text-white"
     >
       Notificaciones

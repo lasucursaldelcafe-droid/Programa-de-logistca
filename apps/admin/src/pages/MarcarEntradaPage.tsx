@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
-import { Link } from "react-router-dom";
-import { ATTENDANCE_LABEL, formatQrPayload } from "@spe/shared";
+import { Link, useLocation } from "react-router-dom";
+import { ATTENDANCE_LABEL, formatQrPayload, resolveTurnosPath } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
 import { Badge, Card } from "../components/ui";
 import { getCurrentPosition } from "../lib/geolocation";
@@ -18,6 +18,7 @@ import { DEMO_MODE } from "../lib/mode";
 
 export function MarcarEntradaPage() {
   const { user } = useAuth();
+  const { pathname } = useLocation();
   const shifts = useShifts();
   const sites = useSites();
   const qrCodes = useQrCodes();
@@ -97,7 +98,8 @@ export function MarcarEntradaPage() {
         <div>
           <h1 className="font-display text-3xl font-bold">Jornada activa</h1>
           <p className="mt-1 text-neutral-400">
-            GPS activo solo durante esta jornada. {DEMO_MODE && "(ubicación simulada en demo)"}
+            GPS activo solo durante esta jornada.
+            {DEMO_MODE && !gpsError && " En web demo la ubicación es simulada; en el celular usa GPS real."}
           </p>
         </div>
 
@@ -117,6 +119,11 @@ export function MarcarEntradaPage() {
               {dentroGeocerca
                 ? `Dentro de geocerca (${activeSite.radioGeocerca}m)`
                 : "Fuera de geocerca — se notificó al administrador"}
+            </p>
+          )}
+          {active.ubicacionActual && (
+            <p className="mt-2 font-mono text-xs text-neutral-500">
+              GPS: {active.ubicacionActual.lat.toFixed(5)}, {active.ubicacionActual.lng.toFixed(5)}
             </p>
           )}
           {gpsError && <p className="mt-2 text-xs text-alert">{gpsError}</p>}
@@ -222,7 +229,7 @@ export function MarcarEntradaPage() {
         </form>
         <p className="mt-4 text-xs text-neutral-500">
           Necesitas un turno <strong>confirmado</strong> en el sitio.{" "}
-          <Link to="/turnos" className="text-accent hover:underline">
+          <Link to={resolveTurnosPath(pathname)} className="text-accent hover:underline">
             Ver mis turnos
           </Link>
         </p>

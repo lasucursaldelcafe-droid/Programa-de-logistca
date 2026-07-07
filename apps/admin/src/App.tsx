@@ -74,6 +74,7 @@ export function App() {
 
       <Route path="/master/*" element={<MasterRoutes />} />
       <Route path="/worker/*" element={<WorkerRoutes />} />
+      <Route path="/marcar-entrada" element={<Navigate to="/worker/entrada" replace />} />
 
       <Route path="/" element={<RoleHomeRedirect />} />
       <Route

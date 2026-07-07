@@ -30,7 +30,9 @@
     "seed": "tsx scripts/seed-emulators.ts",
     "setup": "tsx scripts/setup-phase1.ts",
     "setup:all": "npm run setup && npm run seed",
-    "test:smoke": "firebase emulators:exec --only auth,firestore --project demo-personal-eventos \"npm run seed && tsx scripts/ci-smoke.ts\""
+    "test:smoke": "firebase emulators:exec --only auth,firestore --project demo-personal-eventos \"npm run seed && tsx scripts/ci-smoke.ts\"",
+    "check:nav": "tsx scripts/check-nav-routes.ts",
+    "verify:flows": "tsx scripts/verify-demo-flows.ts"
   },
   "devDependencies": {
     "cross-env": "^10.1.0",

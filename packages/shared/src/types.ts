@@ -103,6 +103,8 @@ export interface AppUser {
   nombre: string;
   telefono?: string;
   perfilCompleto?: boolean;
+  /** Cuenta activa; el administrador puede inhabilitar acceso. */
+  habilitado?: boolean;
 }
 
 export interface Invitation {
@@ -139,6 +141,8 @@ export interface Worker {
   cuentaCreada: boolean;
   /** Rol en la plataforma; lo asigna el administrador al registrar. */
   rolPlataforma: "trabajador" | "supervisor_sitio";
+  /** Si false, no puede iniciar sesión (admin puede inhabilitar). */
+  habilitado?: boolean;
   certificaciones: string[];
   creadoEn: string;
 }

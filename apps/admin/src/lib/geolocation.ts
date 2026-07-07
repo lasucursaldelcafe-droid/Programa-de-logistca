@@ -28,7 +28,8 @@ async function getNativePosition(): Promise<GeoPosition> {
 }
 
 export async function getCurrentPosition(): Promise<GeoPosition> {
-  if (DEMO_MODE) {
+  // En móvil/nativo siempre GPS real; en web demo usa coordenadas fijas para pruebas sin hardware.
+  if (DEMO_MODE && !isNativePlatform()) {
     return { lat: 4.6538, lng: -74.0839, accuracy: 10 };
   }
 
@@ -58,7 +59,7 @@ export function watchPosition(
   onPosition: (pos: GeoPosition) => void,
   onError?: (message: string) => void,
 ): () => void {
-  if (DEMO_MODE) {
+  if (DEMO_MODE && !isNativePlatform()) {
     const id = window.setInterval(() => {
       onPosition({
         lat: 4.6538 + (Math.random() - 0.5) * 0.0002,
