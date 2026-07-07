@@ -33,11 +33,12 @@ jobs:
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
 
-      - name: Construir las 3 plataformas
+      - name: Construir app unificada
         run: npm run build:pages
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_PAGES_BASE: ${{ format('/{0}/', github.event.repository.name) }}
+          PAGES_DEPLOY_ALLOW_MISSING_FIREBASE: "true"
           VITE_DEMO_MODE: "false"
           VITE_USE_FIREBASE_EMULATORS: "false"
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
@@ -51,12 +52,10 @@ jobs:
       - name: Verificar artefactos
         run: |
           test -f docs/index.html
+          test -f docs/.nojekyll
           test -f docs/worker/index.html
           test -f docs/master/index.html
-          test -f docs/.nojekyll
-          test -f docs/worker/.nojekyll
-          test -f docs/master/.nojekyll
-          echo "✓ docs/ listo para publicar"
+          echo "✓ docs/ listo (app unificada + redirecciones /worker/ y /master/)"
 
       - name: Publicar en gh-pages/docs
         uses: JamesIves/github-pages-deploy-action@v4

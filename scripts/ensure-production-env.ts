@@ -1,6 +1,9 @@
 /**
  * Falla el build si VITE_DEMO_MODE=false y faltan credenciales Firebase de producción.
+ * Con --pages solo advierte: permite publicar la UI en GitHub Pages mientras se configuran Secrets.
  */
+const PAGES_MODE =
+  process.argv.includes("--pages") || process.env.PAGES_DEPLOY_ALLOW_MISSING_FIREBASE === "true";
 const DEMO_MODE = process.env.VITE_DEMO_MODE === "true";
 
 const REQUIRED = [
@@ -36,13 +39,22 @@ function main(): void {
   }
 
   if (missing.length > 0 || placeholder.length > 0) {
+    const detail = [
+      missing.length > 0 ? `faltantes: ${missing.join(", ")}` : "",
+      placeholder.length > 0 ? `de prueba: ${placeholder.join(", ")}` : "",
+    ]
+      .filter(Boolean)
+      .join("; ");
+
+    if (PAGES_MODE) {
+      console.warn("⚠ GitHub Pages: Firebase sin configurar — se publica solo la UI estática.");
+      console.warn(`  (${detail})`);
+      console.warn("  El inicio de sesión requiere GitHub Secrets; ver docs-source/PRODUCCION-FIREBASE.md");
+      return;
+    }
+
     console.error("✗ Producción requiere credenciales Firebase reales (VITE_DEMO_MODE=false).");
-    if (missing.length > 0) {
-      console.error("  Variables faltantes:", missing.join(", "));
-    }
-    if (placeholder.length > 0) {
-      console.error("  Variables con valor de prueba:", placeholder.join(", "));
-    }
+    console.error(`  ${detail}`);
     console.error(
       "\nConfigura GitHub Secrets o apps/admin/.env.production con los valores de Firebase Console.",
     );

@@ -20,7 +20,7 @@
     "build:admin": "npm run build -w @spe/shared && npm run build -w @spe/admin",
     "build:native:admin": "npm run build -w @spe/shared && cross-env NATIVE_BUILD=true npm run build:native -w @spe/admin",
     "build:native": "npm run build -w @spe/shared && cross-env NATIVE_BUILD=true npm run build:native -w @spe/admin",
-    "build:pages": "tsx scripts/ensure-production-env.ts && npm run build -w @spe/shared && tsx scripts/prepare-pages.ts",
+    "build:pages": "tsx scripts/ensure-production-env.ts --pages && npm run build -w @spe/shared && tsx scripts/prepare-pages.ts",
     "build:production": "tsx scripts/ensure-production-env.ts && npm run build",
     "cap:sync": "npm run build:native && npm run cap:sync -w @spe/worker",
     "cap:android": "npm run cap:open -w @spe/worker android",
