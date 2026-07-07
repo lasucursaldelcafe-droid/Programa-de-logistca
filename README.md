@@ -51,6 +51,8 @@ Guía completa: `docs-source/GUIA.md` o `/ayuda` dentro de cada app.
 
 **Informe de revisión técnica:** `docs-source/INFORME-REVISION.md` — documento para entrega a revisión (arquitectura, módulos, flujos, despliegue).
 
+**Informe HTML (para enviar/adjuntar):** `docs-source/INFORME-REVISION.html` — abrir en navegador o adjuntar por correo; Ctrl+P para PDF.
+
 ## Descargar instaladores (Windows + Android)
 
 **https://github.com/lasucursaldelcafe-droid/Programa-de-logistca/releases/latest**

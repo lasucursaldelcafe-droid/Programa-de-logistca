@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Informe de revisión — SPE (Sistema de Personal para Eventos)</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --border: #2d3a4f;
+      --text: #e8edf4;
+      --muted: #94a3b8;
+      --accent: #f59e0b;
+      --positive: #22c55e;
+      --alert: #ef4444;
+      --link: #60a5fa;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem 4rem;
+    }
+
+    /* Portada */
+    .cover {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--surface) 0%, #121a24 100%);
+      padding: 2.5rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .cover .badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #000;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      margin-bottom: 1rem;
+    }
+
+    .cover h1 {
+      font-size: 1.85rem;
+      font-weight: 700;
+      line-height: 1.25;
+      margin-bottom: 0.5rem;
+    }
+
+    .cover .subtitle {
+      color: var(--muted);
+      font-size: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.75rem 1.5rem;
+      font-size: 0.875rem;
+    }
+
+    .meta-grid dt { color: var(--muted); margin-bottom: 0.15rem; }
+    .meta-grid dd { font-weight: 500; }
+    .meta-grid a { color: var(--link); text-decoration: none; word-break: break-all; }
+    .meta-grid a:hover { text-decoration: underline; }
+
+    /* Índice */
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .toc h2 { font-size: 1rem; margin-bottom: 0.75rem; color: var(--accent); }
+    .toc ol { padding-left: 1.25rem; columns: 2; column-gap: 2rem; }
+    .toc li { margin-bottom: 0.3rem; font-size: 0.875rem; }
+    .toc a { color: var(--link); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+
+    /* Secciones */
+    section { margin-bottom: 2.5rem; scroll-margin-top: 1rem; }
+
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.4rem;
+      margin-bottom: 1rem;
+    }
+
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 1.25rem 0 0.5rem;
+      color: #cbd5e1;
+    }
+
+    p { margin-bottom: 0.75rem; color: #cbd5e1; }
+
+    ul, ol { margin: 0.5rem 0 0.75rem 1.25rem; color: #cbd5e1; }
+    li { margin-bottom: 0.3rem; }
+
+    a { color: var(--link); }
+
+    /* Tablas */
+    .table-wrap { overflow-x: auto; margin: 1rem 0; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.65rem;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--surface);
+      color: var(--accent);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+    .check { color: var(--positive); font-weight: 700; }
+    .dash { color: var(--muted); }
+    .pending { color: var(--alert); }
+
+    /* Código / diagramas */
+    pre, code {
+      font-family: "Cascadia Code", "Consolas", monospace;
+      font-size: 0.8rem;
+    }
+
+    pre {
+      background: #0a0e14;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+      color: #a8b8cc;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    code {
+      background: rgba(255,255,255,0.06);
+      padding: 0.1rem 0.35rem;
+      border-radius: 3px;
+      color: #fbbf24;
+    }
+
+    /* Alertas */
+    .alert {
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      margin: 1rem 0;
+      font-size: 0.875rem;
+    }
+
+    .alert-warn {
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      color: #fcd34d;
+    }
+
+    .alert-info {
+      background: rgba(96, 165, 250, 0.1);
+      border: 1px solid rgba(96, 165, 250, 0.3);
+      color: #93c5fd;
+    }
+
+    /* Checklist */
+    .checklist { list-style: none; padding-left: 0; }
+    .checklist li { padding: 0.25rem 0; }
+    .checklist .done::before { content: "✓ "; color: var(--positive); font-weight: 700; }
+    .checklist .todo::before { content: "○ "; color: var(--alert); font-weight: 700; }
+
+    /* Pie */
+    footer {
+      border-top: 1px solid var(--border);
+      padding-top: 1.5rem;
+      margin-top: 3rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* Impresión */
+    @media print {
+      body { background: #fff; color: #111; font-size: 11pt; }
+      .page { max-width: 100%; padding: 0; }
+      .cover, .toc, section, pre, .alert { break-inside: avoid; }
+      .cover { background: #f8fafc; border-color: #ccc; }
+      .cover h1, h2, th { color: #b45309; }
+      p, li, td { color: #222; }
+      th { background: #f1f5f9; }
+      pre { background: #f8fafc; color: #333; border-color: #ddd; }
+      a { color: #1d4ed8; }
+      .alert-warn { background: #fffbeb; border-color: #fbbf24; color: #92400e; }
+      .no-print { display: none; }
+    }
+
+    @media (max-width: 600px) {
+      .toc ol { columns: 1; }
+      .page { padding: 1.25rem 1rem 3rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <!-- PORTADA -->
+    <header class="cover">
+      <span class="badge">Documento de revisión</span>
+      <h1>Informe técnico — SPE<br>Sistema de Personal para Eventos</h1>
+      <p class="subtitle">Programa de logística — gestión de personal en eventos de recreación y logística</p>
+      <dl class="meta-grid">
+        <div>
+          <dt>Proyecto</dt>
+          <dd>Programa de logística</dd>
+        </div>
+        <div>
+          <dt>Versión</dt>
+          <dd>0.2.x</dd>
+        </div>
+        <div>
+          <dt>Fecha</dt>
+          <dd>7 de julio de 2026</dd>
+        </div>
+        <div>
+          <dt>Destinatario</dt>
+          <dd>Equipo de revisión / stakeholders</dd>
+        </div>
+        <div>
+          <dt>Repositorio</dt>
+          <dd><a href="https://github.com/lasucursaldelcafe-droid/Programa-de-logistca">github.com/lasucursaldelcafe-droid/Programa-de-logistca</a></dd>
+        </div>
+        <div>
+          <dt>App en línea</dt>
+          <dd><a href="https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/">lasucursaldelcafe-droid.github.io/Programa-de-logistca</a></dd>
+        </div>
+        <div>
+          <dt>Contacto</dt>
+          <dd><a href="mailto:lasucursaldelcafe@gmail.com">lasucursaldelcafe@gmail.com</a></dd>
+        </div>
+      </dl>
+    </header>
+
+    <!-- ÍNDICE -->
+    <nav class="toc no-print">
+      <h2>Índice</h2>
+      <ol>
+        <li><a href="#s1">Resumen ejecutivo</a></li>
+        <li><a href="#s2">Alcance del sistema</a></li>
+        <li><a href="#s3">Arquitectura técnica</a></li>
+        <li><a href="#s4">Roles y permisos</a></li>
+        <li><a href="#s5">Módulos funcionales</a></li>
+        <li><a href="#s6">Persistencia de datos</a></li>
+        <li><a href="#s7">Seguridad</a></li>
+        <li><a href="#s8">Despliegue y entregables</a></li>
+        <li><a href="#s9">Flujo operativo</a></li>
+        <li><a href="#s10">Comandos de desarrollo</a></li>
+        <li><a href="#s11">Cuentas de prueba</a></li>
+        <li><a href="#s12">Estado del proyecto</a></li>
+        <li><a href="#s13">Documentación complementaria</a></li>
+        <li><a href="#s14">Glosario</a></li>
+      </ol>
+    </nav>
+
+    <!-- 1 -->
+    <section id="s1">
+      <h2>1. Resumen ejecutivo</h2>
+      <p>SPE es una plataforma web y móvil para empresas que operan personal en eventos de logística y recreación (capacidad pensada para <strong>200+ trabajadores</strong> por evento). El sistema cubre el ciclo completo:</p>
+      <ol>
+        <li><strong>Planificación</strong> — eventos, sitios GPS, turnos y códigos QR.</li>
+        <li><strong>Operación en campo</strong> — check-in/out con geolocalización, reportes de incidencias.</li>
+        <li><strong>Supervisión</strong> — mapa en vivo, alertas, seguimiento de asistencia.</li>
+        <li><strong>Administración</strong> — personal, cuentas, nómina, configuración.</li>
+        <li><strong>Plataforma</strong> — consola Master para auditoría e informes globales.</li>
+      </ol>
+      <p>La aplicación es <strong>unificada</strong>: una sola URL y un solo login. Tras autenticarse, el usuario ve el panel según su rol (Master, Admin/Supervisor o Trabajador). Se despliega automáticamente en <strong>GitHub Pages</strong> (web) y genera instaladores <strong>Windows</strong> (Electron) y <strong>Android</strong> (Capacitor) en cada actualización de la rama <code>main</code>.</p>
+    </section>
+
+    <!-- 2 -->
+    <section id="s2">
+      <h2>2. Alcance y objetivo del sistema</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Área</th><th>Qué resuelve</th></tr></thead>
+          <tbody>
+            <tr><td>Gestión de personal</td><td>Alta, roles, invitaciones, activación de cuentas</td></tr>
+            <tr><td>Turnos y sitios</td><td>Asignación horaria + ubicación física con geocerca</td></tr>
+            <tr><td>Control de asistencia</td><td>QR rotativo + validación GPS al marcar entrada/salida</td></tr>
+            <tr><td>Supervisión</td><td>Mapa en tiempo real, estados del personal, incidencias</td></tr>
+            <tr><td>Nómina</td><td>Cálculo y exportación según asistencia y tarifas</td></tr>
+            <tr><td>Plataforma</td><td>Master con informes CSV y auditoría de movimientos</td></tr>
+            <tr><td>Integraciones (fase actual)</td><td>Conectores demo hacia Siigo, WhatsApp, redes sociales</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>Fuera de alcance actual:</strong> backend de integraciones en producción (<code>functions/</code> reservado para fase 2), prototipo legacy en <code>_legacy/envios-next/</code>.</p>
+    </section>
+
+    <!-- 3 -->
+    <section id="s3">
+      <h2>3. Arquitectura técnica</h2>
+      <h3>3.1 Estructura del monorepo</h3>
+      <pre>Programa-de-logistca/
+├── apps/
+│   ├── admin/          → App principal unificada (Vite + React 19)
+│   ├── worker/         → Panel trabajador + proyecto Android (Capacitor)
+│   ├── master/         → Panel Master
+│   └── desktop/        → Cliente Electron (Windows)
+├── packages/
+│   ├── shared/         → Tipos, permisos, geo, Firebase, nómina
+│   └── integrations/   → Conectores Siigo, WhatsApp, Facebook, etc.
+├── scripts/            → Setup, seed, build Pages, validación CI
+├── docs/               → Artefacto publicado en GitHub Pages
+├── docs-source/        → Documentación fuente
+├── firestore.rules     → Reglas de seguridad Firestore
+└── .github/workflows/  → CI, Pages, Releases</pre>
+
+      <h3>3.2 App unificada</h3>
+      <p>Aunque existen tres carpetas de código, <strong>el despliegue usa un solo bundle</strong> desde <code>apps/admin</code>. Vite importa páginas de worker y master mediante aliases. Ventajas: un solo despliegue web, misma versión en web/Android/Windows, menor complejidad de CI/CD.</p>
+
+      <h3>3.3 Stack tecnológico</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Capa</th><th>Tecnología</th></tr></thead>
+          <tbody>
+            <tr><td>Frontend</td><td>React 19, TypeScript, Vite, Tailwind CSS</td></tr>
+            <tr><td>Autenticación y datos</td><td>Firebase Auth + Cloud Firestore</td></tr>
+            <tr><td>Móvil</td><td>Capacitor 7 (Android), geolocalización y biometría</td></tr>
+            <tr><td>Escritorio</td><td>Electron 35 (Windows NSIS + portable)</td></tr>
+            <tr><td>CI/CD</td><td>GitHub Actions</td></tr>
+            <tr><td>Hosting web</td><td>GitHub Pages</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section id="s4">
+      <h2>4. Roles, cuentas y permisos</h2>
+      <h3>4.1 Roles del sistema</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Rol técnico</th><th>Nombre</th><th>Panel</th><th>Función</th></tr></thead>
+          <tbody>
+            <tr><td><code>super_admin</code></td><td>Master</td><td><code>/master</code></td><td>Gobierno de plataforma, informes, auditoría</td></tr>
+            <tr><td><code>administrador</code></td><td>Administrador</td><td><code>/panel</code></td><td>Configuración, cuentas, nómina, integraciones</td></tr>
+            <tr><td><code>supervisor_sitio</code></td><td>Supervisor</td><td><code>/panel</code></td><td>Operación diaria: turnos, mapa, reportes</td></tr>
+            <tr><td><code>trabajador</code></td><td>Trabajador</td><td><code>/worker</code></td><td>Turnos, entrada/salida, reportar incidencias</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>4.2 Quién crea cada cuenta</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Tipo</th><th>Creador</th><th>Credenciales</th></tr></thead>
+          <tbody>
+            <tr><td>Master</td><td>Seed de plataforma</td><td>Cuenta fija (demo: <code>master@eventos.test</code>)</td></tr>
+            <tr><td>Administrador</td><td>Seed de plataforma</td><td>Cuenta fija (demo: <code>admin@eventos.test</code>)</td></tr>
+            <tr><td>Supervisor / Trabajador</td><td>Administrador</td><td>Invitación → la persona elige su contraseña</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>Regla clave:</strong> el rol lo asigna <strong>solo el administrador</strong> al registrar en Personal.</p>
+
+      <h3>4.3 Matriz de permisos</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Acción</th><th>Master</th><th>Admin</th><th>Supervisor</th><th>Trabajador</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Informes y auditoría global</td><td class="check">✓</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td></tr>
+            <tr><td>Crear administradores</td><td class="check">✓</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td></tr>
+            <tr><td>Gestionar cuentas / invitaciones</td><td class="dash">—</td><td class="check">✓</td><td class="dash">—</td><td class="dash">—</td></tr>
+            <tr><td>Configuración y nómina (CRUD)</td><td class="dash">—</td><td class="check">✓</td><td class="dash">—</td><td class="dash">—</td></tr>
+            <tr><td>Gestionar personal</td><td class="dash">—</td><td class="check">✓</td><td class="check">✓</td><td class="dash">—</td></tr>
+            <tr><td>Turnos, QR, mapa, reportes</td><td class="dash">—</td><td class="check">✓</td><td class="check">✓</td><td class="dash">—</td></tr>
+            <tr><td>Configurar integraciones APIs</td><td class="check">✓</td><td class="check">✓</td><td class="dash">—</td><td class="dash">—</td></tr>
+            <tr><td>Marcar entrada/salida</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="check">✓</td></tr>
+            <tr><td>Ver propia nómina</td><td class="dash">—</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 5 -->
+    <section id="s5">
+      <h2>5. Módulos funcionales</h2>
+
+      <h3>5.1 Autenticación y sesión</h3>
+      <ol>
+        <li>Usuario ingresa correo y contraseña en <code>/login</code>.</li>
+        <li>En producción: Firebase Auth valida y carga <code>users/{uid}</code> en Firestore.</li>
+        <li>Redirección al home del rol (<code>/master</code>, <code>/panel</code> o <code>/worker</code>).</li>
+        <li>Biometría opcional en Android (huella/rostro) tras primer login.</li>
+      </ol>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Paso</th><th>Ruta</th><th>Qué ocurre</th></tr></thead>
+          <tbody>
+            <tr><td>Admin envía invitación</td><td><code>/cuentas</code></td><td>Código de 6 dígitos + rol fijado</td></tr>
+            <tr><td>Persona activa cuenta</td><td><code>/unirse</code></td><td>Crea usuario Auth + documento users</td></tr>
+            <tr><td>Trabajador completa datos</td><td><code>/completar-perfil</code></td><td>Nombre, teléfono; perfilCompleto = true</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>5.2 Panel operativo (Admin / Supervisor) — <code>/panel</code></h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Módulo</th><th>Ruta</th><th>Función</th></tr></thead>
+          <tbody>
+            <tr><td>Resumen</td><td><code>/panel</code></td><td>KPIs: personal en sitio, turnos, alertas</td></tr>
+            <tr><td>Personal</td><td><code>/personal</code></td><td>Alta, edición, inhabilitación de personas</td></tr>
+            <tr><td>Cuentas</td><td><code>/cuentas</code></td><td>Invitaciones y activación</td></tr>
+            <tr><td>Turnos</td><td><code>/turnos</code></td><td>Asignar trabajador + sitio + horario</td></tr>
+            <tr><td>QR y sitios</td><td><code>/qr-sitios</code></td><td>QR por sitio con token rotativo</td></tr>
+            <tr><td>Mapa en vivo</td><td><code>/mapa</code></td><td>Posición GPS de trabajadores activos</td></tr>
+            <tr><td>Supervisión</td><td><code>/supervision</code></td><td>Vista operativa consolidada</td></tr>
+            <tr><td>Reportes</td><td><code>/reportes</code></td><td>Incidencias desde campo</td></tr>
+            <tr><td>Nómina</td><td><code>/nomina</code></td><td>Cálculo y exportación CSV</td></tr>
+            <tr><td>Configuración</td><td><code>/configuracion</code></td><td>Wizard de evento y parámetros</td></tr>
+            <tr><td>Integraciones</td><td><code>/integraciones</code></td><td>APIs externas (Siigo, WhatsApp, etc.)</td></tr>
+            <tr><td>Notificaciones</td><td><code>/notificaciones</code></td><td>Bandeja + push FCM</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>5.3 Consola Master — <code>/master</code></h3>
+      <p>Resumen plataforma, administradores, informes CSV, auditoría. Solo rol <code>super_admin</code>.</p>
+
+      <h3>5.4 App Trabajador — <code>/worker</code></h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Módulo</th><th>Ruta</th><th>Función</th></tr></thead>
+          <tbody>
+            <tr><td>Inicio</td><td><code>/worker</code></td><td>Resumen del día</td></tr>
+            <tr><td>Mis turnos</td><td><code>/worker/turnos</code></td><td>Confirmar o rechazar turnos</td></tr>
+            <tr><td>Marcar entrada</td><td><code>/worker/entrada</code></td><td>QR + GPS → check-in/out</td></tr>
+            <tr><td>Reportar</td><td><code>/worker/reportar</code></td><td>Incidencias al supervisor</td></tr>
+            <tr><td>Notificaciones</td><td><code>/worker/notificaciones</code></td><td>Alertas de turno y geocerca</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>5.5 Control de asistencia (QR + GPS)</h3>
+      <pre>Trabajador → /worker/entrada
+    ↓ Escanea QR del sitio
+    ↓ Solicita permiso GPS (obligatorio)
+    ↓ Valida: turno + ventana horaria + token QR + geocerca (Haversine)
+    ↓ Registro en colección attendance
+    ↓ Monitor geocerca (~10 s) → alerta si sale de zona</pre>
+      <p>Requisitos: HTTPS (GitHub Pages ✓), permisos de ubicación en Android.</p>
+
+      <h3>5.6 Integraciones externas (fase demo)</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Integración</th><th>Estado</th><th>Uso previsto</th></tr></thead>
+          <tbody>
+            <tr><td>Siigo Nube</td><td>Demo</td><td>Clientes, facturación, inventario</td></tr>
+            <tr><td>WhatsApp Cloud API</td><td>Demo</td><td>Alertas de turno</td></tr>
+            <tr><td>Facebook / Instagram</td><td>Demo</td><td>Actividad social</td></tr>
+            <tr><td>Webhook entrante</td><td>Demo</td><td>Eventos externos</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 6 -->
+    <section id="s6">
+      <h2>6. Persistencia de datos</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Modo</th><th>Cuándo</th><th>Dónde</th><th>Sincronización</th></tr></thead>
+          <tbody>
+            <tr><td>Demo</td><td>Desarrollo local</td><td>localStorage</td><td>Mismo origen/URL</td></tr>
+            <tr><td>Emuladores</td><td><code>npm run dev:full</code></td><td>Firestore local</td><td>Solo en tu PC</td></tr>
+            <tr><td>Producción</td><td>Firebase real</td><td>Cloud Firestore</td><td>Tiempo real global</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Colecciones principales: <code>users</code>, <code>workers</code>, <code>events</code>, <code>sites</code>, <code>qrCodes</code>, <code>shifts</code>, <code>attendance</code>, <code>invitations</code>, <code>reports</code>, <code>notifications</code>, <code>payroll</code>, <code>payrollAudit</code>.</p>
+    </section>
+
+    <!-- 7 -->
+    <section id="s7">
+      <h2>7. Seguridad</h2>
+      <ul>
+        <li>Reglas Firestore por rol (lectura/escritura según token Auth).</li>
+        <li><code>PlatformGate</code>: aislamiento de rutas por rol.</li>
+        <li>Navegación filtrada por permisos granulares.</li>
+        <li>Cuentas inhabilitables; reset de contraseña por admin.</li>
+        <li>Auditoría de nómina append-only (sin edición ni borrado).</li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Riesgo</th><th>Estado</th><th>Mitigación</th></tr></thead>
+          <tbody>
+            <tr><td>Credenciales APIs en localStorage</td><td>Activo (demo)</td><td>Backend proxy en functions/</td></tr>
+            <tr><td>Firebase Secrets sin configurar</td><td>Pendiente</td><td>GitHub Secrets (ver §8)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 8 -->
+    <section id="s8">
+      <h2>8. Despliegue, CI/CD y entregables</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Recurso</th><th>URL</th></tr></thead>
+          <tbody>
+            <tr><td>App web</td><td><a href="https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/">lasucursaldelcafe-droid.github.io/Programa-de-logistca</a></td></tr>
+            <tr><td>Instaladores</td><td><a href="https://github.com/lasucursaldelcafe-droid/Programa-de-logistca/releases/latest">Releases / latest</a></td></tr>
+            <tr><td>CI / Actions</td><td><a href="https://github.com/lasucursaldelcafe-droid/Programa-de-logistca/actions">Actions</a></td></tr>
+            <tr><td>Repositorio</td><td><a href="https://github.com/lasucursaldelcafe-droid/Programa-de-logistca">GitHub repo</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Instaladores nativos</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Archivo</th><th>Plataforma</th><th>Comportamiento</th></tr></thead>
+          <tbody>
+            <tr><td>SPE-Admin-*-nsis.exe</td><td>Windows</td><td>Carga URL GitHub Pages (requiere internet)</td></tr>
+            <tr><td>SPE-Admin-*-portable.exe</td><td>Windows portable</td><td>Igual que instalable</td></tr>
+            <tr><td>SPE-Eventos-*-android.apk</td><td>Android</td><td>WebView con misma URL remota</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="alert alert-warn">
+        <strong>⚠ Login en producción:</strong> el sitio publicado requiere configurar los GitHub Secrets
+        <code>VITE_FIREBASE_*</code> y crear usuarios reales en Firebase Auth. Las cuentas
+        <code>admin@eventos.test</code> solo funcionan en desarrollo local con emuladores (<code>npm run dev:full</code>).
+      </div>
+
+      <h3>Secrets Firebase requeridos</h3>
+      <ul>
+        <li><code>VITE_FIREBASE_API_KEY</code></li>
+        <li><code>VITE_FIREBASE_AUTH_DOMAIN</code></li>
+        <li><code>VITE_FIREBASE_PROJECT_ID</code></li>
+        <li><code>VITE_FIREBASE_STORAGE_BUCKET</code></li>
+        <li><code>VITE_FIREBASE_MESSAGING_SENDER_ID</code></li>
+        <li><code>VITE_FIREBASE_APP_ID</code></li>
+        <li><code>VITE_FIREBASE_VAPID_KEY</code> (opcional, push)</li>
+      </ul>
+    </section>
+
+    <!-- 9 -->
+    <section id="s9">
+      <h2>9. Flujo operativo de punta a punta</h2>
+      <pre>┌──────────────────────────────────────────────────────────────┐
+│  MASTER — plataforma, informes globales, auditoría           │
+└──────────────────────────┬───────────────────────────────────┘
+                           │
+┌──────────────────────────▼───────────────────────────────────┐
+│  ADMIN — evento → sitios GPS → QR → personal → invitaciones  │
+│          → turnos asignados                                    │
+└──────────────────────────┬───────────────────────────────────┘
+                           │
+┌──────────────────────────▼───────────────────────────────────┐
+│  TRABAJADOR — activa cuenta → perfil → confirma turno        │
+│               → QR + GPS → reporta incidencias               │
+└──────────────────────────┬───────────────────────────────────┘
+                           │
+┌──────────────────────────▼───────────────────────────────────┐
+│  SUPERVISOR/ADMIN — mapa en vivo → reportes → nómina → cierre │
+└──────────────────────────────────────────────────────────────┘</pre>
+    </section>
+
+    <!-- 10 -->
+    <section id="s10">
+      <h2>10. Comandos de desarrollo</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Comando</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td><code>npm run setup</code></td><td>Primera instalación</td></tr>
+            <tr><td><code>npm start</code></td><td>Desarrollo local :5173</td></tr>
+            <tr><td><code>npm run dev:full</code></td><td>Emuladores + seed + app</td></tr>
+            <tr><td><code>npm run build</code></td><td>Compila app unificada</td></tr>
+            <tr><td><code>npm run build:pages</code></td><td>Build para GitHub Pages</td></tr>
+            <tr><td><code>npm run electron:build</code></td><td>Instalador Windows</td></tr>
+            <tr><td><code>npm run cap:android</code></td><td>Proyecto Android</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 11 -->
+    <section id="s11">
+      <h2>11. Cuentas de prueba (solo desarrollo local)</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Rol</th><th>Correo</th><th>Contraseña</th></tr></thead>
+          <tbody>
+            <tr><td>Master</td><td>master@eventos.test</td><td>Master123!</td></tr>
+            <tr><td>Administrador</td><td>admin@eventos.test</td><td>Admin123!</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="alert alert-info">
+        Estas cuentas funcionan únicamente con <code>npm run dev:full</code> (emuladores Firebase en tu PC).
+        No aplican al enlace público de GitHub Pages.
+      </div>
+    </section>
+
+    <!-- 12 -->
+    <section id="s12">
+      <h2>12. Estado del proyecto</h2>
+      <h3>Completado</h3>
+      <ul class="checklist">
+        <li class="done">App unificada con navegación lateral por secciones</li>
+        <li class="done">Tres paneles por rol (Master, Admin/Supervisor, Trabajador)</li>
+        <li class="done">GPS real en web y Android</li>
+        <li class="done">Biometría en Android</li>
+        <li class="done">Gestión de personal, cuentas, invitaciones y roles</li>
+        <li class="done">QR rotativo + geocercas + monitor de asistencia</li>
+        <li class="done">Mapa en vivo y reportes de incidencias</li>
+        <li class="done">Nómina con exportación CSV</li>
+        <li class="done">Despliegue automático GitHub Pages + Releases</li>
+        <li class="done">Modo producción sin demo</li>
+        <li class="done">Validación de rutas y flujos en CI</li>
+      </ul>
+      <h3>Pendiente / próxima fase</h3>
+      <ul class="checklist">
+        <li class="todo">Configurar GitHub Secrets Firebase (bloquea login en sitio publicado)</li>
+        <li class="todo">Backend seguro para integraciones (Siigo, WhatsApp)</li>
+        <li class="todo">Push notifications FCM en producción</li>
+        <li class="todo">Migración de credenciales demo a backend cifrado</li>
+      </ul>
+    </section>
+
+    <!-- 13 -->
+    <section id="s13">
+      <h2>13. Documentación complementaria (repositorio)</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Documento</th><th>Contenido</th></tr></thead>
+          <tbody>
+            <tr><td>docs-source/GUIA.md</td><td>Guía de usuario completa</td></tr>
+            <tr><td>docs-source/CUENTAS-Y-ROLES.md</td><td>Cuentas, invitaciones y permisos</td></tr>
+            <tr><td>docs-source/PRODUCCION-FIREBASE.md</td><td>Configuración Firebase y Secrets</td></tr>
+            <tr><td>docs-source/PERSISTENCIA-Y-DEPLOY.md</td><td>Datos y publicación</td></tr>
+            <tr><td>docs-source/INTEGRACIONES-APIS.md</td><td>APIs externas</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 14 -->
+    <section id="s14">
+      <h2>14. Glosario</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Término</th><th>Significado</th></tr></thead>
+          <tbody>
+            <tr><td>SPE</td><td>Sistema de Personal para Eventos</td></tr>
+            <tr><td>Geocerca</td><td>Radio en metros alrededor de un sitio; valida presencia física</td></tr>
+            <tr><td>QR rotativo</td><td>Código con token que cambia periódicamente</td></tr>
+            <tr><td>Check-in / Check-out</td><td>Marcar entrada o salida de un turno</td></tr>
+            <tr><td>Capacitor</td><td>Empaqueta la web como app Android nativa</td></tr>
+            <tr><td>Electron</td><td>Empaqueta la web como app Windows</td></tr>
+            <tr><td>Firestore</td><td>Base de datos en tiempo real de Firebase</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer>
+      <p><strong>SPE — Sistema de Personal para Eventos</strong></p>
+      <p>Informe generado para entrega a revisión · 7 de julio de 2026</p>
+      <p>lasucursaldelcafe@gmail.com · lasucursaldelcafe-droid/Programa-de-logistca</p>
+      <p class="no-print" style="margin-top:0.75rem;">Para imprimir o guardar como PDF: Ctrl+P → Guardar como PDF</p>
+    </footer>
+
+  </div>
+</body>
+</html>
