@@ -37,7 +37,10 @@ let db: Firestore;
 let emulatorsConnected = false;
 
 export function configureFirebase(config: Partial<FirebaseClientConfig>): void {
-  clientConfig = { ...DEFAULT_CONFIG, ...config };
+  const cleaned = Object.fromEntries(
+    Object.entries(config).filter(([, value]) => value !== undefined && value !== ""),
+  ) as Partial<FirebaseClientConfig>;
+  clientConfig = { ...DEFAULT_CONFIG, ...cleaned };
 }
 
 export function getFirebaseApp(): FirebaseApp {

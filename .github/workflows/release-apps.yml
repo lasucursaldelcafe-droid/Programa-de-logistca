@@ -13,11 +13,18 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  APP_VERSION: "0.2.2"
-  VITE_DEMO_MODE: "true"
+  APP_VERSION: "0.2.3"
+  VITE_DEMO_MODE: "false"
   VITE_USE_FIREBASE_EMULATORS: "false"
   NATIVE_BUILD: "true"
   CAPACITOR_SERVER_URL: "https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/"
+  VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+  VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+  VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+  VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+  VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+  VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+  VITE_FIREBASE_VAPID_KEY: ${{ secrets.VITE_FIREBASE_VAPID_KEY }}
 
 jobs:
   build-windows:
@@ -33,6 +40,9 @@ jobs:
 
       - name: Instalar dependencias
         run: npm ci
+
+      - name: Validar entorno producción
+        run: npx tsx scripts/ensure-production-env.ts
 
       - name: Asegurar Electron en desktop
         run: npm install electron@35.7.5 electron-builder@25.1.8 app-builder-bin@5.0.0-alpha.10 -w @spe/desktop
@@ -85,6 +95,9 @@ jobs:
 
       - name: Instalar dependencias
         run: npm ci
+
+      - name: Validar entorno producción
+        run: npx tsx scripts/ensure-production-env.ts
 
       - name: Sincronizar Capacitor (app unificada)
         run: npm run cap:sync

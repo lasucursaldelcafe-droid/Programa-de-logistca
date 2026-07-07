@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ATTENDANCE_LABEL, formatQrPayload, resolveTurnosPath } from "@spe/shared";
+import { ATTENDANCE_LABEL, resolveTurnosPath } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
 import { Badge, Card } from "../components/ui";
 import { getCurrentPosition } from "../lib/geolocation";
@@ -14,7 +14,6 @@ import {
   useShifts,
   useSites,
 } from "../hooks/useDataStore";
-import { DEMO_MODE } from "../lib/mode";
 
 export function MarcarEntradaPage() {
   const { user } = useAuth();
@@ -38,11 +37,6 @@ export function MarcarEntradaPage() {
   const active = getActiveAttendance(attendances, workerId);
   const activeSite = active ? sites.find((s) => s.id === active.siteId) ?? null : null;
   const { dentroGeocerca, gpsError } = useGeofenceMonitor(active, activeSite, Boolean(active));
-
-  const qrDemoCocina = qrCodes.find((q) => q.id === "qr-site-cocina");
-  const qrPayloadDemo = qrDemoCocina
-    ? formatQrPayload(qrDemoCocina.id, qrDemoCocina.token)
-    : "";
 
   async function iniciarCheckin(e: FormEvent) {
     e.preventDefault();
@@ -99,7 +93,6 @@ export function MarcarEntradaPage() {
           <h1 className="font-display text-3xl font-bold">Jornada activa</h1>
           <p className="mt-1 text-neutral-400">
             GPS activo solo durante esta jornada.
-            {DEMO_MODE && !gpsError && " En web demo la ubicación es simulada; en el celular usa GPS real."}
           </p>
         </div>
 
@@ -205,20 +198,11 @@ export function MarcarEntradaPage() {
             <input
               value={rawQr}
               onChange={(e) => setRawQr(e.target.value)}
-              placeholder="spe:qr:qr-site-cocina:cocina2026token"
+              placeholder="spe:qr:ID_DEL_SITIO:token"
               className="w-full rounded-lg border border-border bg-bg px-3 py-2 font-mono text-xs"
               required
             />
           </label>
-          {qrPayloadDemo && (
-            <button
-              type="button"
-              onClick={() => setRawQr(qrPayloadDemo)}
-              className="text-xs text-accent hover:underline"
-            >
-              Usar QR demo cocina central
-            </button>
-          )}
           {error && <p className="text-sm text-alert">{error}</p>}
           <button
             type="submit"

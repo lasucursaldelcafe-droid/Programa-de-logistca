@@ -1,5 +1,4 @@
 import { Geolocation } from "@capacitor/geolocation";
-import { DEMO_MODE } from "./mode";
 import { isNativePlatform } from "./platform";
 
 export interface GeoPosition {
@@ -28,11 +27,6 @@ async function getNativePosition(): Promise<GeoPosition> {
 }
 
 export async function getCurrentPosition(): Promise<GeoPosition> {
-  // En móvil/nativo siempre GPS real; en web demo usa coordenadas fijas para pruebas sin hardware.
-  if (DEMO_MODE && !isNativePlatform()) {
-    return { lat: 4.6538, lng: -74.0839, accuracy: 10 };
-  }
-
   if (isNativePlatform()) {
     return getNativePosition();
   }
@@ -59,17 +53,6 @@ export function watchPosition(
   onPosition: (pos: GeoPosition) => void,
   onError?: (message: string) => void,
 ): () => void {
-  if (DEMO_MODE && !isNativePlatform()) {
-    const id = window.setInterval(() => {
-      onPosition({
-        lat: 4.6538 + (Math.random() - 0.5) * 0.0002,
-        lng: -74.0839 + (Math.random() - 0.5) * 0.0002,
-      });
-    }, 10_000);
-    onPosition({ lat: 4.6538, lng: -74.0839 });
-    return () => window.clearInterval(id);
-  }
-
   if (isNativePlatform()) {
     let active = true;
     const poll = async () => {

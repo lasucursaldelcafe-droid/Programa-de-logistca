@@ -30,7 +30,6 @@ import {
 } from "../hooks/useDataStore";
 import { usePayrollEntries } from "../hooks/usePayroll";
 import { useNotifications } from "../hooks/useNotifications";
-import { DEMO_MODE } from "../lib/mode";
 import { SetupBanner } from "../components/SetupBanner";
 import { PageHeader } from "../components/nav/PageHeader";
 
@@ -110,7 +109,7 @@ export function HomePage() {
       <div className="space-y-8">
         <PageHeader
           title="Mi panel"
-          description={`Turnos, jornada y nómina${DEMO_MODE ? " · demo" : ""}`}
+          description="Turnos, jornada y nómina"
         />
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -172,7 +171,7 @@ export function HomePage() {
       {user && puedeGestionarConfiguracion(user.role) && <SetupBanner />}
       <PageHeader
         title="Resumen"
-        description={`Personal, turnos, GPS y nómina${DEMO_MODE ? " · demo" : ""}`}
+        description="Personal, turnos, GPS y nómina"
       >
         {esOperativo && events.length > 0 && (
           <label className="text-sm">

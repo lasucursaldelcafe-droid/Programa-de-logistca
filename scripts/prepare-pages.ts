@@ -55,8 +55,15 @@ updateRootIndex(links);
 console.log("→ Build app unificada (Admin + Master + Trabajador)…");
 run("npm run build -w @spe/shared && npm run build -w @spe/admin", {
   GITHUB_PAGES_BASE: appBase(),
-  VITE_DEMO_MODE: process.env.VITE_DEMO_MODE ?? "true",
+  VITE_DEMO_MODE: process.env.VITE_DEMO_MODE ?? "false",
   VITE_USE_FIREBASE_EMULATORS: process.env.VITE_USE_FIREBASE_EMULATORS ?? "false",
+  VITE_FIREBASE_API_KEY: process.env.VITE_FIREBASE_API_KEY ?? "",
+  VITE_FIREBASE_AUTH_DOMAIN: process.env.VITE_FIREBASE_AUTH_DOMAIN ?? "",
+  VITE_FIREBASE_PROJECT_ID: process.env.VITE_FIREBASE_PROJECT_ID ?? "",
+  VITE_FIREBASE_STORAGE_BUCKET: process.env.VITE_FIREBASE_STORAGE_BUCKET ?? "",
+  VITE_FIREBASE_MESSAGING_SENDER_ID: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? "",
+  VITE_FIREBASE_APP_ID: process.env.VITE_FIREBASE_APP_ID ?? "",
+  VITE_FIREBASE_VAPID_KEY: process.env.VITE_FIREBASE_VAPID_KEY ?? "",
 });
 
 const adminDist = resolve(ROOT, "apps/admin/dist");

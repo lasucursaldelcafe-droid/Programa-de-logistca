@@ -3,7 +3,6 @@ import { Navigate, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@core/contexts/AuthContext";
 import { Card } from "@core/components/ui";
 import { LoginAyudaPanel } from "@core/components/LoginAyudaPanel";
-import { DEMO_MODE } from "@core/lib/mode";
 
 export function LoginPage() {
   const { user, loading, login } = useAuth();
@@ -46,11 +45,6 @@ export function LoginPage() {
             Instrucciones de operación
           </Link>
         </div>
-        {DEMO_MODE && (
-          <p className="mt-2 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-xs text-accent">
-            Modo demo — datos en memoria del navegador.
-          </p>
-        )}
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
           <label className="block text-sm">
             <span className="mb-1 block text-neutral-300">Correo</span>

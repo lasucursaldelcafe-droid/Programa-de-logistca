@@ -19,7 +19,6 @@ import {
   useNotifications,
 } from "../hooks/useNotifications";
 import { updateShiftEstado, useAttendances, useEvents, useShifts, useWorkers } from "../hooks/useDataStore";
-import { DEMO_MODE } from "../lib/mode";
 
 export function NotificacionesPage() {
   const { user } = useAuth();
@@ -116,7 +115,7 @@ export function NotificacionesPage() {
       <div>
         <h1 className="font-display text-3xl font-bold">Notificaciones</h1>
         <p className="mt-1 text-neutral-400">
-          Bandeja en tiempo real{DEMO_MODE ? " (modo demo, sin FCM)" : pushAvailable() ? " + push habilitado" : " (FCM: configura VITE_FIREBASE_VAPID_KEY)"}.
+          Bandeja en tiempo real{pushAvailable() ? " + push habilitado" : " (FCM: configura VITE_FIREBASE_VAPID_KEY)"}.
         </p>
       </div>
 

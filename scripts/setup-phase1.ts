@@ -9,13 +9,14 @@ const ENV_PATHS = [
   resolve(ROOT, "apps/master/.env.local"),
 ];
 
-const ENV_CONTENT = `VITE_FIREBASE_API_KEY=demo-api-key
-VITE_FIREBASE_AUTH_DOMAIN=demo-personal-eventos.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=demo-personal-eventos
-VITE_FIREBASE_STORAGE_BUCKET=demo-personal-eventos.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=000000000000
-VITE_FIREBASE_APP_ID=1:000000000000:web:demo
-VITE_USE_FIREBASE_EMULATORS=true
+const ENV_CONTENT = `VITE_DEMO_MODE=false
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
+VITE_USE_FIREBASE_EMULATORS=false
 `;
 
 function main(): void {
@@ -32,9 +33,10 @@ function main(): void {
   execSync("npm install", { cwd: ROOT, stdio: "inherit" });
 
   console.log("\n✓ Setup listo.");
-  console.log("  npm start          → Admin :5173 + emuladores");
-  console.log("  npm run dev:worker → Trabajador :5174");
-  console.log("  npm run dev:master → Master :5175");
+  console.log("  1. Copia apps/admin/.env.production.example → apps/admin/.env.local");
+  console.log("  2. Pega las credenciales de Firebase Console");
+  console.log("  3. npm start          → desarrollo local :5173");
+  console.log("  4. npm run dev:full   → emuladores + seed (solo desarrollo)");
 }
 
 main();

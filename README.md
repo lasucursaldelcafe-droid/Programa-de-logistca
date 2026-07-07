@@ -13,20 +13,18 @@ Plataforma de gestión de personal para empresas de logística y recreación en 
 ## Inicio rápido
 
 ```bash
-npm run setup    # primera vez: deps + .env.local
-npm start        # emuladores + seed + app :5173
+npm run setup    # primera vez: deps + plantilla .env.local
+# Edita apps/admin/.env.local con credenciales Firebase (ver docs-source/PRODUCCION-FIREBASE.md)
+npm start        # desarrollo local :5173
 ```
 
-## Cuentas de plataforma (seed)
+Para desarrollo con emuladores (opcional): `npm run dev:full`
 
-Solo **Master** y **Administrador único**. Supervisores y trabajadores: Admin → Personal (asignar rol) → Cuentas (invitación).
+## Producción
 
-| Rol | Email | Contraseña |
-|-----|-------|------------|
-| Master | master@eventos.test | Master123! |
-| Administrador | admin@eventos.test | Admin123! |
+La app usa **Firebase Auth + Firestore**. Configura credenciales en GitHub Secrets para CI y en `apps/admin/.env.local` para desarrollo.
 
-Cada persona invitada activa su cuenta con su correo y elige su contraseña. Ver `docs-source/CUENTAS-Y-ROLES.md`.
+Guía: `docs-source/PRODUCCION-FIREBASE.md`
 
 ## Ver en línea (GitHub Pages)
 
@@ -41,7 +39,7 @@ Cada persona invitada activa su cuenta con su correo y elige su contraseña. Ver
 > Una sola app: Admin, Master y Trabajador en la misma URL. Enlaces generados por `npm run sync:links`.
 <!-- DEPLOY_LINKS_END -->
 
-GitHub Pages publica las **tres plataformas** en modo demo:
+GitHub Pages publica la **app unificada** con Firebase en producción:
 
 | Plataforma | URL |
 |------------|-----|

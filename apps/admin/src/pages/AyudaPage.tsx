@@ -31,18 +31,11 @@ const PLATFORM_STEPS: Record<Platform, string[]> = {
   ],
 };
 
-const DEMO_ACCOUNTS: { platform: Platform; email: string; password: string; note?: string }[] = [
-  { platform: "master", email: "master@eventos.test", password: "Master123!", note: "Plataforma" },
-  { platform: "admin", email: "admin@eventos.test", password: "Admin123!", note: "Administrador único" },
-];
-
 interface AyudaPageProps {
   platform: Platform;
 }
 
 export function AyudaPage({ platform }: AyudaPageProps) {
-  const accounts = DEMO_ACCOUNTS.filter((a) => a.platform === platform);
-
   return (
     <div className="mx-auto max-w-2xl space-y-8 py-4">
       <div>
@@ -88,30 +81,6 @@ export function AyudaPage({ platform }: AyudaPageProps) {
         </p>
       </section>
 
-      {accounts.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-lg font-medium text-white">Cuentas de prueba (demo)</h2>
-          <div className="overflow-x-auto rounded-lg border border-border">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-surface text-neutral-400">
-                <tr>
-                  <th className="px-4 py-2">Email</th>
-                  <th className="px-4 py-2">Contraseña</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border text-neutral-300">
-                {accounts.map((a) => (
-                  <tr key={a.email}>
-                    <td className="px-4 py-2 font-mono text-xs">{a.email}</td>
-                    <td className="px-4 py-2 font-mono text-xs">{a.password}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
       <section className="space-y-3">
         <h2 className="text-lg font-medium text-white">Preguntas frecuentes</h2>
         <dl className="space-y-4 text-sm text-neutral-300">
@@ -119,7 +88,8 @@ export function AyudaPage({ platform }: AyudaPageProps) {
             <dt className="font-medium text-white">¿Por qué no puedo entrar?</dt>
             <dd className="mt-1">
               Verifica que estás en la plataforma correcta para tu rol. Un trabajador no
-              puede acceder al Admin ni al Master.
+              puede acceder al Admin ni al Master. Si olvidaste la contraseña, usa
+              recuperación en la pantalla de login.
             </dd>
           </div>
           <div>

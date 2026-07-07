@@ -9,7 +9,6 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { Badge, Card } from "../components/ui";
 import { buildInvitationUrls } from "../lib/urls";
-import { DEMO_MODE } from "../lib/mode";
 import { InstruccionesOperacion } from "../components/InstruccionesOperacion";
 import { useDeploymentLinks } from "../hooks/useDeploymentLinks";
 import {
@@ -120,17 +119,6 @@ export function CuentasPage() {
         title="Cuentas"
         description="Invitaciones por correo. Cada persona elige su contraseña al activar."
       />
-
-      {DEMO_MODE && (
-        <Card className="border-accent/30 bg-accent/5">
-          <p className="text-sm text-neutral-300">
-            <strong className="text-accent">Datos guardados automáticamente</strong> en este
-            navegador o app. Web, Android y Windows (con internet) comparten datos al usar la URL
-            publicada. Los cambios de código se actualizan con cada despliegue en{" "}
-            <code className="text-neutral-400">main</code>.
-          </p>
-        </Card>
-      )}
 
       <Card>
         <h2 className="font-display text-lg font-semibold">Cómo invitar personal</h2>

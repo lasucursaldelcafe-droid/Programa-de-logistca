@@ -17,11 +17,9 @@ import {
   deleteWorker,
   setWorkerHabilitado,
   updateWorkerEstado,
-  useChangeLog,
   useWorkers,
 } from "../hooks/useDataStore";
 import { PageHeader } from "../components/nav/PageHeader";
-import { DEMO_MODE } from "../lib/mode";
 
 const PERFILES: PerfilTrabajo[] = [
   "logistica",
@@ -36,7 +34,6 @@ const PERFILES: PerfilTrabajo[] = [
 export function PersonalPage() {
   const { user } = useAuth();
   const workers = useWorkers();
-  const changeLog = useChangeLog();
   const [form, setForm] = useState({
     nombre: "",
     documento: "",
@@ -104,13 +101,6 @@ export function PersonalPage() {
         title="Personal"
         description="Registra personas y asigna roles. Los cambios se guardan automáticamente."
       />
-
-      {DEMO_MODE && (
-        <p className="rounded-lg border border-border bg-bg/60 px-3 py-2 text-xs text-neutral-500">
-          Datos guardados en este navegador o app. Web, Android y Windows (con internet) comparten
-          el mismo almacenamiento al usar la URL publicada.
-        </p>
-      )}
 
       {error && (
         <p className="rounded-lg bg-alert/10 px-3 py-2 text-sm text-alert">{error}</p>
@@ -260,29 +250,6 @@ export function PersonalPage() {
         ))}
       </div>
 
-      {DEMO_MODE && changeLog.length > 0 && (
-        <Card>
-          <h2 className="font-display text-sm font-semibold text-neutral-300">Historial reciente</h2>
-          <ul className="mt-3 max-h-48 space-y-1 overflow-y-auto text-xs text-neutral-500">
-            {changeLog
-              .filter((e) => e.action.startsWith("worker."))
-              .slice(0, 15)
-              .map((e) => (
-                <li key={e.id}>
-                  <span className="text-neutral-400">
-                    {new Date(e.at).toLocaleString("es-CO")}
-                  </span>
-                  {" · "}
-                  {e.action === "worker.create" && "Alta"}
-                  {e.action === "worker.update" && "Actualización"}
-                  {e.action === "worker.delete" && "Eliminación"}
-                  {e.targetLabel ? `: ${e.targetLabel}` : ""}
-                  {e.actorNombre ? ` (${e.actorNombre})` : ""}
-                </li>
-              ))}
-          </ul>
-        </Card>
-      )}
     </div>
   );
 }
