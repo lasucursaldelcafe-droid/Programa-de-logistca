@@ -60,3 +60,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# SPE toolkit (generados localmente)
+spe-health-report.json
+github-secrets-commands.txt
+__pycache__/
+*.pyc

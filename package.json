@@ -35,7 +35,13 @@
     "setup:all": "npm run setup && npm run seed",
     "test:smoke": "firebase emulators:exec --only auth,firestore --project demo-personal-eventos \"npm run seed && tsx scripts/ci-smoke.ts\"",
     "check:nav": "tsx scripts/check-nav-routes.ts",
-    "verify:flows": "tsx scripts/verify-demo-flows.ts"
+    "verify:flows": "tsx scripts/verify-demo-flows.ts",
+    "toolkit": "node scripts/run-toolkit.mjs",
+    "toolkit:cli": "node scripts/run-toolkit-cli.mjs",
+    "toolkit:health": "node scripts/run-toolkit-cli.mjs health",
+    "toolkit:pdf": "node scripts/run-toolkit-cli.mjs pdf",
+    "toolkit:setup": "node scripts/run-toolkit-cli.mjs setup",
+    "pdf:informe": "npm run build:informe-pdf"
   },
   "devDependencies": {
     "cross-env": "^10.1.0",
