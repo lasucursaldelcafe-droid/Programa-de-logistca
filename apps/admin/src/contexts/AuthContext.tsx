@@ -17,10 +17,12 @@ import { doc, getDoc } from "firebase/firestore";
 import {
   getFirebaseAuth,
   getFirestoreDb,
+  isFirebaseConfigured,
   type AppUser,
   type UserRole,
 } from "@spe/shared";
 import { DEMO_MODE } from "../lib/mode";
+import { formatAuthError } from "../lib/authErrors";
 import { initPushNotifications } from "../lib/fcm";
 import {
   clearDemoSession,
@@ -64,6 +66,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    if (!isFirebaseConfigured()) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
     const unsub = onAuthStateChanged(getFirebaseAuth(), async (fbUser) => {
       if (!fbUser) {
         setUser(null);
@@ -102,7 +110,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw err instanceof Error ? err : new Error("Credenciales inválidas");
       }
     }
-    await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
+    if (!isFirebaseConfigured()) {
+      throw new Error(
+        "Firebase no está configurado en este despliegue. El administrador debe añadir las credenciales en GitHub Secrets (ver PRODUCCION-FIREBASE.md).",
+      );
+    }
+    try {
+      await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
+    } catch (err) {
+      throw new Error(formatAuthError(err));
+    }
     const fbUser = getFirebaseAuth().currentUser;
     if (!fbUser) throw new Error("No se pudo iniciar sesión");
     if (fbUser) void initPushNotifications(fbUser.uid);

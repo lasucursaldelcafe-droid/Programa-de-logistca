@@ -30,20 +30,50 @@ const DEFAULT_CONFIG: FirebaseClientConfig = {
   useEmulators: true,
 };
 
+const PLACEHOLDER_API_KEYS = new Set(["", "demo-api-key"]);
+
+const UNCONFIGURED_PRODUCTION: FirebaseClientConfig = {
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: "",
+  useEmulators: false,
+};
+
 let clientConfig: FirebaseClientConfig = DEFAULT_CONFIG;
 let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
 let emulatorsConnected = false;
 
+export function isFirebaseConfigured(): boolean {
+  const key = clientConfig.apiKey?.trim() ?? "";
+  return !PLACEHOLDER_API_KEYS.has(key);
+}
+
 export function configureFirebase(config: Partial<FirebaseClientConfig>): void {
   const cleaned = Object.fromEntries(
     Object.entries(config).filter(([, value]) => value !== undefined && value !== ""),
   ) as Partial<FirebaseClientConfig>;
+
+  const useEmulators = cleaned.useEmulators ?? DEFAULT_CONFIG.useEmulators;
+  const hasRealApiKey =
+    typeof cleaned.apiKey === "string" && !PLACEHOLDER_API_KEYS.has(cleaned.apiKey.trim());
+
+  if (!hasRealApiKey && useEmulators === false) {
+    clientConfig = UNCONFIGURED_PRODUCTION;
+    return;
+  }
+
   clientConfig = { ...DEFAULT_CONFIG, ...cleaned };
 }
 
 export function getFirebaseApp(): FirebaseApp {
+  if (!isFirebaseConfigured()) {
+    throw new Error("Firebase no está configurado en este despliegue.");
+  }
   if (!app) {
     const { useEmulators: _u, ...firebaseConfig } = clientConfig;
     app = getApps().length ? getApps()[0]! : initializeApp(firebaseConfig);

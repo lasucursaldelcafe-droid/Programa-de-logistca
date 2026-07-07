@@ -3,7 +3,8 @@ import { Navigate, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Card } from "../components/ui";
 import { useDeploymentLinks } from "../hooks/useDeploymentLinks";
-import { rutaHomePorRol } from "@spe/shared";
+import { rutaHomePorRol, isFirebaseConfigured } from "@spe/shared";
+import { DEMO_MODE } from "../lib/mode";
 import { LoginAyudaPanel } from "../components/LoginAyudaPanel";
 import { BiometricLoginButton } from "../components/BiometricLogin";
 import { isBiometricAvailable, saveBiometricCredentials } from "../lib/biometricAuth";
@@ -24,6 +25,8 @@ export function LoginPage() {
   useEffect(() => {
     void isBiometricAvailable().then(setBiometricAvailable);
   }, []);
+
+  const firebaseReady = DEMO_MODE || isFirebaseConfigured();
 
   if (!loading && user) {
     return <Navigate to={rutaHomePorRol(user.role)} replace />;
@@ -53,6 +56,20 @@ export function LoginPage() {
         <p className="mt-1 text-sm text-neutral-400">
           Una sola app: entra con tu usuario y se abre tu panel (Admin, Master o Trabajador)
         </p>
+        {!firebaseReady && (
+          <div className="mt-4 rounded-lg border border-alert/40 bg-alert/10 px-3 py-3 text-sm text-alert">
+            <p className="font-semibold">Backend no configurado</p>
+            <p className="mt-1 text-neutral-300">
+              Este sitio se publicó sin credenciales Firebase. El administrador del repositorio debe
+              configurar los GitHub Secrets (<code className="text-xs">VITE_FIREBASE_*</code>) y volver
+              a desplegar. Guía: <code className="text-xs">docs-source/PRODUCCION-FIREBASE.md</code>.
+            </p>
+            <p className="mt-2 text-neutral-400">
+              Las cuentas <code className="text-xs">admin@eventos.test</code> solo funcionan en desarrollo
+              local con emuladores (<code className="text-xs">npm run dev:full</code>), no en este enlace.
+            </p>
+          </div>
+        )}
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
           <label className="block text-sm">
             <span className="mb-1 block text-neutral-300">Correo</span>
@@ -88,10 +105,10 @@ export function LoginPage() {
           )}
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || !firebaseReady}
             className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50"
           >
-            {submitting ? "Entrando…" : "Iniciar sesión"}
+            {submitting ? "Entrando…" : firebaseReady ? "Iniciar sesión" : "Login deshabilitado — configurar Firebase"}
           </button>
           <BiometricLoginButton
             onLogin={async (e, p) => {
