@@ -51,7 +51,9 @@ Guía completa: `docs-source/GUIA.md` o `/ayuda` dentro de cada app.
 
 **Informe de revisión técnica:** `docs-source/INFORME-REVISION.md` — documento para entrega a revisión (arquitectura, módulos, flujos, despliegue).
 
-**Informe HTML (para enviar/adjuntar):** `docs-source/INFORME-REVISION.html` — abrir en navegador o adjuntar por correo; Ctrl+P para PDF.
+**Informe HTML (para enviar/adjuntar):** `INFORME-REVISION-SPE.html` — abrir en navegador o adjuntar por correo.
+
+**Informe PDF (presentación):** `INFORME-REVISION-SPE.pdf` — listo para entregar; regenerar con `npm run build:informe-pdf` (requiere Chrome).
 
 ## Descargar instaladores (Windows + Android)
 
