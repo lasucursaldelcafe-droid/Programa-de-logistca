@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/>
+<title>Reporte de faltantes — SPE</title>
+<style>
+body{font-family:Segoe UI,sans-serif;max-width:900px;margin:2rem auto;padding:0 1rem;color:#1e293b;line-height:1.55}
+h1{color:#b45309;border-bottom:3px solid #f59e0b;padding-bottom:.5rem}
+h2{color:#0f172a;margin-top:1.5rem;border-left:4px solid #f59e0b;padding-left:.5rem}
+h3{color:#d97706}
+table{border-collapse:collapse;width:100%;margin:1rem 0;font-size:.9rem}
+th,td{border:1px solid #e2e8f0;padding:.45rem .6rem;text-align:left}
+th{background:#0f172a;color:#fff}
+tr:nth-child(even) td{background:#f8fafc}
+code{background:#f1f5f9;padding:.1rem .3rem;border-radius:3px;color:#b45309}
+pre{background:#f1f5f9;border-left:3px solid #f59e0b;padding:.75rem;white-space:pre-wrap}
+ul{padding-left:1.25rem}
+</style></head><body><h1>Reporte de faltantes — SPE (actualizado 17 jul 2026)</h1>
+<h2>Cambios desde el reporte anterior (7 jul)</h2>
+<table>
+<tr><th>Tema</th><th>Antes</th><th>Ahora</th></tr>
+<tr><td>Login GitHub Pages</td><td>❌ Bloqueado</td><td>⚠️ Fix en PR #21 (modo demo auto)</td></tr>
+<tr><td>SPE Toolkit Windows</td><td>No existía</td><td>✅ PR #20 mergeado</td></tr>
+<tr><td>Google Sheets backend</td><td>No evaluado</td><td>✅ Script + docs + cliente</td></tr>
+<tr><td>Visual login/shell</td><td>Base</td><td>✅ Mejorado (gradiente, UX demo)</td></tr>
+<tr><td>Pruebas CI locales</td><td>—</td><td>✅ build, nav, flows, smoke OK</td></tr>
+</table>
+<hr/>
+<h2>Bloqueadores restantes</h2>
+<p>1. <strong>Merge PR #21</strong> para que Pages permita login demo</p>
+<p>2. <strong>Elegir backend producción:</strong></p>
+<ul>
+<li>Firebase Secrets (ver <code>PRODUCCION-FIREBASE.md</code>)</li>
+<li>Google Sheets (ver <code>OPCION-GOOGLE-SHEETS.md</code>)</li>
+</ul>
+<p>3. <strong>Release Win/Android</strong> — requiere Firebase Secrets en CI</p>
+<hr/>
+<h2>Qué ya funciona</h2>
+<ul>
+<li>Desarrollo local: <code>npm run dev:full</code></li>
+<li>Build: <code>npm run build</code> / <code>build:pages</code></li>
+<li>Navegación y flujos demo verificados</li>
+<li>Toolkit: <code>npm run toolkit:demo</code>, GUI Windows</li>
+<li>Documentación: informe, guías, Apps Script</li>
+</ul>
+<hr/>
+<h2>Checklist configuración</h2>
+<pre>
+[ ] Merge PR #21 (login Pages)
+[ ] Opción A: Firebase Secrets en GitHub
+[ ] Opción B: Google Sheet + Apps Script desplegado
+[ ] npm run seed:production (si Firebase)
+[ ] Verificar login en sitio publicado
+[ ] npm run electron:build / cap:sync (cuando CI pase)
+</pre>
+<p>Ver informe completo: <code>INFORME-VERIFICACION-JUL2026.md</code></p></body></html>

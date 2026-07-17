@@ -3,7 +3,7 @@ import { Navigate, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Card } from "../components/ui";
 import { useDeploymentLinks } from "../hooks/useDeploymentLinks";
-import { rutaHomePorRol, isFirebaseConfigured } from "@spe/shared";
+import { rutaHomePorRol, isFirebaseConfigured, PLATFORM_SEED_ACCOUNTS } from "@spe/shared";
 import { DEMO_MODE } from "../lib/mode";
 import { LoginAyudaPanel } from "../components/LoginAyudaPanel";
 import { BiometricLoginButton } from "../components/BiometricLogin";
@@ -14,8 +14,8 @@ export function LoginPage() {
   const { user, loading, login } = useAuth();
   const navigate = useNavigate();
   const deployLinks = useDeploymentLinks();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState(DEMO_MODE ? "admin@eventos.test" : "");
+  const [password, setPassword] = useState(DEMO_MODE ? "Admin123!" : "");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -50,13 +50,45 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg px-4">
-      <Card className="w-full max-w-md">
-        <h1 className="font-display text-2xl font-bold">SPE — Personal Eventos</h1>
-        <p className="mt-1 text-sm text-neutral-400">
-          Una sola app: entra con tu usuario y se abre tu panel (Admin, Master o Trabajador)
-        </p>
-        {!firebaseReady && (
+    <div className="spe-login-bg flex min-h-screen items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md">
+        <div className="mb-6 text-center">
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/15 ring-1 ring-accent/30">
+            <span className="font-display text-xl font-bold text-accent">SPE</span>
+          </div>
+          <h1 className="font-display text-2xl font-bold tracking-tight">Personal Eventos</h1>
+          <p className="mt-1 text-sm text-neutral-400">
+            Admin · Master · Trabajador — un solo acceso
+          </p>
+        </div>
+      <Card className="w-full shadow-lg shadow-black/20">
+        {DEMO_MODE && (
+          <div className="mt-4 rounded-lg border border-accent/40 bg-accent/10 px-3 py-3 text-sm">
+            <p className="font-semibold text-accent">Modo demo — GitHub Pages</p>
+            <p className="mt-1 text-neutral-300">
+              Los datos se guardan en este navegador. Para producción con Firebase real, configure los
+              GitHub Secrets (<code className="text-xs">VITE_FIREBASE_*</code>) y vuelva a desplegar.
+            </p>
+            <ul className="mt-2 space-y-1 font-mono text-xs text-neutral-400">
+              {PLATFORM_SEED_ACCOUNTS.map((a) => (
+                <li key={a.email} className="flex flex-wrap items-center gap-2">
+                  <span>{a.email} / {a.password}</span>
+                  <button
+                    type="button"
+                    className="rounded border border-accent/30 px-2 py-0.5 text-[10px] text-accent hover:bg-accent/10"
+                    onClick={() => {
+                      setEmail(a.email);
+                      setPassword(a.password);
+                    }}
+                  >
+                    Usar
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {!firebaseReady && !DEMO_MODE && (
           <div className="mt-4 rounded-lg border border-alert/40 bg-alert/10 px-3 py-3 text-sm text-alert">
             <p className="font-semibold">Backend no configurado</p>
             <p className="mt-1 text-neutral-300">
@@ -106,7 +138,7 @@ export function LoginPage() {
           <button
             type="submit"
             disabled={submitting || !firebaseReady}
-            className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50"
+            className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-black shadow-md shadow-accent/20 transition hover:brightness-110 disabled:opacity-50"
           >
             {submitting ? "Entrando…" : firebaseReady ? "Iniciar sesión" : "Login deshabilitado — configurar Firebase"}
           </button>
@@ -175,6 +207,7 @@ export function LoginPage() {
           </p>
         </div>
       </Card>
+      </div>
     </div>
   );
 }

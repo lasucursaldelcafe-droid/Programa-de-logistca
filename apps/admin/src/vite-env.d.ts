@@ -9,6 +9,9 @@ interface ImportMetaEnv {
   readonly VITE_FIREBASE_APP_ID: string;
   readonly VITE_USE_FIREBASE_EMULATORS: string;
   readonly VITE_DEMO_MODE: string;
+  readonly VITE_DATA_BACKEND: string;
+  readonly VITE_SHEETS_WEB_APP_URL: string;
+  readonly VITE_SHEETS_API_TOKEN: string;
 }
 
 interface ImportMeta {

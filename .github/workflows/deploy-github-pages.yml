@@ -33,13 +33,27 @@ jobs:
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
 
+      - name: Detectar Firebase (demo si faltan Secrets)
+        id: firebase_mode
+        shell: bash
+        env:
+          FB_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+        run: |
+          if [ -n "$FB_KEY" ] && [ "$FB_KEY" != "demo-api-key" ]; then
+            echo "demo_mode=false" >> "$GITHUB_OUTPUT"
+            echo "✓ Secrets Firebase presentes — build con backend real"
+          else
+            echo "demo_mode=true" >> "$GITHUB_OUTPUT"
+            echo "○ Sin Secrets Firebase — GitHub Pages en modo demo (login funcional en el navegador)"
+          fi
+
       - name: Construir app unificada
         run: npm run build:pages
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_PAGES_BASE: ${{ format('/{0}/', github.event.repository.name) }}
           PAGES_DEPLOY_ALLOW_MISSING_FIREBASE: "true"
-          VITE_DEMO_MODE: "false"
+          VITE_DEMO_MODE: ${{ steps.firebase_mode.outputs.demo_mode }}
           VITE_USE_FIREBASE_EMULATORS: "false"
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
