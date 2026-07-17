@@ -37,14 +37,30 @@ jobs:
         id: firebase_mode
         shell: bash
         env:
-          FB_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
         run: |
-          if [ -n "$FB_KEY" ] && [ "$FB_KEY" != "demo-api-key" ]; then
+          PLACEHOLDERS="demo-api-key demo-personal-eventos 000000000000 1:000000000000:web:demo"
+          missing=()
+          for key in VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_STORAGE_BUCKET VITE_FIREBASE_MESSAGING_SENDER_ID VITE_FIREBASE_APP_ID; do
+            val="${!key}"
+            if [ -z "$val" ]; then
+              missing+=("$key (vacío)")
+            elif echo "$PLACEHOLDERS" | grep -qw "$val"; then
+              missing+=("$key (valor de prueba)")
+            fi
+          done
+          if [ ${#missing[@]} -eq 0 ]; then
             echo "demo_mode=false" >> "$GITHUB_OUTPUT"
-            echo "✓ Secrets Firebase presentes — build con backend real"
+            echo "✓ Los 6 Secrets Firebase están completos — build con backend real"
           else
             echo "demo_mode=true" >> "$GITHUB_OUTPUT"
-            echo "○ Sin Secrets Firebase — GitHub Pages en modo demo (login funcional en el navegador)"
+            echo "○ Secrets incompletos — GitHub Pages en modo demo hasta corregir:"
+            printf '  - %s\n' "${missing[@]}"
           fi
 
       - name: Construir app unificada
