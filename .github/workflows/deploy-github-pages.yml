@@ -82,6 +82,11 @@ jobs:
           PAGES_DEPLOY_ALLOW_MISSING_FIREBASE: "true"
           VITE_DEMO_MODE: ${{ steps.firebase_mode.outputs.demo_mode }}
           VITE_USE_FIREBASE_EMULATORS: "false"
+          VITE_DATA_BACKEND: ${{ secrets.VITE_DATA_BACKEND }}
+          VITE_SHEETS_WEB_APP_URL: ${{ secrets.VITE_SHEETS_WEB_APP_URL }}
+          VITE_SHEETS_API_TOKEN: ${{ secrets.VITE_SHEETS_API_TOKEN }}
+          VITE_BLOQUEAR_INTEGRACIONES: ${{ secrets.VITE_BLOQUEAR_INTEGRACIONES }}
+          VITE_INTEGRACIONES_CLAVE: ${{ secrets.VITE_INTEGRACIONES_CLAVE }}
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
           VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
