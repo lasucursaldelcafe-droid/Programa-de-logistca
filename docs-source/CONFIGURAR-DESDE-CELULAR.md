@@ -59,3 +59,25 @@ Se guarda solo y redirige al login.
 | `npm run apply:all` (PC) | Sube secrets o dispara workflow |
 
 Ver también: `GUIA-SIN-DESCARGAR-JSON.md`
+
+---
+
+## Si las credenciales no funcionan
+
+### Modo demo (GitHub Pages sin backend real)
+
+Usa exactamente:
+
+| Correo | Contraseña |
+|--------|------------|
+| admin@eventos.test | Admin123! |
+| master@eventos.test | Master123! |
+
+Si falla, en **Login** pulsa **「Restablecer modo demo」** (limpia una config Sheets incorrecta guardada antes).
+
+### Backend Sheets (después de /configurar)
+
+- El token debe coincidir con `SPE_API_TOKEN` en Apps Script.
+- En la hoja `users` deben existir las filas (ejecuta `npm run setup:sheets-auto` en PC una vez).
+- Si el token falla, verás *Unauthorized* — vuelve a /configurar con el texto completo del correo.
+

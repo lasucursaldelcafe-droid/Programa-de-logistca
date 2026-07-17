@@ -1,5 +1,10 @@
 import { configureFirebase, type FirebaseClientConfig } from "./firebase";
-import { configureSheetsClient, isSheetsBackendConfigured } from "./sheetsClient";
+import {
+  clearSheetsClient,
+  configureSheetsClient,
+  isSheetsBackendConfigured,
+  sheetsHealth,
+} from "./sheetsClient";
 
 export type EffectiveBackend = "demo" | "firebase" | "sheets";
 
@@ -93,6 +98,23 @@ export function clearRuntimeConfig(): void {
   localStorage.removeItem(STORAGE_KEY);
   runtime.backend = null;
   runtime.demoMode = null;
+  clearSheetsClient();
+}
+
+/** Vuelve al modo demo (GitHub Pages sin backend real). */
+export function resetToDemoMode(): void {
+  clearRuntimeConfig();
+  runtime.backend = "demo";
+  runtime.demoMode = true;
+}
+
+export function getRuntimeBackendLabel(
+  buildEnv: { demoMode?: boolean; dataBackend?: string } = {},
+): string {
+  const b = getEffectiveBackend(buildEnv);
+  if (b === "demo") return "demo (navegador)";
+  if (b === "sheets") return "Google Sheets";
+  return "Firebase";
 }
 
 /** Parsea texto pegado desde correo / CREDENCIALES-SHEETS-AUTO.txt */
@@ -180,15 +202,37 @@ export async function bootstrapRuntimeConfig(
     runtime.backend = "demo";
     runtime.demoMode = true;
   }
+
+  if (runtime.backend === "sheets" && isSheetsBackendConfigured()) {
+    try {
+      const health = await sheetsHealth();
+      if (!health.ok) {
+        clearRuntimeConfig();
+        if (buildEnv.demoMode === true) {
+          runtime.backend = "demo";
+          runtime.demoMode = true;
+        }
+      }
+    } catch {
+      clearRuntimeConfig();
+      if (buildEnv.demoMode === true) {
+        runtime.backend = "demo";
+        runtime.demoMode = true;
+      }
+    }
+  }
 }
 
 export function getEffectiveBackend(
   buildEnv: { demoMode?: boolean; dataBackend?: string } = {},
 ): EffectiveBackend {
+  if (runtime.backend === "sheets" && !isSheetsBackendConfigured()) {
+    return buildEnv.demoMode === true ? "demo" : "firebase";
+  }
   if (runtime.backend) return runtime.backend;
   if (buildEnv.demoMode === true || buildEnv.dataBackend === "demo") return "demo";
   if (buildEnv.dataBackend === "sheets" && isSheetsBackendConfigured()) return "sheets";
-  if (buildEnv.dataBackend === "sheets") return "sheets";
+  if (buildEnv.dataBackend === "sheets") return "firebase";
   return "firebase";
 }
 

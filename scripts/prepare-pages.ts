@@ -114,6 +114,10 @@ writeLegacyRedirect(resolve(docs, "worker"), links.pagesUrl);
 writeLegacyRedirect(resolve(docs, "master"), links.pagesUrl);
 
 copyFileSync(resolve(ROOT, "docs-source/GUIA.md"), resolve(docs, "GUIA.md"));
+copyFileSync(
+  resolve(ROOT, "apps/admin/public/spe-runtime-config.json"),
+  resolve(docs, "spe-runtime-config.json"),
+);
 copyFileSync(resolve(ROOT, "docs-source/INTEGRACIONES-APIS.md"), resolve(docs, "INTEGRACIONES-APIS.md"));
 copyFileSync(resolve(ROOT, "docs-source/CUENTAS-Y-ROLES.md"), resolve(docs, "CUENTAS-Y-ROLES.md"));
 copyFileSync(resolve(ROOT, "docs-source/TUTORIAL-APP-SPE.html"), resolve(docs, "TUTORIAL-APP-SPE.html"));

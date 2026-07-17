@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   parseBootstrapText,
   saveRuntimeConfig,
   sheetsHealth,
+  resetToDemoMode,
+  clearSheetsSession,
 } from "@spe/shared";
 
 export function ConfigurarDesdeMovilPage() {
-  const navigate = useNavigate();
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -27,12 +27,17 @@ export function ConfigurarDesdeMovilPage() {
     });
     try {
       const health = await sheetsHealth();
-      if (!health.ok) throw new Error("Backend no responde");
-      setStatus("✓ Configuración aplicada. Entrando al login…");
-      setTimeout(() => navigate("/login", { replace: true }), 800);
-    } catch {
-      setStatus("Guardado localmente. Si el backend tarda, espera 1 min y vuelve a iniciar sesión.");
-      setTimeout(() => navigate("/login", { replace: true }), 1500);
+      if (!health.ok) {
+        resetToDemoMode();
+        clearSheetsSession();
+        throw new Error("Token o URL incorrectos (Unauthorized). No se guardó la configuración.");
+      }
+      setStatus("✓ Backend verificado. Recargando…");
+      window.location.assign(`${import.meta.env.BASE_URL}login`);
+    } catch (err) {
+      resetToDemoMode();
+      clearSheetsSession();
+      setStatus(err instanceof Error ? err.message : "Configuración inválida. Usa modo demo o corrige credenciales.");
     } finally {
       setLoading(false);
     }
@@ -87,10 +92,23 @@ export function ConfigurarDesdeMovilPage() {
           Aplicar texto pegado
         </button>
 
+        <button
+          type="button"
+          disabled={loading}
+          onClick={() => {
+            resetToDemoMode();
+            clearSheetsSession();
+            window.location.assign(`${import.meta.env.BASE_URL}login`);
+          }}
+          className="mt-3 w-full rounded-lg border border-neutral-600 py-2 text-sm text-neutral-300"
+        >
+          Cancelar — usar modo demo (admin@eventos.test)
+        </button>
+
         {status && <p className="mt-4 text-sm text-neutral-300">{status}</p>}
 
-        <p className="mt-6 text-xs text-neutral-500">
-          Cuentas: admin@eventos.test / Admin123! — La config queda guardada en este dispositivo.
+        <p className="mt-4 text-xs text-neutral-500">
+          Cuentas demo: admin@eventos.test / Admin123! — master@eventos.test / Master123!
         </p>
       </div>
     </div>

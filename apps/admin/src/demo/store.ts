@@ -623,8 +623,12 @@ export function clearDemoSession(): void {
 }
 
 export function demoLogin(email: string, password: string): AppUser {
-  const account = demoStore.accounts.find((a) => a.email === email && a.password === password);
-  if (!account) throw new Error("Credenciales inválidas");
+  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedPassword = password.trim();
+  const account = demoStore.accounts.find(
+    (a) => a.email.trim().toLowerCase() === normalizedEmail && a.password === normalizedPassword,
+  );
+  if (!account) throw new Error("Credenciales inválidas. Prueba admin@eventos.test / Admin123!");
 
   if (account.user.habilitado === false) {
     throw new Error("Cuenta inhabilitada. Contacta al administrador.");

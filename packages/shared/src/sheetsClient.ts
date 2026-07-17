@@ -19,6 +19,11 @@ export function configureSheetsClient(url: string, token: string): void {
   apiToken = token;
 }
 
+export function clearSheetsClient(): void {
+  webAppUrl = "";
+  apiToken = "";
+}
+
 export function isSheetsBackendConfigured(): boolean {
   return webAppUrl.length > 0 && apiToken.length > 0;
 }
@@ -30,13 +35,31 @@ export async function sheetsHealth(): Promise<{ ok: boolean; backend?: string }>
 }
 
 export async function sheetsLogin(email: string, password: string): Promise<SheetsLoginResult> {
+  if (!isSheetsBackendConfigured()) {
+    throw new Error("Backend Sheets no configurado. Ve a /configurar o restablece modo demo.");
+  }
   const res = await fetch(webAppUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "login", token: apiToken, email, password }),
+    body: JSON.stringify({
+      action: "login",
+      token: apiToken,
+      email: email.trim().toLowerCase(),
+      password: password.trim(),
+    }),
   });
-  const data = (await res.json()) as SheetsLoginResult & { error?: string };
-  if (!res.ok || data.error) throw new Error(data.error ?? "Login Sheets falló");
+  let data: SheetsLoginResult & { error?: string };
+  try {
+    data = (await res.json()) as SheetsLoginResult & { error?: string };
+  } catch {
+    throw new Error("No se pudo conectar al backend Sheets. Revisa URL y token en /configurar.");
+  }
+  if (res.status === 401 && data.error === "Unauthorized") {
+    throw new Error("Token API incorrecto. Vuelve a /configurar y pega las credenciales del correo.");
+  }
+  if (!res.ok || data.error) {
+    throw new Error(data.error ?? "Login Sheets falló");
+  }
   return data;
 }
 
