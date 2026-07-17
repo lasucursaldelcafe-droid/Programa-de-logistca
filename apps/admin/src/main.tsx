@@ -1,11 +1,18 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, HashRouter } from "react-router-dom";
-import { configureFirebase, configureSheetsClient } from "@spe/shared";
+import { bootstrapRuntimeConfig, configureFirebase, configureSheetsClient } from "@spe/shared";
 import { AuthProvider } from "./contexts/AuthContext";
 import { App } from "./App";
 import { isElectron, isNativePlatform } from "./lib/platform";
 import "./index.css";
+
+const buildEnv = {
+  demoMode: import.meta.env.VITE_DEMO_MODE === "true",
+  dataBackend: import.meta.env.VITE_DATA_BACKEND,
+  sheetsUrl: import.meta.env.VITE_SHEETS_WEB_APP_URL,
+  sheetsToken: import.meta.env.VITE_SHEETS_API_TOKEN,
+};
 
 configureFirebase({
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -26,12 +33,18 @@ if (import.meta.env.VITE_DATA_BACKEND === "sheets") {
 const Router = isElectron() || isNativePlatform() ? HashRouter : BrowserRouter;
 const routerProps = isElectron() || isNativePlatform() ? {} : { basename: import.meta.env.BASE_URL };
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <Router {...routerProps}>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </Router>
-  </StrictMode>,
-);
+async function boot() {
+  await bootstrapRuntimeConfig(import.meta.env.BASE_URL, buildEnv);
+
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <Router {...routerProps}>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </Router>
+    </StrictMode>,
+  );
+}
+
+void boot();

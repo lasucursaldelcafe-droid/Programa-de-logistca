@@ -43,7 +43,7 @@ import {
   type AppUser,
 } from "@spe/shared";
 import type { GeoPosition } from "../lib/geolocation";
-import { DEMO_MODE } from "../lib/mode";
+import { isDemoMode } from "../lib/mode";
 import { isSheetsBackend } from "../lib/backend";
 import { useSheetsPoll } from "./useSheetsPoll";
 import { sheetsGetById, sheetsListAll, sheetsUpsertRecord } from "../data/sheetsOps";
@@ -65,7 +65,7 @@ export function useWorkers(): Worker[] {
   const sheetsWorkers = useSheetsPoll<Worker>("workers");
 
   useEffect(() => {
-    if (DEMO_MODE || isSheetsBackend()) return;
+    if (isDemoMode() || isSheetsBackend()) return;
     const unsub = onSnapshot(
       query(collection(getFirestoreDb(), "workers"), orderBy("nombre")),
       (snap) => setWorkers(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Worker))),
@@ -74,7 +74,7 @@ export function useWorkers(): Worker[] {
   }, []);
 
   const demoWorkers = useDemoSnapshot(() => demoStore.workers);
-  if (DEMO_MODE) return demoWorkers;
+  if (isDemoMode()) return demoWorkers;
   if (isSheetsBackend()) return sheetsWorkers;
   return workers;
 }
@@ -84,7 +84,7 @@ export function useShifts(): Turno[] {
   const sheetsShifts = useSheetsPoll<Turno>("shifts");
 
   useEffect(() => {
-    if (DEMO_MODE || isSheetsBackend()) return;
+    if (isDemoMode() || isSheetsBackend()) return;
     const unsub = onSnapshot(
       query(collection(getFirestoreDb(), "shifts"), orderBy("inicio")),
       (snap) => setShifts(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Turno))),
@@ -93,7 +93,7 @@ export function useShifts(): Turno[] {
   }, []);
 
   const demoShifts = useDemoSnapshot(() => demoStore.shifts);
-  if (DEMO_MODE) return demoShifts;
+  if (isDemoMode()) return demoShifts;
   if (isSheetsBackend()) return sheetsShifts;
   return shifts;
 }
@@ -103,7 +103,7 @@ export function useEvents(): Evento[] {
   const sheetsEvents = useSheetsPoll<Evento>("events");
 
   useEffect(() => {
-    if (DEMO_MODE || isSheetsBackend()) return;
+    if (isDemoMode() || isSheetsBackend()) return;
     const unsub = onSnapshot(collection(getFirestoreDb(), "events"), (snap) =>
       setEvents(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Evento))),
     );
@@ -111,7 +111,7 @@ export function useEvents(): Evento[] {
   }, []);
 
   const demoEvents = useDemoSnapshot(() => demoStore.events);
-  if (DEMO_MODE) return demoEvents;
+  if (isDemoMode()) return demoEvents;
   if (isSheetsBackend()) return sheetsEvents;
   return events;
 }
@@ -121,7 +121,7 @@ export function useSites(): Sitio[] {
   const sheetsSites = useSheetsPoll<Sitio>("sites");
 
   useEffect(() => {
-    if (DEMO_MODE || isSheetsBackend()) return;
+    if (isDemoMode() || isSheetsBackend()) return;
     const unsub = onSnapshot(collection(getFirestoreDb(), "sites"), (snap) =>
       setSites(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Sitio))),
     );
@@ -129,7 +129,7 @@ export function useSites(): Sitio[] {
   }, []);
 
   const demoSites = useDemoSnapshot(() => demoStore.sites);
-  if (DEMO_MODE) return demoSites;
+  if (isDemoMode()) return demoSites;
   if (isSheetsBackend()) return sheetsSites;
   return sites;
 }
@@ -146,7 +146,7 @@ export async function createWorker(
   actorNombre?: string,
 ): Promise<void> {
   const rolPlataforma = data.rolPlataforma ?? "trabajador";
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     demoStore.addWorker(
       {
         nombre: data.nombre,
@@ -213,7 +213,7 @@ export async function updateWorkerEstado(
   estado: WorkerEstado,
   actorNombre?: string,
 ): Promise<void> {
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     demoStore.updateWorker(id, { estado }, actorNombre);
     return;
   }
@@ -226,7 +226,7 @@ export async function updateWorkerEstado(
 }
 
 export async function deleteWorker(id: string, actorNombre?: string): Promise<void> {
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     demoStore.removeWorker(id, actorNombre);
     return;
   }
@@ -265,7 +265,7 @@ export async function setWorkerHabilitado(
   habilitado: boolean,
   actorNombre?: string,
 ): Promise<void> {
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     demoStore.updateWorker(workerId, { habilitado }, actorNombre);
     const worker = demoStore.workers.find((w) => w.id === workerId);
     if (worker?.cuentaCreada) {
@@ -280,7 +280,7 @@ export async function resetWorkerPassword(
   email: string,
   newPassword: string,
 ): Promise<void> {
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     setDemoAccountPassword(email, newPassword);
     return;
   }
@@ -288,7 +288,7 @@ export async function resetWorkerPassword(
 }
 
 export async function createShift(data: Omit<Turno, "id">): Promise<string> {
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     const id = demoStore.addShift(data);
     await notifyShiftAssigned({ id, ...data });
     return id;
@@ -306,7 +306,7 @@ export async function createShift(data: Omit<Turno, "id">): Promise<string> {
 
 export async function updateShiftEstado(id: string, estado: ShiftEstado): Promise<void> {
   let shift: Turno | null = null;
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     shift = demoStore.shifts.find((s) => s.id === id) ?? null;
     demoStore.updateShift(id, { estado });
   } else if (isSheetsBackend()) {
@@ -335,7 +335,7 @@ export function useInvitations(): Invitation[] {
   const sheetsInvitations = useSheetsPoll<Invitation>("invitations");
 
   useEffect(() => {
-    if (DEMO_MODE || isSheetsBackend()) return;
+    if (isDemoMode() || isSheetsBackend()) return;
     const unsub = onSnapshot(
       query(collection(getFirestoreDb(), "invitations"), orderBy("creadaEn", "desc")),
       (snap) =>
@@ -354,7 +354,7 @@ export function useInvitations(): Invitation[] {
   }, []);
 
   const demoInvitations = useDemoSnapshot(() => demoStore.invitations);
-  if (DEMO_MODE) return demoInvitations;
+  if (isDemoMode()) return demoInvitations;
   if (isSheetsBackend()) {
     return sheetsInvitations.map((inv) => ({
       ...inv,
@@ -366,7 +366,7 @@ export function useInvitations(): Invitation[] {
 }
 
 export async function getInvitationByToken(token: string): Promise<Invitation | null> {
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     return demoStore.getInvitation(token);
   }
   if (isSheetsBackend()) {
@@ -386,7 +386,7 @@ export async function findInvitationByEmailAndCode(
   const normalizedEmail = email.trim().toLowerCase();
   const normalizedCode = codigoAcceso.replace(/\s/g, "").trim();
 
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     return demoStore.findInvitationByEmailAndCode(normalizedEmail, normalizedCode);
   }
 
@@ -435,7 +435,7 @@ export async function createInvitation(data: {
     creadaPorNombre: data.creadaPorNombre,
   };
 
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     demoStore.addInvitation({ ...invitation, id: token });
     return { token, codigoAcceso };
   }
@@ -449,7 +449,7 @@ export async function createInvitation(data: {
 }
 
 export async function revokeInvitation(token: string): Promise<void> {
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     demoStore.updateInvitation(token, { estado: "revocada" });
     return;
   }
@@ -461,7 +461,7 @@ export async function activateAccountWithInvitation(
   password: string,
   codigoAcceso: string,
 ): Promise<AppUser> {
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     demoStore.activateAccount(token, password, codigoAcceso);
     const invitation = demoStore.getInvitation(token);
     if (!invitation?.uid) throw new Error("No se pudo activar la cuenta");
@@ -519,7 +519,7 @@ export async function completeUserProfile(data: {
   nombre: string;
   telefono: string;
 }): Promise<void> {
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     demoStore.completeProfile(data.uid, data);
     return;
   }
@@ -531,7 +531,7 @@ export async function completeUserProfile(data: {
 }
 
 export async function sendPasswordReset(email: string): Promise<void> {
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     const account = demoStore.findAccountByEmail(email);
     if (!account) throw new Error("No hay cuenta registrada con ese correo");
     return;
@@ -540,7 +540,7 @@ export async function sendPasswordReset(email: string): Promise<void> {
 }
 
 export async function getWorkerById(workerId: string): Promise<Worker | null> {
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     return demoStore.workers.find((w) => w.id === workerId) ?? null;
   }
   if (isSheetsBackend()) {
@@ -552,7 +552,7 @@ export async function getWorkerById(workerId: string): Promise<Worker | null> {
 }
 
 export async function getSiteById(siteId: string): Promise<Sitio | null> {
-  if (DEMO_MODE) return demoStore.sites.find((s) => s.id === siteId) ?? null;
+  if (isDemoMode()) return demoStore.sites.find((s) => s.id === siteId) ?? null;
   if (isSheetsBackend()) return sheetsGetById<Sitio>("sites", siteId);
   const snap = await getDoc(doc(getFirestoreDb(), "sites", siteId));
   if (!snap.exists()) return null;
@@ -564,7 +564,7 @@ export function useQrCodes(): QrCode[] {
   const sheetsQr = useSheetsPoll<QrCode>("qrCodes");
 
   useEffect(() => {
-    if (DEMO_MODE || isSheetsBackend()) return;
+    if (isDemoMode() || isSheetsBackend()) return;
     const unsub = onSnapshot(
       query(collection(getFirestoreDb(), "qrCodes"), orderBy("creadoEn", "desc")),
       (snap) => setQrCodes(snap.docs.map((d) => ({ id: d.id, ...d.data() } as QrCode))),
@@ -573,7 +573,7 @@ export function useQrCodes(): QrCode[] {
   }, []);
 
   const demoQr = useDemoSnapshot(() => demoStore.qrCodes);
-  if (DEMO_MODE) return demoQr;
+  if (isDemoMode()) return demoQr;
   if (isSheetsBackend()) return sheetsQr;
   return qrCodes;
 }
@@ -583,7 +583,7 @@ export function useAttendances(): Attendance[] {
   const sheetsAtt = useSheetsPoll<Attendance>("attendance");
 
   useEffect(() => {
-    if (DEMO_MODE || isSheetsBackend()) return;
+    if (isDemoMode() || isSheetsBackend()) return;
     const unsub = onSnapshot(
       query(collection(getFirestoreDb(), "attendance"), orderBy("creadoEn", "desc")),
       (snap) =>
@@ -593,13 +593,13 @@ export function useAttendances(): Attendance[] {
   }, []);
 
   const demoAtt = useDemoSnapshot(() => demoStore.attendances);
-  if (DEMO_MODE) return demoAtt;
+  if (isDemoMode()) return demoAtt;
   if (isSheetsBackend()) return sheetsAtt;
   return attendances;
 }
 
 export async function getQrCodeById(qrId: string): Promise<QrCode | null> {
-  if (DEMO_MODE) return demoStore.qrCodes.find((q) => q.id === qrId) ?? null;
+  if (isDemoMode()) return demoStore.qrCodes.find((q) => q.id === qrId) ?? null;
   if (isSheetsBackend()) return sheetsGetById<QrCode>("qrCodes", qrId);
   const snap = await getDoc(doc(getFirestoreDb(), "qrCodes", qrId));
   if (!snap.exists()) return null;
@@ -650,7 +650,7 @@ export async function createQrCode(data: {
     creadoPor: data.creadoPor,
   };
 
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     demoStore.addQrCode({ ...qr, id });
     return id;
   }
@@ -663,7 +663,7 @@ export async function createQrCode(data: {
 }
 
 export async function deactivateQrCode(qrId: string): Promise<void> {
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     demoStore.updateQrCode(qrId, { activo: false });
     return;
   }
@@ -730,7 +730,7 @@ export async function checkInWithQr(data: {
     dentroGeocerca: dentro,
   };
 
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     const attendanceId = demoStore.checkIn({
       workerId: data.workerId,
       workerNombre: data.workerNombre,
@@ -823,7 +823,7 @@ export async function checkInWithQr(data: {
 }
 
 export async function checkOut(attendanceId: string, position: GeoPosition): Promise<void> {
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     const att = demoStore.attendances.find((a) => a.id === attendanceId);
     demoStore.checkOut(attendanceId, position);
     if (att) {
@@ -905,7 +905,7 @@ export async function updateAttendanceLocation(
   position: GeoPosition,
   dentroGeocerca: boolean,
 ): Promise<void> {
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     demoStore.updateAttendanceLocation(attendanceId, position, dentroGeocerca);
     return;
   }
@@ -929,7 +929,7 @@ export async function updateAttendanceLocation(
 }
 
 export async function recordGeofenceAlert(attendanceId: string): Promise<void> {
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     const att = demoStore.attendances.find((a) => a.id === attendanceId);
     const hadAlerts = (att?.alertasGeocerca.length ?? 0) > 0;
     demoStore.recordGeofenceAlert(attendanceId);
@@ -995,7 +995,7 @@ export async function createEvent(data: {
     sitioIds: [] as string[],
   };
 
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     demoStore.addEvent({ ...evento, id });
     return id;
   }
@@ -1024,7 +1024,7 @@ export async function createSite(data: {
     radioGeocerca: data.radioGeocerca,
   };
 
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     demoStore.addSite({ ...site, id });
     return id;
   }
@@ -1049,7 +1049,7 @@ export function useReportes(): Reporte[] {
   const [reportes, setReportes] = useState<Reporte[]>([]);
 
   useEffect(() => {
-    if (DEMO_MODE) return;
+    if (isDemoMode()) return;
     const unsub = onSnapshot(
       query(collection(getFirestoreDb(), "reports"), orderBy("creadoEn", "desc")),
       (snap) => setReportes(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Reporte))),
@@ -1058,14 +1058,14 @@ export function useReportes(): Reporte[] {
   }, []);
 
   const demoReportes = useDemoSnapshot(() => demoStore.reportes);
-  return DEMO_MODE ? demoReportes : reportes;
+  return isDemoMode() ? demoReportes : reportes;
 }
 
 export function usePlatformUsers(): AppUser[] {
   const [users, setUsers] = useState<AppUser[]>([]);
 
   useEffect(() => {
-    if (DEMO_MODE) return;
+    if (isDemoMode()) return;
     const unsub = onSnapshot(collection(getFirestoreDb(), "users"), (snap) =>
       setUsers(snap.docs.map((d) => ({ uid: d.id, ...d.data() } as AppUser))),
     );
@@ -1073,7 +1073,7 @@ export function usePlatformUsers(): AppUser[] {
   }, []);
 
   const demoUsers = useDemoSnapshot(() => demoStore.platformUsers);
-  return DEMO_MODE ? demoUsers : users;
+  return isDemoMode() ? demoUsers : users;
 }
 
 export async function createReporte(data: {
@@ -1093,7 +1093,7 @@ export async function createReporte(data: {
     creadoEn: new Date().toISOString(),
   };
 
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     demoStore.addReporte({ ...reporte, id });
     return id;
   }
@@ -1114,7 +1114,7 @@ export async function updateReporteEstado(
     patch.resueltoPorNombre = actor.nombre;
   }
 
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     demoStore.updateReporte(reporteId, patch);
     return;
   }

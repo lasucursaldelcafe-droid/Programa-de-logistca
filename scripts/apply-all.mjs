@@ -106,6 +106,14 @@ function main() {
 
   const creds = parseCredentials(CRED_FILE);
   if (!creds) {
+    const bootstrapPath = resolve(ROOT, "config/bootstrap.json");
+    if (existsSync(bootstrapPath)) {
+      log("Usando config/bootstrap.json…", "ok");
+      const { code } = run("node", ["scripts/read-bootstrap-config.mjs", "--json"], { stdio: "pipe" });
+      if (code === 0) {
+        log("Ejecuta commit de config/bootstrap.json y push a main para deploy automático", "info");
+      }
+    }
     log(`No encontré ${CRED_FILE}`, "err");
     log("Ejecuta: npm run setup:sheets-auto", "warn");
     log("O crea el archivo con Web App URL y API Token", "warn");

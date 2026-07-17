@@ -1,0 +1,38 @@
+name: Configurar producción (desde celular)
+
+# Edita config/bootstrap.json en GitHub (app móvil) con URL y token del correo.
+# Este workflow valida y dispara el deploy en Pages con esos valores.
+on:
+  push:
+    branches: [main]
+    paths:
+      - config/bootstrap.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validar bootstrap.json
+        run: |
+          node scripts/read-bootstrap-config.mjs --json | tee bootstrap-out.json
+          BACKEND=$(node -p "JSON.parse(require('fs').readFileSync('bootstrap-out.json','utf8')).VITE_DATA_BACKEND")
+          echo "Backend detectado: $BACKEND"
+          if [ "$BACKEND" = "demo" ]; then
+            echo "::warning::bootstrap.json vacío — edita URL y token Sheets o Firebase"
+          fi
+
+      - name: Instrucciones
+        run: |
+          echo "✓ Push a main ya dispara 'Publicar app (GitHub Pages)' con config/bootstrap.json"
+          echo "  App: https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/"
+          echo "  Celular: /configurar → Pegar credenciales del correo"
