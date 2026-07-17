@@ -17,4 +17,24 @@ body {
   font-family: var(--font-body);
   background: var(--color-bg);
   color: #f5f5f5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Fondo login con gradiente sutil */
+.spe-login-bg {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(232, 130, 60, 0.18), transparent),
+    radial-gradient(ellipse 50% 40% at 100% 100%, rgba(61, 220, 151, 0.08), transparent),
+    var(--color-bg);
+}
+
+input:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-accent) 60%, transparent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-accent) 35%, transparent);
 }

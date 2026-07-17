@@ -10,3 +10,4 @@ export * from "./business";
 export * from "./invitations";
 export * from "./accounts";
 export * from "./paths";
+export * from "./sheetsClient";
