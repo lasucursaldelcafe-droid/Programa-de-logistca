@@ -34,6 +34,10 @@
     "seed:production": "tsx scripts/seed-production.ts",
     "setup": "tsx scripts/setup-phase1.ts",
     "setup:all": "npm run setup && npm run seed",
+    "setup:auto": "tsx scripts/setup-automation.ts",
+    "setup:production": "tsx scripts/setup-automation.ts -- --production",
+    "setup:fcm": "tsx scripts/update-fcm-sw.ts",
+    "firebase:deploy-rules": "firebase deploy --only firestore:rules",
     "test:smoke": "firebase emulators:exec --only auth,firestore --project demo-personal-eventos \"npm run seed && tsx scripts/ci-smoke.ts\"",
     "check:nav": "tsx scripts/check-nav-routes.ts",
     "verify:flows": "tsx scripts/verify-demo-flows.ts",
@@ -44,6 +48,7 @@
     "toolkit:setup": "node scripts/run-toolkit-cli.mjs setup",
     "toolkit:demo": "node scripts/run-toolkit-cli.mjs demo",
     "toolkit:init": "node scripts/run-toolkit-cli.mjs init",
+    "toolkit:auto": "node scripts/run-toolkit-cli.mjs auto",
     "toolkit:secrets": "node scripts/run-toolkit-cli.mjs secrets",
     "pdf:informe": "npm run build:informe-pdf",
     "tutorial:capturas": "tsx scripts/capture-tutorial-screenshots.ts"

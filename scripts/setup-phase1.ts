@@ -38,7 +38,7 @@ function main(): void {
   console.log("    npm run dev:full     → emuladores + seed + 3 apps");
   console.log("    npm run toolkit:demo → alternativa con SPE Toolkit");
   console.log("  Cuentas demo: admin@eventos.test / Admin123!  |  master@eventos.test / Master123!");
-  console.log("  Producción: npm run toolkit:firebase  o  npm run setup:production");
+  console.log("  Producción: npm run setup:production  o  npm run setup:auto -- --production");
 }
 
 main();

@@ -65,6 +65,8 @@ next-env.d.ts
 spe-health-report.json
 github-secrets-commands.txt
 CREDENCIALES-SPE.txt
+CHECKLIST-PRODUCCION.txt
+CONFIGURACION-SHEETS.txt
 service-account.json
 firebase-web-config.json
 __pycache__/

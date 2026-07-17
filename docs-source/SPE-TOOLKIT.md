@@ -10,10 +10,29 @@ Herramienta de escritorio y CLI en **Python** (sin dependencias pip) para automa
 
 ## Configuración automática al 100%
 
+Ver guía completa: **`docs-source/CONFIGURACION-AUTOMATICA.md`**
+
 ### Windows — un solo clic
 
 ```bat
-scripts\windows\Configurar-Todo.bat
+scripts\windows\Configurar-Todo.bat           rem desarrollo demo
+scripts\windows\Configurar-Produccion.bat     rem producción Firebase
+```
+
+### Linux / macOS
+
+```bash
+chmod +x scripts/configurar-todo.sh
+./scripts/configurar-todo.sh demo
+./scripts/configurar-todo.sh produccion
+```
+
+### npm (cualquier OS)
+
+```bash
+npm run setup:auto
+npm run setup:production
+npm run toolkit:auto -- --json firebase-web-config.json --push-github --seed
 ```
 
 Esto hace:

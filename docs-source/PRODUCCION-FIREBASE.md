@@ -2,6 +2,19 @@
 
 La app opera con **Firebase Auth + Firestore** en producción. No hay modo demo en despliegues.
 
+**Configuración automática desde PC (sin celular):** ver [`CONFIGURACION-AUTOMATICA.md`](./CONFIGURACION-AUTOMATICA.md).
+
+Comando rápido:
+
+```bash
+# 1. Pega firebase-web-config.json (SDK web de Firebase Console)
+npm run setup:production
+# 2. GitHub Secrets
+npm run toolkit:secrets
+# 3. Cuentas (service-account.json)
+npm run seed:production -- --service-account ./service-account.json
+```
+
 ## 1. Crear proyecto Firebase
 
 1. [Firebase Console](https://console.firebase.google.com/) → nuevo proyecto (o usa uno existente).

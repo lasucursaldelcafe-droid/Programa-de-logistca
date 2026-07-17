@@ -13,8 +13,9 @@ Plataforma de gestión de personal para empresas de logística y recreación en 
 ## Inicio rápido
 
 ```bash
-npm run setup    # primera vez: deps + plantilla .env.local
-# Edita apps/admin/.env.local con credenciales Firebase (ver docs-source/PRODUCCION-FIREBASE.md)
+npm run setup:auto    # primera vez: demo local automático (emuladores)
+# Producción Firebase (desde PC): docs-source/CONFIGURACION-AUTOMATICA.md
+# npm run setup:production   # requiere firebase-web-config.json
 npm start        # desarrollo local :5173
 ```
 

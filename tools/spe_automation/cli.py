@@ -27,6 +27,61 @@ from tools.spe_automation.env_manager import (  # noqa: E402
 from tools.spe_automation.health import run_health_report, run_npm_script, save_health_json  # noqa: E402
 from tools.spe_automation.pdf_export import generate_faltantes_pdf, generate_informe_pdf  # noqa: E402
 from tools.spe_automation.setup_full import run_demo_setup, run_production_setup  # noqa: E402
+from tools.spe_automation.setup_auto import apply_sheets_bridge, run_auto_production  # noqa: E402
+
+
+def cmd_auto(args: argparse.Namespace) -> int:
+    """Pipeline completo: demo, Firebase producción o Sheets desde PC."""
+    if args.demo:
+        return cmd_demo(argparse.Namespace(no_install=args.no_install, start=args.start))
+
+    if args.sheets:
+        if not args.web_app_url or not args.api_token:
+            print("Sheets: --web-app-url y --api-token requeridos")
+            print("Ver docs-source/OPCION-GOOGLE-SHEETS.md")
+            return 1
+        result = apply_sheets_bridge(args.web_app_url, args.api_token)
+        print("✓ Backend Sheets configurado:")
+        for p in result["env_paths"]:
+            print(f"  - {p}")
+        print(f"✓ {result['sheets_guide']}")
+        return 0
+
+    values: dict[str, str] = {}
+    if args.json:
+        values = parse_firebase_config(Path(args.json).read_text(encoding="utf-8"))
+    elif args.paste:
+        values = parse_firebase_config(args.paste)
+    else:
+        values = load_config_file()
+
+    result = run_auto_production(
+        values or None,
+        push_github=args.push_github,
+        seed=args.seed,
+        deploy_rules=not args.no_deploy_rules,
+    )
+    if not result.get("ok"):
+        print("✗ No se pudo configurar producción:")
+        for e in result.get("errors", []):
+            print(f"  - {e}")
+        print("\nDesde PC: pega firebaseConfig en firebase-web-config.json y repite.")
+        return 1
+
+    print("✓ Configuración automática producción:")
+    for p in result["env_paths"]:
+        print(f"  - {p}")
+    print(f"✓ Checklist: {result['checklist']}")
+    print(f"✓ GitHub: {result['github_template']}")
+    if args.push_github:
+        mark = "✓" if result["github_push_ok"] else "✗"
+        print(f"{mark} Secrets: {result['github_push_message']}")
+    if args.seed:
+        mark = "✓" if result["seed_ok"] else "✗"
+        print(f"{mark} Seed: {result['seed_message'][:200]}")
+    for step in result["next_steps"]:
+        print(f"  → {step}")
+    return 0
 
 
 def cmd_setup(_: argparse.Namespace) -> int:
@@ -199,6 +254,23 @@ def main() -> int:
         description="SPE Automation Toolkit — credenciales, PDF, desarrollo"
     )
     sub = parser.add_subparsers(dest="command", required=True)
+
+    p_auto = sub.add_parser(
+        "auto",
+        help="Pipeline completo (demo / Firebase / Sheets) — sin celular",
+    )
+    p_auto.add_argument("--demo", action="store_true", help="Emuladores locales")
+    p_auto.add_argument("--json", help="firebase-web-config.json")
+    p_auto.add_argument("--paste", help="Snippet firebaseConfig")
+    p_auto.add_argument("--sheets", action="store_true", help="Backend Google Sheets")
+    p_auto.add_argument("--web-app-url", help="URL Apps Script /exec")
+    p_auto.add_argument("--api-token", help="SPE_API_TOKEN del script")
+    p_auto.add_argument("--push-github", action="store_true")
+    p_auto.add_argument("--seed", action="store_true", help="Crear cuentas con service-account.json")
+    p_auto.add_argument("--no-deploy-rules", action="store_true")
+    p_auto.add_argument("--no-install", action="store_true")
+    p_auto.add_argument("--start", action="store_true")
+    p_auto.set_defaults(func=cmd_auto)
 
     p_setup = sub.add_parser("setup", help="Crear .env.local + npm install")
     p_setup.set_defaults(func=cmd_setup)
