@@ -55,9 +55,28 @@ Abre http://localhost:5173
 | admin@eventos.test | Admin123! |
 | master@eventos.test | Master123! |
 
-### Paso 3 — Publicar en GitHub Pages (opcional)
+### Paso 3 — Publicar en GitHub Pages (automático)
 
-En GitHub → Settings → Secrets → Actions, crea:
+**Opción recomendada — un comando** (después del paso 1):
+
+```bash
+npm run apply:all
+```
+
+El script lee `CREDENCIALES-SHEETS-AUTO.txt` y:
+
+1. Intenta subir los Secrets en GitHub (`gh secret set`)
+2. Si no tienes permiso de admin en el repo, dispara el workflow **Publicar app (GitHub Pages)** con la URL y el token como inputs (funciona igual, sin guardar Secrets)
+
+Todo en uno (setup + publicar):
+
+```bash
+npm run apply:all:setup
+```
+
+Requisito: `gh auth login` con tu cuenta GitHub.
+
+**Opción manual — Secrets** en [Settings → Secrets → Actions](https://github.com/lasucursaldelcafe-droid/Programa-de-logistca/settings/secrets/actions):
 
 | Secret | Valor |
 |--------|--------|
@@ -68,6 +87,8 @@ En GitHub → Settings → Secrets → Actions, crea:
 | `VITE_BLOQUEAR_INTEGRACIONES` | `true` |
 
 Push a `main` → la app en Pages usará Sheets (varios celulares sincronizados vía hoja).
+
+**Opción manual — sin Secrets:** GitHub → Actions → **Publicar app (GitHub Pages)** → Run workflow → `backend=sheets` → pega URL `/exec` y token.
 
 ### Si falla el deploy automático
 

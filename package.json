@@ -37,6 +37,8 @@
     "setup:auto": "tsx scripts/setup-automation.ts",
     "setup:production": "tsx scripts/setup-automation.ts -- --production",
     "setup:sheets-auto": "node scripts/setup-sheets-clasp.mjs",
+    "apply:all": "node scripts/apply-all.mjs",
+    "apply:all:setup": "node scripts/apply-all.mjs -- --setup",
     "setup:fcm": "tsx scripts/update-fcm-sw.ts",
     "firebase:deploy-rules": "firebase deploy --only firestore:rules",
     "test:smoke": "firebase emulators:exec --only auth,firestore --project demo-personal-eventos \"npm run seed && tsx scripts/ci-smoke.ts\"",
