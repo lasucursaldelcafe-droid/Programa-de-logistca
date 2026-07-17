@@ -3,9 +3,18 @@ import { Navigate, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Card } from "../components/ui";
 import { useDeploymentLinks } from "../hooks/useDeploymentLinks";
-import { rutaHomePorRol, isFirebaseConfigured, isSheetsBackendConfigured, PLATFORM_SEED_ACCOUNTS } from "@spe/shared";
+import {
+  rutaHomePorRol,
+  isFirebaseConfigured,
+  isSheetsBackendConfigured,
+  PLATFORM_SEED_ACCOUNTS,
+  getRuntimeBackendLabel,
+  resetToDemoMode,
+  clearSheetsSession,
+} from "@spe/shared";
 import { isDemoMode } from "../lib/mode";
-import { isSheetsBackend } from "../lib/backend";
+import { isSheetsBackend, getDataBackend } from "../lib/backend";
+import { clearDemoSession } from "../demo/store";
 import { LoginAyudaPanel } from "../components/LoginAyudaPanel";
 import { BiometricLoginButton } from "../components/BiometricLogin";
 import { isBiometricAvailable, saveBiometricCredentials } from "../lib/biometricAuth";
@@ -31,6 +40,18 @@ export function LoginPage() {
     isDemoMode() ||
     isFirebaseConfigured() ||
     (isSheetsBackend() && isSheetsBackendConfigured());
+
+  const backendLabel = getRuntimeBackendLabel({
+    demoMode: import.meta.env.VITE_DEMO_MODE === "true",
+    dataBackend: import.meta.env.VITE_DATA_BACKEND,
+  });
+
+  function restablecerDemo() {
+    resetToDemoMode();
+    clearSheetsSession();
+    clearDemoSession();
+    window.location.reload();
+  }
 
   if (!loading && user) {
     return <Navigate to={rutaHomePorRol(user.role)} replace />;
@@ -62,8 +83,8 @@ export function LoginPage() {
           </div>
           <h1 className="font-display text-2xl font-bold tracking-tight">Personal Eventos</h1>
           <p className="mt-1 text-sm text-neutral-400">
-            Admin · Master · Trabajador — un solo acceso
-          </p>
+          Admin · Master · Trabajador — backend: <span className="text-accent">{backendLabel}</span>
+        </p>
         </div>
       <Card className="w-full shadow-lg shadow-black/20">
         {isDemoMode() && (
@@ -132,9 +153,18 @@ export function LoginPage() {
             />
           </label>
           {error && (
-            <p className="rounded-lg bg-alert/10 px-3 py-2 text-sm text-alert">
-              {error}
-            </p>
+            <div className="space-y-2">
+              <p className="rounded-lg bg-alert/10 px-3 py-2 text-sm text-alert">{error}</p>
+              {!isDemoMode() && getDataBackend() !== "firebase" && (
+                <button
+                  type="button"
+                  onClick={restablecerDemo}
+                  className="w-full rounded-lg border border-accent/40 py-2 text-sm text-accent"
+                >
+                  Restablecer modo demo (admin@eventos.test / Admin123!)
+                </button>
+              )}
+            </div>
           )}
           {info && (
             <p className="rounded-lg bg-positive/10 px-3 py-2 text-sm text-positive">
