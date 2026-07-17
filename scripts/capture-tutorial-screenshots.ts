@@ -120,6 +120,15 @@ async function capture(page: Page, { file, path, waitMs = 1400, before, skipGoto
   console.log(`+ ${file}  ←  ${path}`);
 }
 
+async function clickWizardStep(page: Page, stepTitle: string): Promise<void> {
+  await page.evaluate((title) => {
+    const btn = [...document.querySelectorAll("button")].find((b) =>
+      b.textContent?.trim().startsWith(title),
+    );
+    btn?.click();
+  }, stepTitle);
+}
+
 async function main(): Promise<void> {
   mkdirSync(OUT, { recursive: true });
 
@@ -141,7 +150,11 @@ async function main(): Promise<void> {
 
   const adminShots: Shot[] = [
     { file: "04-panel-admin.png", path: "/panel", waitMs: 2000 },
-    { file: "05-configuracion.png", path: "/configuracion", waitMs: 1800 },
+    { file: "05-configuracion.png", path: "/configuracion", waitMs: 1800, before: async (p) => {
+      await p.goto(`${BASE}/configuracion`, { waitUntil: "networkidle0" });
+      await clickWizardStep(p, "Evento");
+      await new Promise((r) => setTimeout(r, 600));
+    }, skipGoto: true },
     { file: "06-personal.png", path: "/personal" },
     { file: "07-cuentas.png", path: "/cuentas" },
     { file: "08-qr-sitios.png", path: "/qr-sitios" },
