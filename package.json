@@ -45,12 +45,14 @@
     "toolkit:demo": "node scripts/run-toolkit-cli.mjs demo",
     "toolkit:init": "node scripts/run-toolkit-cli.mjs init",
     "toolkit:secrets": "node scripts/run-toolkit-cli.mjs secrets",
-    "pdf:informe": "npm run build:informe-pdf"
+    "pdf:informe": "npm run build:informe-pdf",
+    "tutorial:capturas": "tsx scripts/capture-tutorial-screenshots.ts"
   },
   "devDependencies": {
     "cross-env": "^10.1.0",
     "firebase-admin": "^13.4.0",
     "firebase-tools": "^14.0.0",
+    "puppeteer-core": "^25.3.0",
     "tsx": "^4.22.5",
     "typescript": "^5.8.3"
   }
