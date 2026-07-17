@@ -11,3 +11,4 @@ export * from "./invitations";
 export * from "./accounts";
 export * from "./paths";
 export * from "./sheetsClient";
+export * from "./sheetsSession";

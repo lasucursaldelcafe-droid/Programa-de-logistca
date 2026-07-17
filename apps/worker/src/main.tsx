@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, HashRouter } from "react-router-dom";
-import { configureFirebase } from "@spe/shared";
+import { configureFirebase, configureSheetsClient } from "@spe/shared";
 import { AuthProvider } from "@core/contexts/AuthContext";
 import { isNativePlatform } from "@core/lib/platform";
 import { App } from "./App";
@@ -17,6 +17,12 @@ configureFirebase({
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
   useEmulators: import.meta.env.VITE_USE_FIREBASE_EMULATORS === "true",
 });
+
+if (import.meta.env.VITE_DATA_BACKEND === "sheets") {
+  const url = import.meta.env.VITE_SHEETS_WEB_APP_URL?.trim() ?? "";
+  const token = import.meta.env.VITE_SHEETS_API_TOKEN?.trim() ?? "";
+  if (url && token) configureSheetsClient(url, token);
+}
 
 /** HashRouter evita pantalla en blanco en Capacitor/Android (file:// y rutas SPA). */
 const useHashRouter = isNativePlatform();

@@ -13,10 +13,10 @@ Plataforma de gestión de personal para empresas de logística y recreación en 
 ## Inicio rápido
 
 ```bash
-npm run setup:auto    # primera vez: demo local automático (emuladores)
-# Producción Firebase (desde PC): docs-source/CONFIGURACION-AUTOMATICA.md
-# npm run setup:production   # requiere firebase-web-config.json
-npm start        # desarrollo local :5173
+npm run setup:sheets-auto  # SIN JSON — Google Sheets automático (recomendado si Google bloquea descargas)
+npm run setup:auto         # demo local emuladores
+# npm run setup:production # Firebase — solo pegar firebase-web-config.json
+npm start                  # desarrollo local :5173
 ```
 
 Para desarrollo con emuladores (opcional): `npm run dev:full`

@@ -69,5 +69,8 @@ CHECKLIST-PRODUCCION.txt
 CONFIGURACION-SHEETS.txt
 service-account.json
 firebase-web-config.json
+sheets-web-app-url.txt
+CREDENCIALES-SHEETS-AUTO.txt
+apps-script/spe-backend/.clasp.json
 __pycache__/
 *.pyc

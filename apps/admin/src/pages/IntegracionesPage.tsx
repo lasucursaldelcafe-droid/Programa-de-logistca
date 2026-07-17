@@ -5,6 +5,7 @@ import { puedeConfigurarIntegraciones } from "@spe/shared";
 import type { TipoIntegracion } from "@spe/shared";
 import { AdminIntegracionPanel } from "../components/AdminIntegracionPanel";
 import { IntegracionesAyuda } from "../components/IntegracionesAyuda";
+import { IntegracionesLockGate } from "../components/IntegracionesLockGate";
 import { PageHeader } from "../components/nav/PageHeader";
 
 export function IntegracionesPage() {
@@ -24,7 +25,7 @@ export function IntegracionesPage() {
       />
 
       {isAdmin ? (
-        <>
+        <IntegracionesLockGate>
           <IntegracionesAyuda />
 
           <div className="space-y-3">
@@ -39,7 +40,7 @@ export function IntegracionesPage() {
               />
             ))}
           </div>
-        </>
+        </IntegracionesLockGate>
       ) : (
         <div className="grid gap-3 lg:grid-cols-2">
           {conexiones.map((c) => (

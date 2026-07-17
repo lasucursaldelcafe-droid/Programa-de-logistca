@@ -4,6 +4,8 @@ La app opera con **Firebase Auth + Firestore** en producción. No hay modo demo 
 
 **Configuración automática desde PC (sin celular):** ver [`CONFIGURACION-AUTOMATICA.md`](./CONFIGURACION-AUTOMATICA.md).
 
+**Si Google no te deja descargar JSON:** ver [`GUIA-SIN-DESCARGAR-JSON.md`](./GUIA-SIN-DESCARGAR-JSON.md) → `npm run setup:sheets-auto`.
+
 Comando rápido:
 
 ```bash

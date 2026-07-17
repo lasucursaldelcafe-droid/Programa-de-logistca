@@ -3,8 +3,9 @@ import { Navigate, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Card } from "../components/ui";
 import { useDeploymentLinks } from "../hooks/useDeploymentLinks";
-import { rutaHomePorRol, isFirebaseConfigured, PLATFORM_SEED_ACCOUNTS } from "@spe/shared";
+import { rutaHomePorRol, isFirebaseConfigured, isSheetsBackendConfigured, PLATFORM_SEED_ACCOUNTS } from "@spe/shared";
 import { DEMO_MODE } from "../lib/mode";
+import { isSheetsBackend } from "../lib/backend";
 import { LoginAyudaPanel } from "../components/LoginAyudaPanel";
 import { BiometricLoginButton } from "../components/BiometricLogin";
 import { isBiometricAvailable, saveBiometricCredentials } from "../lib/biometricAuth";
@@ -26,7 +27,10 @@ export function LoginPage() {
     void isBiometricAvailable().then(setBiometricAvailable);
   }, []);
 
-  const firebaseReady = DEMO_MODE || isFirebaseConfigured();
+  const firebaseReady =
+    DEMO_MODE ||
+    isFirebaseConfigured() ||
+    (isSheetsBackend() && isSheetsBackendConfigured());
 
   if (!loading && user) {
     return <Navigate to={rutaHomePorRol(user.role)} replace />;
@@ -92,13 +96,9 @@ export function LoginPage() {
           <div className="mt-4 rounded-lg border border-alert/40 bg-alert/10 px-3 py-3 text-sm text-alert">
             <p className="font-semibold">Backend no configurado</p>
             <p className="mt-1 text-neutral-300">
-              Este sitio se publicó sin credenciales Firebase. El administrador del repositorio debe
-              configurar los GitHub Secrets (<code className="text-xs">VITE_FIREBASE_*</code>) y volver
-              a desplegar. Guía: <code className="text-xs">docs-source/PRODUCCION-FIREBASE.md</code>.
-            </p>
-            <p className="mt-2 text-neutral-400">
-              Las cuentas <code className="text-xs">admin@eventos.test</code> solo funcionan en desarrollo
-              local con emuladores (<code className="text-xs">npm run dev:full</code>), no en este enlace.
+              Ejecuta en PC: <code className="text-xs">npm run setup:sheets-auto</code> (Google Sheets,
+              sin descargar JSON) o <code className="text-xs">npm run setup:production</code> (Firebase).
+              Guía: <code className="text-xs">docs-source/GUIA-SIN-DESCARGAR-JSON.md</code>.
             </p>
           </div>
         )}

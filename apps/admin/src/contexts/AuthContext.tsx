@@ -18,10 +18,15 @@ import {
   getFirebaseAuth,
   getFirestoreDb,
   isFirebaseConfigured,
+  sheetsLogin,
+  saveSheetsSession,
+  clearSheetsSession,
+  loadSheetsSession,
   type AppUser,
   type UserRole,
 } from "@spe/shared";
 import { DEMO_MODE } from "../lib/mode";
+import { isSheetsBackend } from "../lib/backend";
 import { formatAuthError } from "../lib/authErrors";
 import { initPushNotifications } from "../lib/fcm";
 import {
@@ -66,6 +71,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    if (isSheetsBackend()) {
+      setUser(loadSheetsSession());
+      setLoading(false);
+      return;
+    }
+
     if (!isFirebaseConfigured()) {
       setUser(null);
       setLoading(false);
@@ -91,6 +102,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(loadDemoSession());
       return;
     }
+    if (isSheetsBackend()) {
+      setUser(loadSheetsSession());
+      return;
+    }
     const fbUser = getFirebaseAuth().currentUser;
     if (!fbUser) {
       setUser(null);
@@ -108,6 +123,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return appUser;
       } catch (err) {
         throw err instanceof Error ? err : new Error("Credenciales inválidas");
+      }
+    }
+    if (isSheetsBackend()) {
+      try {
+        const result = await sheetsLogin(email, password);
+        const appUser: AppUser = {
+          uid: result.uid,
+          email: result.email,
+          nombre: result.nombre,
+          role: result.role as UserRole,
+          workerId: result.workerId ?? undefined,
+          perfilCompleto: result.perfilCompleto ?? true,
+        };
+        saveSheetsSession(appUser);
+        setUser(appUser);
+        return appUser;
+      } catch (err) {
+        throw err instanceof Error ? err : new Error("Credenciales inválidas (Sheets)");
       }
     }
     if (!isFirebaseConfigured()) {
@@ -132,6 +165,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     if (DEMO_MODE) {
       clearDemoSession();
+      setUser(null);
+      return;
+    }
+    if (isSheetsBackend()) {
+      clearSheetsSession();
       setUser(null);
       return;
     }

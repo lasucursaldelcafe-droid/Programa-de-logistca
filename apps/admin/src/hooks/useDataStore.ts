@@ -44,6 +44,9 @@ import {
 } from "@spe/shared";
 import type { GeoPosition } from "../lib/geolocation";
 import { DEMO_MODE } from "../lib/mode";
+import { isSheetsBackend } from "../lib/backend";
+import { useSheetsPoll } from "./useSheetsPoll";
+import { sheetsGetById, sheetsListAll, sheetsUpsertRecord } from "../data/sheetsOps";
 import { demoStore, setDemoAccountHabilitado, setDemoAccountPassword } from "../demo/store";
 import {
   notifyCheckIn,
@@ -59,9 +62,10 @@ function useDemoSnapshot<T>(selector: () => T): T {
 
 export function useWorkers(): Worker[] {
   const [workers, setWorkers] = useState<Worker[]>([]);
+  const sheetsWorkers = useSheetsPoll<Worker>("workers");
 
   useEffect(() => {
-    if (DEMO_MODE) return;
+    if (DEMO_MODE || isSheetsBackend()) return;
     const unsub = onSnapshot(
       query(collection(getFirestoreDb(), "workers"), orderBy("nombre")),
       (snap) => setWorkers(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Worker))),
@@ -70,14 +74,17 @@ export function useWorkers(): Worker[] {
   }, []);
 
   const demoWorkers = useDemoSnapshot(() => demoStore.workers);
-  return DEMO_MODE ? demoWorkers : workers;
+  if (DEMO_MODE) return demoWorkers;
+  if (isSheetsBackend()) return sheetsWorkers;
+  return workers;
 }
 
 export function useShifts(): Turno[] {
   const [shifts, setShifts] = useState<Turno[]>([]);
+  const sheetsShifts = useSheetsPoll<Turno>("shifts");
 
   useEffect(() => {
-    if (DEMO_MODE) return;
+    if (DEMO_MODE || isSheetsBackend()) return;
     const unsub = onSnapshot(
       query(collection(getFirestoreDb(), "shifts"), orderBy("inicio")),
       (snap) => setShifts(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Turno))),
@@ -86,14 +93,17 @@ export function useShifts(): Turno[] {
   }, []);
 
   const demoShifts = useDemoSnapshot(() => demoStore.shifts);
-  return DEMO_MODE ? demoShifts : shifts;
+  if (DEMO_MODE) return demoShifts;
+  if (isSheetsBackend()) return sheetsShifts;
+  return shifts;
 }
 
 export function useEvents(): Evento[] {
   const [events, setEvents] = useState<Evento[]>([]);
+  const sheetsEvents = useSheetsPoll<Evento>("events");
 
   useEffect(() => {
-    if (DEMO_MODE) return;
+    if (DEMO_MODE || isSheetsBackend()) return;
     const unsub = onSnapshot(collection(getFirestoreDb(), "events"), (snap) =>
       setEvents(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Evento))),
     );
@@ -101,14 +111,17 @@ export function useEvents(): Evento[] {
   }, []);
 
   const demoEvents = useDemoSnapshot(() => demoStore.events);
-  return DEMO_MODE ? demoEvents : events;
+  if (DEMO_MODE) return demoEvents;
+  if (isSheetsBackend()) return sheetsEvents;
+  return events;
 }
 
 export function useSites(): Sitio[] {
   const [sites, setSites] = useState<Sitio[]>([]);
+  const sheetsSites = useSheetsPoll<Sitio>("sites");
 
   useEffect(() => {
-    if (DEMO_MODE) return;
+    if (DEMO_MODE || isSheetsBackend()) return;
     const unsub = onSnapshot(collection(getFirestoreDb(), "sites"), (snap) =>
       setSites(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Sitio))),
     );
@@ -116,7 +129,9 @@ export function useSites(): Sitio[] {
   }, []);
 
   const demoSites = useDemoSnapshot(() => demoStore.sites);
-  return DEMO_MODE ? demoSites : sites;
+  if (DEMO_MODE) return demoSites;
+  if (isSheetsBackend()) return sheetsSites;
+  return sites;
 }
 
 export async function createWorker(
@@ -153,6 +168,28 @@ export async function createWorker(
     );
     return;
   }
+  const id = `worker-${Date.now().toString(36)}`;
+  const worker = {
+    id,
+    nombre: data.nombre,
+    documento: data.documento,
+    telefono: data.telefono,
+    email: data.email.trim().toLowerCase(),
+    perfiles: JSON.stringify(data.perfiles),
+    rolPlataforma,
+    experienciaAnios: 0,
+    eventosTrabajados: 0,
+    rating: 0,
+    estado: "sin_asignar" satisfies WorkerEstado,
+    cuentaCreada: false,
+    habilitado: true,
+    certificaciones: "",
+    creadoEn: new Date().toISOString(),
+  };
+  if (isSheetsBackend()) {
+    await sheetsUpsertRecord("workers", worker);
+    return;
+  }
   await addDoc(collection(getFirestoreDb(), "workers"), {
     nombre: data.nombre,
     documento: data.documento,
@@ -178,6 +215,11 @@ export async function updateWorkerEstado(
 ): Promise<void> {
   if (DEMO_MODE) {
     demoStore.updateWorker(id, { estado }, actorNombre);
+    return;
+  }
+  if (isSheetsBackend()) {
+    const worker = await getWorkerById(id);
+    if (worker) await sheetsUpsertRecord("workers", { ...worker, estado });
     return;
   }
   await updateDoc(doc(getFirestoreDb(), "workers", id), { estado });
@@ -251,6 +293,12 @@ export async function createShift(data: Omit<Turno, "id">): Promise<string> {
     await notifyShiftAssigned({ id, ...data });
     return id;
   }
+  if (isSheetsBackend()) {
+    const id = `shift-${Date.now().toString(36)}`;
+    await sheetsUpsertRecord("shifts", { ...data, id });
+    await notifyShiftAssigned({ id, ...data });
+    return id;
+  }
   const ref = await addDoc(collection(getFirestoreDb(), "shifts"), data);
   await notifyShiftAssigned({ id: ref.id, ...data });
   return ref.id;
@@ -261,6 +309,9 @@ export async function updateShiftEstado(id: string, estado: ShiftEstado): Promis
   if (DEMO_MODE) {
     shift = demoStore.shifts.find((s) => s.id === id) ?? null;
     demoStore.updateShift(id, { estado });
+  } else if (isSheetsBackend()) {
+    shift = (await sheetsGetById<Turno>("shifts", id)) ?? null;
+    if (shift) await sheetsUpsertRecord("shifts", { ...shift, estado });
   } else {
     const snap = await getDoc(doc(getFirestoreDb(), "shifts", id));
     if (snap.exists()) shift = { id: snap.id, ...snap.data() } as Turno;
@@ -281,9 +332,10 @@ export async function updateShiftEstado(id: string, estado: ShiftEstado): Promis
 
 export function useInvitations(): Invitation[] {
   const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const sheetsInvitations = useSheetsPoll<Invitation>("invitations");
 
   useEffect(() => {
-    if (DEMO_MODE) return;
+    if (DEMO_MODE || isSheetsBackend()) return;
     const unsub = onSnapshot(
       query(collection(getFirestoreDb(), "invitations"), orderBy("creadaEn", "desc")),
       (snap) =>
@@ -302,12 +354,25 @@ export function useInvitations(): Invitation[] {
   }, []);
 
   const demoInvitations = useDemoSnapshot(() => demoStore.invitations);
-  return DEMO_MODE ? demoInvitations : invitations;
+  if (DEMO_MODE) return demoInvitations;
+  if (isSheetsBackend()) {
+    return sheetsInvitations.map((inv) => ({
+      ...inv,
+      id: inv.id ?? inv.token,
+      token: inv.token ?? inv.id,
+    }));
+  }
+  return invitations;
 }
 
 export async function getInvitationByToken(token: string): Promise<Invitation | null> {
   if (DEMO_MODE) {
     return demoStore.getInvitation(token);
+  }
+  if (isSheetsBackend()) {
+    const row = await sheetsGetById<Invitation>("invitations", token, "id");
+    if (!row) return null;
+    return { ...row, token: row.token ?? row.id, id: row.id ?? token };
   }
   const snap = await getDoc(doc(getFirestoreDb(), "invitations", token));
   if (!snap.exists()) return null;
@@ -372,6 +437,10 @@ export async function createInvitation(data: {
 
   if (DEMO_MODE) {
     demoStore.addInvitation({ ...invitation, id: token });
+    return { token, codigoAcceso };
+  }
+  if (isSheetsBackend()) {
+    await sheetsUpsertRecord("invitations", { ...invitation, id: token }, "id");
     return { token, codigoAcceso };
   }
 
@@ -474,6 +543,9 @@ export async function getWorkerById(workerId: string): Promise<Worker | null> {
   if (DEMO_MODE) {
     return demoStore.workers.find((w) => w.id === workerId) ?? null;
   }
+  if (isSheetsBackend()) {
+    return sheetsGetById<Worker>("workers", workerId);
+  }
   const snap = await getDoc(doc(getFirestoreDb(), "workers", workerId));
   if (!snap.exists()) return null;
   return { id: snap.id, ...snap.data() } as Worker;
@@ -481,6 +553,7 @@ export async function getWorkerById(workerId: string): Promise<Worker | null> {
 
 export async function getSiteById(siteId: string): Promise<Sitio | null> {
   if (DEMO_MODE) return demoStore.sites.find((s) => s.id === siteId) ?? null;
+  if (isSheetsBackend()) return sheetsGetById<Sitio>("sites", siteId);
   const snap = await getDoc(doc(getFirestoreDb(), "sites", siteId));
   if (!snap.exists()) return null;
   return { id: snap.id, ...snap.data() } as Sitio;
@@ -488,9 +561,10 @@ export async function getSiteById(siteId: string): Promise<Sitio | null> {
 
 export function useQrCodes(): QrCode[] {
   const [qrCodes, setQrCodes] = useState<QrCode[]>([]);
+  const sheetsQr = useSheetsPoll<QrCode>("qrCodes");
 
   useEffect(() => {
-    if (DEMO_MODE) return;
+    if (DEMO_MODE || isSheetsBackend()) return;
     const unsub = onSnapshot(
       query(collection(getFirestoreDb(), "qrCodes"), orderBy("creadoEn", "desc")),
       (snap) => setQrCodes(snap.docs.map((d) => ({ id: d.id, ...d.data() } as QrCode))),
@@ -499,14 +573,17 @@ export function useQrCodes(): QrCode[] {
   }, []);
 
   const demoQr = useDemoSnapshot(() => demoStore.qrCodes);
-  return DEMO_MODE ? demoQr : qrCodes;
+  if (DEMO_MODE) return demoQr;
+  if (isSheetsBackend()) return sheetsQr;
+  return qrCodes;
 }
 
 export function useAttendances(): Attendance[] {
   const [attendances, setAttendances] = useState<Attendance[]>([]);
+  const sheetsAtt = useSheetsPoll<Attendance>("attendance");
 
   useEffect(() => {
-    if (DEMO_MODE) return;
+    if (DEMO_MODE || isSheetsBackend()) return;
     const unsub = onSnapshot(
       query(collection(getFirestoreDb(), "attendance"), orderBy("creadoEn", "desc")),
       (snap) =>
@@ -516,11 +593,14 @@ export function useAttendances(): Attendance[] {
   }, []);
 
   const demoAtt = useDemoSnapshot(() => demoStore.attendances);
-  return DEMO_MODE ? demoAtt : attendances;
+  if (DEMO_MODE) return demoAtt;
+  if (isSheetsBackend()) return sheetsAtt;
+  return attendances;
 }
 
 export async function getQrCodeById(qrId: string): Promise<QrCode | null> {
   if (DEMO_MODE) return demoStore.qrCodes.find((q) => q.id === qrId) ?? null;
+  if (isSheetsBackend()) return sheetsGetById<QrCode>("qrCodes", qrId);
   const snap = await getDoc(doc(getFirestoreDb(), "qrCodes", qrId));
   if (!snap.exists()) return null;
   return { id: snap.id, ...snap.data() } as QrCode;
@@ -574,6 +654,10 @@ export async function createQrCode(data: {
     demoStore.addQrCode({ ...qr, id });
     return id;
   }
+  if (isSheetsBackend()) {
+    await sheetsUpsertRecord("qrCodes", { ...qr, id });
+    return id;
+  }
   await setDoc(doc(getFirestoreDb(), "qrCodes", id), qr);
   return id;
 }
@@ -581,6 +665,11 @@ export async function createQrCode(data: {
 export async function deactivateQrCode(qrId: string): Promise<void> {
   if (DEMO_MODE) {
     demoStore.updateQrCode(qrId, { activo: false });
+    return;
+  }
+  if (isSheetsBackend()) {
+    const qr = await getQrCodeById(qrId);
+    if (qr) await sheetsUpsertRecord("qrCodes", { ...qr, activo: false });
     return;
   }
   await updateDoc(doc(getFirestoreDb(), "qrCodes", qrId), { activo: false });
@@ -662,6 +751,40 @@ export async function checkInWithQr(data: {
     return attendanceId;
   }
 
+  if (isSheetsBackend()) {
+    const attendanceId = `att-${Date.now().toString(36)}`;
+    await sheetsUpsertRecord("attendance", {
+      id: attendanceId,
+      workerId: data.workerId,
+      workerNombre: data.workerNombre,
+      shiftId: shift.id,
+      siteId: qr.siteId,
+      siteNombre: qr.siteNombre,
+      eventId: qr.eventId,
+      eventNombre: qr.eventNombre,
+      qrId: qr.id,
+      estado,
+      entrada: JSON.stringify(entrada),
+      ubicacionActual: JSON.stringify(data.position),
+      alertasGeocerca: "",
+      creadoEn: new Date().toISOString(),
+    });
+    await sheetsUpsertRecord("workers", {
+      ...(await getWorkerById(data.workerId)),
+      id: data.workerId,
+      estado: "en_sitio",
+    });
+    await notifyCheckIn({
+      workerId: data.workerId,
+      workerNombre: data.workerNombre,
+      siteNombre: qr.siteNombre,
+      eventNombre: qr.eventNombre,
+      attendanceId,
+      dentroGeocerca: dentro,
+    });
+    return attendanceId;
+  }
+
   const ref = await addDoc(collection(getFirestoreDb(), "attendance"), {
     workerId: data.workerId,
     workerNombre: data.workerNombre,
@@ -714,6 +837,37 @@ export async function checkOut(attendanceId: string, position: GeoPosition): Pro
     return;
   }
 
+  if (isSheetsBackend()) {
+    const att = await sheetsGetById<Attendance>("attendance", attendanceId);
+    if (!att) throw new Error("Jornada no encontrada");
+    const site = await getSiteById(att.siteId);
+    const dentro = site
+      ? isInsideGeofence(position, { lat: site.lat, lng: site.lng }, site.radioGeocerca)
+      : true;
+    const salida = {
+      timestamp: new Date().toISOString(),
+      lat: position.lat,
+      lng: position.lng,
+      dentroGeocerca: dentro,
+    };
+    await sheetsUpsertRecord("attendance", {
+      ...att,
+      estado: "cerrado",
+      salida: JSON.stringify(salida),
+    });
+    const worker = await getWorkerById(att.workerId);
+    if (worker) {
+      await sheetsUpsertRecord("workers", { ...worker, estado: "sin_asignar" });
+    }
+    await notifyCheckOut({
+      workerId: att.workerId,
+      workerNombre: att.workerNombre ?? att.workerId,
+      siteNombre: att.siteNombre,
+      attendanceId,
+    });
+    return;
+  }
+
   const snap = await getDoc(doc(getFirestoreDb(), "attendance", attendanceId));
   if (!snap.exists()) throw new Error("Jornada no encontrada");
   const attendance = { id: snap.id, ...snap.data() } as Attendance;
@@ -753,6 +907,17 @@ export async function updateAttendanceLocation(
 ): Promise<void> {
   if (DEMO_MODE) {
     demoStore.updateAttendanceLocation(attendanceId, position, dentroGeocerca);
+    return;
+  }
+  if (isSheetsBackend()) {
+    const att = await sheetsGetById<Attendance>("attendance", attendanceId);
+    if (att) {
+      await sheetsUpsertRecord("attendance", {
+        ...att,
+        ubicacionActual: JSON.stringify(position),
+        estado: dentroGeocerca ? "activo" : "fuera_geocerca",
+      });
+    }
     return;
   }
 
@@ -834,6 +999,10 @@ export async function createEvent(data: {
     demoStore.addEvent({ ...evento, id });
     return id;
   }
+  if (isSheetsBackend()) {
+    await sheetsUpsertRecord("events", { ...evento, id, sitioIds: "" });
+    return id;
+  }
 
   await setDoc(doc(getFirestoreDb(), "events", id), evento);
   return id;
@@ -857,6 +1026,10 @@ export async function createSite(data: {
 
   if (DEMO_MODE) {
     demoStore.addSite({ ...site, id });
+    return id;
+  }
+  if (isSheetsBackend()) {
+    await sheetsUpsertRecord("sites", { ...site, id });
     return id;
   }
 

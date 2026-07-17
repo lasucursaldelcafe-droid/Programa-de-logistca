@@ -33,10 +33,13 @@ jobs:
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
 
-      - name: Detectar Firebase (demo si faltan Secrets)
+      - name: Detectar backend (Firebase, Sheets o demo)
         id: firebase_mode
         shell: bash
         env:
+          VITE_DATA_BACKEND: ${{ secrets.VITE_DATA_BACKEND }}
+          VITE_SHEETS_WEB_APP_URL: ${{ secrets.VITE_SHEETS_WEB_APP_URL }}
+          VITE_SHEETS_API_TOKEN: ${{ secrets.VITE_SHEETS_API_TOKEN }}
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
           VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
@@ -44,6 +47,12 @@ jobs:
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
         run: |
+          if [ "$VITE_DATA_BACKEND" = "sheets" ] && [ -n "$VITE_SHEETS_WEB_APP_URL" ] && [ -n "$VITE_SHEETS_API_TOKEN" ]; then
+            echo "demo_mode=false" >> "$GITHUB_OUTPUT"
+            echo "data_backend=sheets" >> "$GITHUB_OUTPUT"
+            echo "✓ Backend Google Sheets configurado — build producción"
+            exit 0
+          fi
           PLACEHOLDERS="demo-api-key demo-personal-eventos 000000000000 1:000000000000:web:demo"
           missing=()
           for key in VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_STORAGE_BUCKET VITE_FIREBASE_MESSAGING_SENDER_ID VITE_FIREBASE_APP_ID; do
@@ -54,6 +63,7 @@ jobs:
               missing+=("$key (valor de prueba)")
             fi
           done
+          echo "data_backend=firebase" >> "$GITHUB_OUTPUT"
           if [ ${#missing[@]} -eq 0 ]; then
             echo "demo_mode=false" >> "$GITHUB_OUTPUT"
             echo "✓ Los 6 Secrets Firebase están completos — build con backend real"
@@ -61,6 +71,7 @@ jobs:
             echo "demo_mode=true" >> "$GITHUB_OUTPUT"
             echo "○ Secrets incompletos — GitHub Pages en modo demo hasta corregir:"
             printf '  - %s\n' "${missing[@]}"
+            echo "  Alternativa sin JSON: Secrets VITE_DATA_BACKEND=sheets + VITE_SHEETS_*"
           fi
 
       - name: Construir app unificada
