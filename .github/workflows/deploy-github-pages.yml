@@ -57,6 +57,22 @@ jobs:
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
 
+      - name: Cargar config/bootstrap.json (configuración desde celular)
+        run: |
+          if [ -f config/bootstrap.json ]; then
+            while IFS= read -r line; do
+              key="${line#export }"
+              name="${key%%=*}"
+              val="${key#*=}"
+              val="${val#\"}"
+              val="${val%\"}"
+              if [ -n "$val" ] && [ "$val" != "demo-api-key" ]; then
+                echo "${name}=${val}" >> "$GITHUB_ENV"
+                echo "○ bootstrap → ${name}"
+              fi
+            done < <(node scripts/read-bootstrap-config.mjs --export)
+          fi
+
       - name: Detectar backend (Firebase, Sheets o demo)
         id: firebase_mode
         shell: bash

@@ -1,15 +1,25 @@
 /** Backend de datos: demo local, Firebase o Google Sheets (Apps Script). */
 
+import {
+  getEffectiveBackend,
+  isEffectiveSheetsBackend,
+} from "@spe/shared";
+
 export type DataBackend = "demo" | "firebase" | "sheets";
 
+function buildEnv() {
+  return {
+    demoMode: import.meta.env.VITE_DEMO_MODE === "true",
+    dataBackend: import.meta.env.VITE_DATA_BACKEND,
+  };
+}
+
 export function getDataBackend(): DataBackend {
-  if (import.meta.env.VITE_DEMO_MODE === "true") return "demo";
-  if (import.meta.env.VITE_DATA_BACKEND === "sheets") return "sheets";
-  return "firebase";
+  return getEffectiveBackend(buildEnv()) as DataBackend;
 }
 
 export function isSheetsBackend(): boolean {
-  return getDataBackend() === "sheets";
+  return isEffectiveSheetsBackend(buildEnv());
 }
 
 export function isDemoBackend(): boolean {

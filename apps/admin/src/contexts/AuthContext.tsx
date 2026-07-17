@@ -25,7 +25,7 @@ import {
   type AppUser,
   type UserRole,
 } from "@spe/shared";
-import { DEMO_MODE } from "../lib/mode";
+import { isDemoMode } from "../lib/mode";
 import { isSheetsBackend } from "../lib/backend";
 import { formatAuthError } from "../lib/authErrors";
 import { initPushNotifications } from "../lib/fcm";
@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (DEMO_MODE) {
+    if (isDemoMode()) {
       setUser(loadDemoSession());
       setLoading(false);
       return;
@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshUser = useCallback(async () => {
-    if (DEMO_MODE) {
+    if (isDemoMode()) {
       setUser(loadDemoSession());
       return;
     }
@@ -116,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<AppUser> => {
-    if (DEMO_MODE) {
+    if (isDemoMode()) {
       try {
         const appUser = demoLogin(email, password);
         setUser(appUser);
@@ -163,7 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    if (DEMO_MODE) {
+    if (isDemoMode()) {
       clearDemoSession();
       setUser(null);
       return;

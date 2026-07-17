@@ -1,0 +1,14 @@
+{
+  "backend": "sheets",
+  "demoMode": false,
+  "sheetsWebAppUrl": "https://script.google.com/macros/s/TU_ID/exec",
+  "sheetsApiToken": "tu-token-de-CREDENCIALES-SHEETS-AUTO",
+  "firebase": {
+    "apiKey": "",
+    "authDomain": "",
+    "projectId": "",
+    "storageBucket": "",
+    "messagingSenderId": "",
+    "appId": ""
+  }
+}
