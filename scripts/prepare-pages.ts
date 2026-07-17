@@ -110,6 +110,8 @@ writeLegacyRedirect(resolve(docs, "master"), links.pagesUrl);
 copyFileSync(resolve(ROOT, "docs-source/GUIA.md"), resolve(docs, "GUIA.md"));
 copyFileSync(resolve(ROOT, "docs-source/INTEGRACIONES-APIS.md"), resolve(docs, "INTEGRACIONES-APIS.md"));
 copyFileSync(resolve(ROOT, "docs-source/CUENTAS-Y-ROLES.md"), resolve(docs, "CUENTAS-Y-ROLES.md"));
+copyFileSync(resolve(ROOT, "docs-source/TUTORIAL-APP-SPE.html"), resolve(docs, "TUTORIAL-APP-SPE.html"));
+cpSync(resolve(ROOT, "docs-source/tutorial-imagenes"), resolve(docs, "tutorial-imagenes"), { recursive: true });
 writeFileSync(resolve(docs, ".nojekyll"), "");
 
 console.log(`✓ GitHub Pages listo (${links.pagesUrl})`);
