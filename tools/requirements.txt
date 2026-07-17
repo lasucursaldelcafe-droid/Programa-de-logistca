@@ -1,0 +1,5 @@
+# SPE Toolkit — solo stdlib (tkinter viene con Python en Windows)
+# No se requieren paquetes pip adicionales para la GUI y CLI.
+#
+# Opcional para empaquetar .exe:
+# pyinstaller>=6.0
