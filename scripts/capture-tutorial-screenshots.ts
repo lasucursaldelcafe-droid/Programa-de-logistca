@@ -7,7 +7,7 @@ import { existsSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 const ROOT = resolve(import.meta.dirname, "..");
-const OUT = resolve(ROOT, "docs/tutorial-imagenes");
+const OUT = resolve(ROOT, "docs-source/tutorial-imagenes");
 const BASE = process.env.TUTORIAL_BASE_URL ?? "http://127.0.0.1:5173";
 
 const CHROME_PATHS = [
@@ -29,8 +29,6 @@ async function main(): Promise<void> {
   if (!chrome) throw new Error("Chrome no encontrado");
 
   mkdirSync(OUT, { recursive: true });
-
-  const browser = await puppeteer.launch({
     executablePath: chrome,
     headless: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox", "--window-size=1280,900"],
