@@ -1,8 +1,8 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { rutaHomePorRol } from "@spe/shared";
-import { Card } from "../components/ui";
 import { useAuth } from "../contexts/AuthContext";
+import { AuthShell, authButtonClass, authInputClass } from "../components/AuthShell";
 import {
   activateAccountWithInvitation,
   getInvitationByToken,
@@ -67,7 +67,7 @@ export function ActivarCuentaPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-neutral-400">
+      <div className="spe-login-bg flex min-h-screen items-center justify-center text-neutral-400">
         Verificando invitación…
       </div>
     );
@@ -75,118 +75,117 @@ export function ActivarCuentaPage() {
 
   if (!invitation) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-bg px-4">
-        <Card className="w-full max-w-md text-center">
-          <h1 className="font-display text-xl font-bold">Invitación no encontrada</h1>
-          <p className="mt-2 text-sm text-neutral-400">
-            El enlace no es válido o ya fue eliminado.
-          </p>
-          <Link to="/unirse" className="mt-4 inline-block text-sm text-accent hover:underline">
-            Activar con correo y código →
-          </Link>
-          <Link to="/login" className="mt-2 block text-sm text-neutral-500 hover:underline">
-            Ir al inicio de sesión
-          </Link>
-        </Card>
-      </div>
+      <AuthShell
+        title="Invitación no encontrada"
+        subtitle="El enlace no es válido o ya fue eliminado."
+        footer={
+          <>
+            <Link to="/unirse" className="text-accent hover:underline">
+              Activar con correo y código
+            </Link>
+            <span className="mx-2">·</span>
+            <Link to="/login" className="text-accent hover:underline">
+              Inicio de sesión
+            </Link>
+          </>
+        }
+      >
+        <p className="text-center text-sm text-neutral-400">
+          Solicita un nuevo enlace al administrador de tu empresa.
+        </p>
+      </AuthShell>
     );
   }
 
   if (invitation.estado !== "pendiente") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-bg px-4">
-        <Card className="w-full max-w-md text-center">
-          <h1 className="font-display text-xl font-bold">Invitación no disponible</h1>
-          <p className="mt-2 text-sm text-neutral-400">
-            Esta invitación ya fue {invitation.estado === "usada" ? "utilizada" : "revocada"}.
-            Cada código solo funciona una vez.
-          </p>
-          <Link to="/login" className="mt-4 inline-block text-sm text-accent hover:underline">
+      <AuthShell
+        title="Invitación no disponible"
+        subtitle={`Esta invitación ya fue ${invitation.estado === "usada" ? "utilizada" : "revocada"}. Cada código solo funciona una vez.`}
+        footer={
+          <Link to="/login" className="text-accent hover:underline">
             Ir al inicio de sesión
           </Link>
-        </Card>
-      </div>
+        }
+      >
+        <p className="text-center text-sm text-neutral-400">
+          Si necesitas acceso, pide una nueva invitación al administrador.
+        </p>
+      </AuthShell>
     );
   }
 
   if (new Date(invitation.expiraEn) < new Date()) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-bg px-4">
-        <Card className="w-full max-w-md text-center">
-          <h1 className="font-display text-xl font-bold">Invitación expirada</h1>
-          <p className="mt-2 text-sm text-neutral-400">
-            Solicita al administrador una nueva invitación.
-          </p>
-          <Link to="/login" className="mt-4 inline-block text-sm text-accent hover:underline">
+      <AuthShell
+        title="Invitación expirada"
+        subtitle="Solicita al administrador una nueva invitación."
+        footer={
+          <Link to="/login" className="text-accent hover:underline">
             Ir al inicio de sesión
           </Link>
-        </Card>
-      </div>
+        }
+      >
+        <p className="text-center text-sm text-neutral-400">
+          Los códigos de invitación tienen fecha de vencimiento por seguridad.
+        </p>
+      </AuthShell>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg px-4">
-      <Card className="w-full max-w-md">
-        <h1 className="font-display text-2xl font-bold">Activar cuenta</h1>
-        <p className="mt-1 text-sm text-neutral-400">
-          Hola <span className="text-neutral-200">{invitation.workerNombre}</span>, crea tu
-          contraseña personal para acceder con tu correo.
-        </p>
-        <p className="mt-2 font-mono text-xs text-neutral-500">{invitation.email}</p>
-
-        <form onSubmit={onSubmit} className="mt-6 space-y-4">
-          <label className="block text-sm">
-            <span className="mb-1 block text-neutral-300">Código de invitación (un solo uso)</span>
-            <input
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              value={codigoAcceso}
-              onChange={(e) => setCodigoAcceso(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              className="w-full rounded-lg border border-border bg-bg px-3 py-2 font-mono text-lg tracking-widest outline-none focus:border-accent"
-              placeholder="000000"
-              maxLength={6}
-              required
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="mb-1 block text-neutral-300">Nueva contraseña</span>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-border bg-bg px-3 py-2 outline-none focus:border-accent"
-              minLength={8}
-              required
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="mb-1 block text-neutral-300">Confirmar contraseña</span>
-            <input
-              type="password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              className="w-full rounded-lg border border-border bg-bg px-3 py-2 outline-none focus:border-accent"
-              minLength={8}
-              required
-            />
-          </label>
-          {error && (
-            <p className="rounded-lg bg-alert/10 px-3 py-2 text-sm text-alert">{error}</p>
-          )}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50"
-          >
-            {submitting ? "Activando…" : "Activar cuenta"}
-          </button>
-        </form>
-        <p className="mt-4 text-xs text-neutral-500">
-          No compartas tu código. Quedará invalidado al activar la cuenta.
-        </p>
-      </Card>
-    </div>
+    <AuthShell
+      title="Activar cuenta"
+      subtitle={`Hola ${invitation.workerNombre}, crea tu contraseña personal para acceder con tu correo.`}
+    >
+      <p className="mb-4 font-mono text-xs text-neutral-500">{invitation.email}</p>
+      <form onSubmit={onSubmit} className="space-y-4">
+        <label className="block text-sm">
+          <span className="mb-1 block text-neutral-300">Código de invitación (un solo uso)</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            value={codigoAcceso}
+            onChange={(e) => setCodigoAcceso(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            className={`${authInputClass} font-mono text-lg tracking-widest`}
+            placeholder="000000"
+            maxLength={6}
+            required
+          />
+        </label>
+        <label className="block text-sm">
+          <span className="mb-1 block text-neutral-300">Nueva contraseña</span>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={authInputClass}
+            minLength={8}
+            required
+          />
+        </label>
+        <label className="block text-sm">
+          <span className="mb-1 block text-neutral-300">Confirmar contraseña</span>
+          <input
+            type="password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            className={authInputClass}
+            minLength={8}
+            required
+          />
+        </label>
+        {error && (
+          <p className="rounded-lg bg-alert/10 px-3 py-2 text-sm text-alert">{error}</p>
+        )}
+        <button type="submit" disabled={submitting} className={authButtonClass}>
+          {submitting ? "Activando…" : "Activar cuenta"}
+        </button>
+      </form>
+      <p className="mt-4 text-xs text-neutral-500">
+        No compartas tu código. Quedará invalidado al activar la cuenta.
+      </p>
+    </AuthShell>
   );
 }

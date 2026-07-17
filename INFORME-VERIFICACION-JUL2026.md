@@ -46,9 +46,11 @@ npm run toolkit:health     → ✅ Node, Chrome, sitio HTTP 200
 ## 3. Mejoras visuales aplicadas
 
 - **Login:** fondo con gradiente, logo SPE, botones «Usar» en cuentas demo
+- **AuthShell:** layout uniforme en Unirse, Activar cuenta y Completar perfil (mismo gradiente + card)
 - **Sidebar:** gradiente sutil surface → bg
 - **Accesibilidad:** focus-visible en inputs y botones
 - **Botón login:** sombra accent, mejor contraste
+- **Setup:** `npm run setup` crea `.env.local` con emuladores demo por defecto (3 apps)
 
 ---
 

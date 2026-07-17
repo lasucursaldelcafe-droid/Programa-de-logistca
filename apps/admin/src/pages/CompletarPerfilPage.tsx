@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { Card } from "../components/ui";
+import { AuthShell, authButtonClass, authInputClass } from "../components/AuthShell";
 import {
   completeUserProfile,
   getWorkerById,
@@ -51,52 +51,45 @@ export function CompletarPerfilPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg px-4">
-      <Card className="w-full max-w-lg">
-        <h1 className="font-display text-2xl font-bold">Completa tu perfil</h1>
-        <p className="mt-1 text-sm text-neutral-400">
-          Antes de continuar, confirma tus datos de contacto.
-        </p>
-
-        <form onSubmit={onSubmit} className="mt-6 space-y-4">
-          <label className="block text-sm">
-            <span className="mb-1 block text-neutral-300">Nombre completo</span>
-            <input
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              className="w-full rounded-lg border border-border bg-bg px-3 py-2 outline-none focus:border-accent"
-              required
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="mb-1 block text-neutral-300">Teléfono</span>
-            <input
-              value={telefono}
-              onChange={(e) => setTelefono(e.target.value)}
-              className="w-full rounded-lg border border-border bg-bg px-3 py-2 outline-none focus:border-accent"
-              required
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="mb-1 block text-neutral-300">Correo</span>
-            <input
-              value={user.email}
-              disabled
-              className="w-full rounded-lg border border-border bg-neutral-900 px-3 py-2 text-neutral-500"
-            />
-          </label>
-          {error && (
-            <p className="rounded-lg bg-alert/10 px-3 py-2 text-sm text-alert">{error}</p>
-          )}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50"
-          >
-            {submitting ? "Guardando…" : "Continuar al sistema"}
-          </button>
-        </form>
-      </Card>
-    </div>
+    <AuthShell
+      wide
+      title="Completa tu perfil"
+      subtitle="Antes de continuar, confirma tus datos de contacto."
+    >
+      <form onSubmit={onSubmit} className="space-y-4">
+        <label className="block text-sm">
+          <span className="mb-1 block text-neutral-300">Nombre completo</span>
+          <input
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+            className={authInputClass}
+            required
+          />
+        </label>
+        <label className="block text-sm">
+          <span className="mb-1 block text-neutral-300">Teléfono</span>
+          <input
+            value={telefono}
+            onChange={(e) => setTelefono(e.target.value)}
+            className={authInputClass}
+            required
+          />
+        </label>
+        <label className="block text-sm">
+          <span className="mb-1 block text-neutral-300">Correo</span>
+          <input
+            value={user.email}
+            disabled
+            className="w-full rounded-lg border border-border bg-neutral-900 px-3 py-2 text-neutral-500"
+          />
+        </label>
+        {error && (
+          <p className="rounded-lg bg-alert/10 px-3 py-2 text-sm text-alert">{error}</p>
+        )}
+        <button type="submit" disabled={submitting} className={authButtonClass}>
+          {submitting ? "Guardando…" : "Continuar al sistema"}
+        </button>
+      </form>
+    </AuthShell>
   );
 }
