@@ -47,9 +47,9 @@ function main(): void {
       .join("; ");
 
     if (PAGES_MODE) {
-      console.warn("⚠ GitHub Pages: Firebase sin configurar — se publica solo la UI estática.");
+      console.warn("⚠ GitHub Pages: Firebase sin configurar — el workflow usará VITE_DEMO_MODE=true.");
       console.warn(`  (${detail})`);
-      console.warn("  El inicio de sesión requiere GitHub Secrets; ver docs-source/PRODUCCION-FIREBASE.md");
+      console.warn("  Login demo en el navegador hasta configurar Secrets; ver docs-source/PRODUCCION-FIREBASE.md");
       return;
     }
 
