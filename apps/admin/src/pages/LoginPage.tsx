@@ -13,7 +13,7 @@ import {
   clearSheetsSession,
 } from "@spe/shared";
 import { isDemoMode } from "../lib/mode";
-import { isSheetsBackend, getDataBackend } from "../lib/backend";
+import { isSheetsBackend } from "../lib/backend";
 import { clearDemoSession } from "../demo/store";
 import { LoginAyudaPanel } from "../components/LoginAyudaPanel";
 import { BiometricLoginButton } from "../components/BiometricLogin";
@@ -24,8 +24,10 @@ export function LoginPage() {
   const { user, loading, login } = useAuth();
   const navigate = useNavigate();
   const deployLinks = useDeploymentLinks();
-  const [email, setEmail] = useState(isDemoMode() ? "admin@eventos.test" : "");
-  const [password, setPassword] = useState(isDemoMode() ? "Admin123!" : "");
+  const pagesBuildDemo = import.meta.env.VITE_DEMO_MODE === "true";
+  const demoUi = pagesBuildDemo || isDemoMode();
+  const [email, setEmail] = useState(demoUi ? "admin@eventos.test" : "");
+  const [password, setPassword] = useState(demoUi ? "Admin123!" : "");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -37,6 +39,7 @@ export function LoginPage() {
   }, []);
 
   const firebaseReady =
+    demoUi ||
     isDemoMode() ||
     isFirebaseConfigured() ||
     (isSheetsBackend() && isSheetsBackendConfigured());
@@ -87,11 +90,15 @@ export function LoginPage() {
         </p>
         </div>
       <Card className="w-full shadow-lg shadow-black/20">
-        {isDemoMode() && (
+        {demoUi && (
           <div className="mt-4 rounded-lg border border-accent/40 bg-accent/10 px-3 py-3 text-sm">
-            <p className="font-semibold text-accent">Modo demo — GitHub Pages</p>
+            <p className="font-semibold text-accent">
+              {isDemoMode() ? "Modo demo — GitHub Pages" : "Cuentas demo disponibles"}
+            </p>
             <p className="mt-1 text-neutral-300">
-              Los datos se guardan en este navegador. Para producción real:{" "}
+              {isDemoMode()
+                ? "Los datos se guardan en este navegador. Para producción real:"
+                : "Si el login falla, pulsa «Restablecer modo demo» abajo. Para backend real:"}{" "}
               <Link to="/configurar" className="text-accent underline">
                 configurar con un toque
               </Link>{" "}
@@ -155,16 +162,16 @@ export function LoginPage() {
           {error && (
             <div className="space-y-2">
               <p className="rounded-lg bg-alert/10 px-3 py-2 text-sm text-alert">{error}</p>
-              {!isDemoMode() && getDataBackend() !== "firebase" && (
-                <button
-                  type="button"
-                  onClick={restablecerDemo}
-                  className="w-full rounded-lg border border-accent/40 py-2 text-sm text-accent"
-                >
-                  Restablecer modo demo (admin@eventos.test / Admin123!)
-                </button>
-              )}
             </div>
+          )}
+          {pagesBuildDemo && !isDemoMode() && (
+            <button
+              type="button"
+              onClick={restablecerDemo}
+              className="w-full rounded-lg border border-accent/40 py-2 text-sm text-accent"
+            >
+              Restablecer modo demo (admin@eventos.test / Admin123!)
+            </button>
           )}
           {info && (
             <p className="rounded-lg bg-positive/10 px-3 py-2 text-sm text-positive">
@@ -176,8 +183,23 @@ export function LoginPage() {
             disabled={submitting || !firebaseReady}
             className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-black shadow-md shadow-accent/20 transition hover:brightness-110 disabled:opacity-50"
           >
-            {submitting ? "Entrando…" : firebaseReady ? "Iniciar sesión" : "Login deshabilitado — configurar Firebase"}
+            {submitting
+              ? "Entrando…"
+              : firebaseReady
+                ? "Iniciar sesión"
+                : pagesBuildDemo
+                  ? "Restablece modo demo arriba para continuar"
+                  : "Login deshabilitado — configurar Firebase"}
           </button>
+          {pagesBuildDemo && isDemoMode() && (
+            <button
+              type="button"
+              onClick={restablecerDemo}
+              className="w-full rounded-lg border border-neutral-600 py-2 text-xs text-neutral-400"
+            >
+              Limpiar configuración guardada y recargar demo
+            </button>
+          )}
           <BiometricLoginButton
             onLogin={async (e, p) => {
               setEmail(e);
