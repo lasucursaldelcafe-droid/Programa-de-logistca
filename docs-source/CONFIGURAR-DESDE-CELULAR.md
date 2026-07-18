@@ -1,5 +1,7 @@
 # Configurar SPE desde el celular (sin PC)
 
+Todo el esquema de configuración está en la carpeta **`config/`** del repo (ver `README.md` → `npm run config:sync`).
+
 Tres caminos **sin escribir credenciales a mano**:
 
 ---

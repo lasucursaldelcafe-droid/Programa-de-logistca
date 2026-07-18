@@ -21,7 +21,27 @@ npm start                  # desarrollo local :5173
 
 Para desarrollo con emuladores (opcional): `npm run dev:full`
 
-## Producción
+## Configuración en el repositorio (`config/`)
+
+Toda la configuración vive en el repo bajo **`config/`**:
+
+| Archivo | En Git | Uso |
+|---------|--------|-----|
+| `config/proyecto.json` | Sí | Metadatos, correo del proyecto |
+| `config/cuentas-app.json` | Sí | Cuentas demo (`admin@eventos.test` / `Admin123!`) |
+| `config/bootstrap.json` | Sí | Backend activo (demo / Sheets / Firebase) — CI y GitHub Pages leen esto |
+| `config/bootstrap.example.json` | Sí | Plantilla |
+| `config/credenciales.local.ejemplo.json` | Sí | Plantilla de secretos |
+| `config/credenciales.local.json` | **No** (gitignore) | Contraseñas y tokens — solo en tu PC |
+
+```bash
+npm run config:sync   # bootstrap.json + .env.local de las 3 apps + spe-runtime-config.json
+```
+
+**Desde el celular (sin PC):** edita `config/bootstrap.json` en GitHub (pega URL y token de Sheets) → push a `main` → el deploy actualiza la app.
+
+**Contraseña Google:** cópiala en `config/credenciales.local.json` en tu máquina (nunca la subas a Git). Correo del proyecto: `lasucursaldelcafe@gmail.com`.
+
 
 La app usa **Firebase Auth + Firestore**. Configura credenciales en GitHub Secrets para CI y en `apps/admin/.env.local` para desarrollo.
 

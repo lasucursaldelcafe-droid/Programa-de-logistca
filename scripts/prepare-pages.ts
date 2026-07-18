@@ -53,6 +53,7 @@ updateReadme(links);
 updateRootIndex(links);
 
 console.log("→ Build app unificada (Admin + Master + Trabajador)…");
+run("node scripts/sync-repo-config.mjs", {});
 run("npm run build -w @spe/shared && npm run build -w @spe/admin", {
   GITHUB_PAGES_BASE: appBase(),
   VITE_DEMO_MODE: process.env.VITE_DEMO_MODE ?? "false",
