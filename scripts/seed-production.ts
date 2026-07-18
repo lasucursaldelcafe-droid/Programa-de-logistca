@@ -1,9 +1,10 @@
 /**
  * Crea cuentas de plataforma en Firebase PRODUCCIÓN (Auth + Firestore).
- * Requiere cuenta de servicio con permisos Admin SDK.
+ * Requiere cuenta de servicio con permisos Admin SDK (solo servidor — no va en la app web).
  *
  * Uso:
  *   npm run seed:production -- --service-account ./service-account.json
+ *   FIREBASE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}' npm run seed:production
  *   npm run seed:production -- --service-account ./sa.json --email admin@empresa.com --password "MiPass123!"
  */
 import { existsSync, readFileSync } from "node:fs";
@@ -68,14 +69,6 @@ function parseArgs(): {
     if (existsSync(fallback)) serviceAccountPath = fallback;
   }
 
-  if (!serviceAccountPath || !existsSync(serviceAccountPath)) {
-    console.error("✗ Falta archivo de cuenta de servicio.");
-    console.error("  Firebase Console → Configuración → Cuentas de servicio → Generar clave privada");
-    console.error("  Guarda como service-account.json en la raíz del proyecto.");
-    console.error("  npm run seed:production -- --service-account ./service-account.json");
-    process.exit(1);
-  }
-
   const users = [...DEFAULT_USERS];
   if (customEmail && customPassword) {
     users.push({
@@ -86,7 +79,44 @@ function parseArgs(): {
     });
   }
 
-  return { serviceAccountPath: resolve(serviceAccountPath), users };
+  return {
+    serviceAccountPath: serviceAccountPath ? resolve(serviceAccountPath) : "",
+    users,
+  };
+}
+
+function loadServiceAccount(serviceAccountPath: string): {
+  credentials: ServiceAccount;
+  source: string;
+} {
+  const jsonEnv = process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
+  if (jsonEnv) {
+    try {
+      return {
+        credentials: JSON.parse(jsonEnv) as ServiceAccount,
+        source: "variable FIREBASE_SERVICE_ACCOUNT_JSON",
+      };
+    } catch {
+      console.error("✗ FIREBASE_SERVICE_ACCOUNT_JSON no es JSON válido.");
+      process.exit(1);
+    }
+  }
+
+  if (!serviceAccountPath || !existsSync(serviceAccountPath)) {
+    console.error("✗ Falta cuenta de servicio (Admin SDK — solo servidor).");
+    console.error("  Opción A — archivo:");
+    console.error("    Firebase Console → Cuentas de servicio → Generar clave privada");
+    console.error("    npm run seed:production -- --service-account ./service-account.json");
+    console.error("  Opción B — variable de entorno (CI / sin guardar archivo):");
+    console.error("    FIREBASE_SERVICE_ACCOUNT_JSON='{...}' npm run seed:production");
+    console.error("  GitHub Actions: secreto FIREBASE_SERVICE_ACCOUNT_JSON + workflow seed-production");
+    process.exit(1);
+  }
+
+  return {
+    credentials: JSON.parse(readFileSync(serviceAccountPath, "utf-8")) as ServiceAccount,
+    source: serviceAccountPath,
+  };
 }
 
 async function upsertAuthUser(
@@ -110,7 +140,7 @@ async function upsertAuthUser(
 
 async function main(): Promise<void> {
   const { serviceAccountPath, users } = parseArgs();
-  const raw = JSON.parse(readFileSync(serviceAccountPath, "utf-8")) as ServiceAccount;
+  const { credentials: raw, source } = loadServiceAccount(serviceAccountPath);
 
   if (!getApps().length) {
     initializeApp({ credential: cert(raw) });
@@ -121,7 +151,7 @@ async function main(): Promise<void> {
 
   console.log("> Seed producción — Firebase Auth + Firestore");
   console.log(`  Proyecto: ${(raw as { project_id?: string }).project_id ?? "?"}`);
-  console.log(`  Cuenta de servicio: ${serviceAccountPath}\n`);
+  console.log(`  Cuenta de servicio: ${source}\n`);
 
   for (const u of users) {
     const uid = await upsertAuthUser(auth, u);

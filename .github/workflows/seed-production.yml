@@ -19,11 +19,11 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Escribir cuenta de servicio
+      - name: Recrear usuarios de inicio de sesión
         env:
-          SA_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
         run: |
-          if [ -z "$SA_JSON" ]; then
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
             echo "✗ Falta el secreto FIREBASE_SERVICE_ACCOUNT_JSON"
             echo "  Firebase → Configuración → Cuentas de servicio → Generar clave privada"
             echo "  GitHub → Configuración → Secretos → Nuevo secreto:"
@@ -31,11 +31,4 @@ jobs:
             echo "    Valor: pega TODO el contenido del archivo .json"
             exit 1
           fi
-          printf '%s' "$SA_JSON" > service-account.json
-
-      - name: Recrear usuarios de inicio de sesión
-        run: npm run seed:production -- --service-account ./service-account.json
-
-      - name: Limpiar clave temporal
-        if: always()
-        run: rm -f service-account.json
+          npm run seed:production
