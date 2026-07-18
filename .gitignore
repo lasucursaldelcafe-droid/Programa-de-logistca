@@ -72,5 +72,6 @@ firebase-web-config.json
 sheets-web-app-url.txt
 CREDENCIALES-SHEETS-AUTO.txt
 apps-script/spe-backend/.clasp.json
+config/credenciales.local.json
 __pycache__/
 *.pyc

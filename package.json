@@ -40,6 +40,7 @@
     "apply:all": "node scripts/apply-all.mjs",
     "apply:all:setup": "node scripts/apply-all.mjs -- --setup",
     "sync:bootstrap": "node scripts/sync-bootstrap-from-cred.mjs",
+    "config:sync": "node scripts/sync-repo-config.mjs",
     "setup:fcm": "tsx scripts/update-fcm-sw.ts",
     "firebase:deploy-rules": "firebase deploy --only firestore:rules",
     "test:smoke": "firebase emulators:exec --only auth,firestore --project demo-personal-eventos \"npm run seed && tsx scripts/ci-smoke.ts\"",

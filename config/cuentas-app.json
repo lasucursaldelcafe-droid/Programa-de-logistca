@@ -1,0 +1,30 @@
+{
+  "modoDemo": {
+    "descripcion": "Cuentas para GitHub Pages y desarrollo local (emuladores).",
+    "cuentas": [
+      {
+        "email": "admin@eventos.test",
+        "password": "Admin123!",
+        "nombre": "Administrador",
+        "role": "administrador",
+        "panel": "/panel"
+      },
+      {
+        "email": "master@eventos.test",
+        "password": "Master123!",
+        "nombre": "Master Plataforma",
+        "role": "super_admin",
+        "panel": "/master"
+      }
+    ],
+    "instrucciones": [
+      "Abre /login en la app web.",
+      "Si falla el login, pulsa «Restablecer modo demo».",
+      "Usa el botón «Usar» junto a la cuenta en la pantalla de login."
+    ]
+  },
+  "produccionFirebase": {
+    "descripcion": "Tras npm run seed:production — mismas credenciales en Firebase Auth real.",
+    "nota": "El correo lasucursaldelcafe@gmail.com es la cuenta Google del proyecto, no el login de la app salvo que lo crees en Firebase."
+  }
+}

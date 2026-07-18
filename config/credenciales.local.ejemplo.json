@@ -1,0 +1,20 @@
+{
+  "_comentario": "Copia este archivo a config/credenciales.local.json y completa los valores. credenciales.local.json NO se sube a Git (está en .gitignore). Para configurar desde el celular sin PC, edita config/bootstrap.json en GitHub.",
+  "google": {
+    "email": "lasucursaldelcafe@gmail.com",
+    "password": "TU_CONTRASEÑA_GOOGLE_AQUI"
+  },
+  "sheets": {
+    "webAppUrl": "",
+    "apiToken": ""
+  },
+  "firebase": {
+    "apiKey": "",
+    "authDomain": "",
+    "projectId": "",
+    "storageBucket": "",
+    "messagingSenderId": "",
+    "appId": ""
+  },
+  "firebaseServiceAccountPath": "service-account.json"
+}

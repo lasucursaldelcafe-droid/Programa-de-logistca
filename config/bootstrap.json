@@ -1,5 +1,9 @@
 {
-  "backend": "",
+  "proyecto": {
+    "nombre": "Sistema de Personal para Eventos (SPE)",
+    "correoProyecto": "lasucursaldelcafe@gmail.com"
+  },
+  "backend": "demo",
   "demoMode": true,
   "sheetsWebAppUrl": "",
   "sheetsApiToken": "",
