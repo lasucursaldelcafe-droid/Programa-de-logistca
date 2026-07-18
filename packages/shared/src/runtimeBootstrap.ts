@@ -1,4 +1,4 @@
-import { configureFirebase, type FirebaseClientConfig } from "./firebase";
+import { configureFirebase, isFirebaseConfigured, type FirebaseClientConfig } from "./firebase";
 import {
   clearSheetsClient,
   configureSheetsClient,
@@ -34,12 +34,20 @@ function normalizeBackend(value: string | undefined): EffectiveBackend | null {
 }
 
 function applyConfig(config: RuntimeBootstrapConfig): void {
-  if (config.backend) runtime.backend = config.backend;
+  if (config.backend === "demo" || config.demoMode === true) {
+    runtime.backend = "demo";
+    runtime.demoMode = true;
+    return;
+  }
+
   if (typeof config.demoMode === "boolean") runtime.demoMode = config.demoMode;
 
-  if (config.firebase && Object.keys(config.firebase).length > 0) {
+  const hasFirebase =
+    !!config.firebase && Object.keys(config.firebase).filter((k) => config.firebase?.[k as keyof FirebaseClientConfig]).length > 0;
+
+  if (hasFirebase) {
     configureFirebase({ ...config.firebase, useEmulators: false });
-    if (!runtime.backend) runtime.backend = "firebase";
+    runtime.backend = "firebase";
     runtime.demoMode = false;
   }
 
@@ -49,6 +57,12 @@ function applyConfig(config: RuntimeBootstrapConfig): void {
     configureSheetsClient(sheetsUrl, sheetsToken);
     runtime.backend = "sheets";
     runtime.demoMode = false;
+  } else if (config.backend === "firebase" && !hasFirebase) {
+    /* Config guardada incompleta — no forzar Firebase sin credenciales */
+  } else if (config.backend && hasFirebase) {
+    runtime.backend = config.backend;
+  } else if (config.backend === "sheets" && sheetsUrl && sheetsToken) {
+    runtime.backend = "sheets";
   }
 }
 
@@ -101,11 +115,36 @@ export function clearRuntimeConfig(): void {
   clearSheetsClient();
 }
 
-/** Vuelve al modo demo (GitHub Pages sin backend real). */
-export function resetToDemoMode(): void {
-  clearRuntimeConfig();
+function persistDemoMode(): void {
   runtime.backend = "demo";
   runtime.demoMode = true;
+  if (typeof window !== "undefined") {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ backend: "demo", demoMode: true }));
+  }
+  clearSheetsClient();
+}
+
+/** Vuelve al modo demo (GitHub Pages sin backend real). */
+export function resetToDemoMode(): void {
+  persistDemoMode();
+}
+
+function reconcileBuildDemoFallback(buildEnv: { demoMode?: boolean }): void {
+  if (buildEnv.demoMode !== true) return;
+
+  if (runtime.backend === "firebase" && !isFirebaseConfigured()) {
+    persistDemoMode();
+    return;
+  }
+
+  if (runtime.backend === "sheets" && !isSheetsBackendConfigured()) {
+    persistDemoMode();
+    return;
+  }
+
+  if (runtime.backend === null) {
+    persistDemoMode();
+  }
 }
 
 export function getRuntimeBackendLabel(
@@ -198,35 +237,35 @@ export async function bootstrapRuntimeConfig(
     /* sin archivo remoto */
   }
 
-  if (runtime.backend === null && buildEnv.demoMode === true) {
-    runtime.backend = "demo";
-    runtime.demoMode = true;
-  }
-
   if (runtime.backend === "sheets" && isSheetsBackendConfigured()) {
     try {
       const health = await sheetsHealth();
       if (!health.ok) {
-        clearRuntimeConfig();
         if (buildEnv.demoMode === true) {
-          runtime.backend = "demo";
-          runtime.demoMode = true;
+          persistDemoMode();
+        } else {
+          clearRuntimeConfig();
         }
       }
     } catch {
-      clearRuntimeConfig();
       if (buildEnv.demoMode === true) {
-        runtime.backend = "demo";
-        runtime.demoMode = true;
+        persistDemoMode();
+      } else {
+        clearRuntimeConfig();
       }
     }
   }
+
+  reconcileBuildDemoFallback(buildEnv);
 }
 
 export function getEffectiveBackend(
   buildEnv: { demoMode?: boolean; dataBackend?: string } = {},
 ): EffectiveBackend {
   if (runtime.backend === "sheets" && !isSheetsBackendConfigured()) {
+    return buildEnv.demoMode === true ? "demo" : "firebase";
+  }
+  if (runtime.backend === "firebase" && !isFirebaseConfigured()) {
     return buildEnv.demoMode === true ? "demo" : "firebase";
   }
   if (runtime.backend) return runtime.backend;
@@ -239,8 +278,9 @@ export function getEffectiveBackend(
 export function isEffectiveDemoMode(
   buildEnv: { demoMode?: boolean; dataBackend?: string } = {},
 ): boolean {
+  if (getEffectiveBackend(buildEnv) === "demo") return true;
   if (runtime.demoMode !== null) return runtime.demoMode;
-  return getEffectiveBackend(buildEnv) === "demo";
+  return false;
 }
 
 export function isEffectiveSheetsBackend(
