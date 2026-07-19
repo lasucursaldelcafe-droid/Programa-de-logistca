@@ -11,11 +11,12 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { isConfigSet } from "./lib/config-placeholders.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const BOOTSTRAP = resolve(ROOT, "config/bootstrap.json");
 
-const PLACEHOLDER_SHEETS = /TU_ID|tu-token|PEGAR_|TU_CONTRASEÑA/i;
+const PLACEHOLDER_SHEETS = /TU_ID|PEGAR_|TU_CONTRASEÑA|^tu-token$|^tu-token-de-/i;
 
 function readJson(path) {
   if (!existsSync(path)) return null;
@@ -27,7 +28,7 @@ function readJson(path) {
 }
 
 function isRealString(value) {
-  return typeof value === "string" && value.trim().length > 0 && !PLACEHOLDER_SHEETS.test(value);
+  return isConfigSet(value);
 }
 
 async function sheetsHealth(url, token) {

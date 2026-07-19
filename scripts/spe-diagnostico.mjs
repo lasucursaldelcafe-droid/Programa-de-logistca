@@ -11,6 +11,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { isConfigSet } from "./lib/config-placeholders.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const CONFIG = resolve(ROOT, "config");
@@ -23,7 +24,7 @@ const PLACEHOLDER_FIREBASE = new Set([
   "1:000000000000:web:demo",
 ]);
 
-const PLACEHOLDER_SHEETS = /TU_ID|tu-token|PEGAR_|TU_CONTRASEÑA/i;
+const PLACEHOLDER_SHEETS = /TU_ID|PEGAR_|TU_CONTRASEÑA|^tu-token$|^tu-token-de-/i;
 
 /** @typedef {"ok"|"warn"|"fail"} CheckStatus */
 /** @typedef {{ id: string, status: CheckStatus, message: string, fix?: string }} Check */
@@ -38,7 +39,7 @@ function readJson(path) {
 }
 
 function isRealString(value) {
-  return typeof value === "string" && value.trim().length > 0 && !PLACEHOLDER_SHEETS.test(value);
+  return isConfigSet(value);
 }
 
 function isRealFirebaseKey(value) {
