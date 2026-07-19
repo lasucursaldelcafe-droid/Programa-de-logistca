@@ -79,13 +79,16 @@ async function main() {
 
     spawnSync("node", ["scripts/sync-repo-config.mjs"], { cwd: ROOT, stdio: "inherit" });
 
-    // sync-repo-config puede reconstruir desde credenciales; re-aplicar token probado
+    // sync-repo-config puede reconstruir desde credenciales; re-aplicar config Sheets probada
     const afterSync = JSON.parse(readFileSync(BOOTSTRAP, "utf-8"));
-    if (afterSync.sheetsApiToken !== token) {
+    if (afterSync.sheetsApiToken !== token || afterSync.backend !== "sheets") {
+      afterSync.backend = "sheets";
+      afterSync.demoMode = false;
+      afterSync.sheetsWebAppUrl = webAppUrl;
       afterSync.sheetsApiToken = token;
       writeFileSync(BOOTSTRAP, `${JSON.stringify(afterSync, null, 2)}\n`);
       writeRuntime(afterSync, token);
-      console.log("✓ Token re-aplicado tras config:sync");
+      console.log("✓ Config Sheets re-aplicada tras config:sync");
     }
 
     console.log("\n✓ bootstrap.json y spe-runtime-config.json actualizados");
