@@ -22,6 +22,8 @@ import {
   saveSheetsSession,
   clearSheetsSession,
   loadSheetsSession,
+  esCuentaPlataforma,
+  resetToDemoMode,
   type AppUser,
   type UserRole,
 } from "@spe/shared";
@@ -116,6 +118,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<AppUser> => {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (esCuentaPlataforma(normalizedEmail) && !isSheetsBackend()) {
+      if (!isDemoMode()) {
+        resetToDemoMode();
+      }
+      try {
+        const appUser = demoLogin(email, password);
+        setUser(appUser);
+        return appUser;
+      } catch (err) {
+        throw err instanceof Error ? err : new Error("Credenciales inválidas");
+      }
+    }
+
     if (isDemoMode()) {
       try {
         const appUser = demoLogin(email, password);

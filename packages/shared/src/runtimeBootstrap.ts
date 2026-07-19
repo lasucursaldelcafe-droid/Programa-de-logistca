@@ -227,7 +227,9 @@ export async function bootstrapRuntimeConfig(
     });
     if (res.ok) {
       const remote = (await res.json()) as RuntimeBootstrapConfig;
-      if (remote.backend !== "demo" && remote.sheetsWebAppUrl && remote.sheetsApiToken) {
+      if (remote.backend === "demo" || remote.demoMode === true) {
+        persistDemoMode();
+      } else if (remote.sheetsWebAppUrl && remote.sheetsApiToken) {
         applyConfig(remote);
       } else if (remote.backend === "firebase" && remote.firebase) {
         applyConfig(remote);
@@ -272,6 +274,7 @@ export function getEffectiveBackend(
   if (buildEnv.demoMode === true || buildEnv.dataBackend === "demo") return "demo";
   if (buildEnv.dataBackend === "sheets" && isSheetsBackendConfigured()) return "sheets";
   if (buildEnv.dataBackend === "sheets") return "firebase";
+  if (!isFirebaseConfigured()) return "demo";
   return "firebase";
 }
 

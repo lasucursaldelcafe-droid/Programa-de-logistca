@@ -162,9 +162,14 @@ export function LoginPage() {
           {error && (
             <div className="space-y-2">
               <p className="rounded-lg bg-alert/10 px-3 py-2 text-sm text-alert">{error}</p>
+              {!isDemoMode() && (
+                <p className="text-xs text-neutral-400">
+                  Si usas <span className="font-mono">admin@eventos.test</span>, pulsa «Restablecer modo demo» abajo.
+                </p>
+              )}
             </div>
           )}
-          {pagesBuildDemo && !isDemoMode() && (
+          {!isDemoMode() && (
             <button
               type="button"
               onClick={restablecerDemo}

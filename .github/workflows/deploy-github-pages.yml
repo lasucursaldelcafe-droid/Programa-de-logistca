@@ -104,6 +104,18 @@ jobs:
           SHEETS_URL="${INPUT_SHEETS_URL:-$VITE_SHEETS_WEB_APP_URL}"
           SHEETS_TOKEN="${INPUT_SHEETS_TOKEN:-$VITE_SHEETS_API_TOKEN}"
 
+          if [ -f config/bootstrap.json ]; then
+            BOOT_DEMO=$(node -p "JSON.parse(require('fs').readFileSync('config/bootstrap.json','utf8')).demoMode===true")
+            BOOT_BACKEND=$(node -p "JSON.parse(require('fs').readFileSync('config/bootstrap.json','utf8')).backend||''")
+            if [ "$BOOT_DEMO" = "true" ] || [ "$BOOT_BACKEND" = "demo" ]; then
+              echo "demo_mode=true" >> "$GITHUB_OUTPUT"
+              echo "data_backend=demo" >> "$GITHUB_OUTPUT"
+              echo "use_sheets=false" >> "$GITHUB_OUTPUT"
+              echo "✓ Modo demo desde config/bootstrap.json (ignora Secrets de Firebase/Sheets)"
+              exit 0
+            fi
+          fi
+
           if [ "$INPUT_BACKEND" = "demo" ]; then
             echo "demo_mode=true" >> "$GITHUB_OUTPUT"
             echo "data_backend=demo" >> "$GITHUB_OUTPUT"
