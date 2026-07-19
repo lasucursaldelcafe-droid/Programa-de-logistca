@@ -24,6 +24,19 @@ on:
         description: "Token API Sheets (SPE_API_TOKEN)"
         required: false
         type: string
+  workflow_call:
+    inputs:
+      backend:
+        description: "Backend: auto | sheets | demo"
+        required: false
+        type: string
+        default: auto
+      sheets_web_app_url:
+        required: false
+        type: string
+      sheets_api_token:
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -36,12 +49,13 @@ jobs:
   deploy:
     if: >-
       github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'workflow_call' ||
       !contains(github.event.head_commit.message, '[skip ci]')
     runs-on: ubuntu-latest
     env:
-      INPUT_BACKEND: ${{ github.event.inputs.backend || 'auto' }}
-      INPUT_SHEETS_URL: ${{ github.event.inputs.sheets_web_app_url }}
-      INPUT_SHEETS_TOKEN: ${{ github.event.inputs.sheets_api_token }}
+      INPUT_BACKEND: ${{ inputs.backend || github.event.inputs.backend || 'auto' }}
+      INPUT_SHEETS_URL: ${{ inputs.sheets_web_app_url || github.event.inputs.sheets_web_app_url }}
+      INPUT_SHEETS_TOKEN: ${{ inputs.sheets_api_token || github.event.inputs.sheets_api_token }}
     steps:
       - uses: actions/checkout@v4
         with:

@@ -1,6 +1,8 @@
 name: SPE — Diagnóstico y CD automático
 
 # Analiza qué falla (config, Sheets, Firebase, Pages, login) y opcionalmente corrige + despliega.
+# En push a main con [skip ci] (commits del bot de deploy), dispara Pages vía workflow_call
+# porque deploy-github-pages omite esos commits a propósito.
 on:
   workflow_dispatch:
     inputs:
@@ -24,15 +26,13 @@ on:
           - demo
           - sheets
   push:
-    paths:
-      - "config/**"
-      - "scripts/spe-diagnostico.mjs"
-      - "scripts/spe-cd-auto.mjs"
+    branches: [main]
   schedule:
     - cron: "0 8 * * 1"
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: spe-cd-diagnostico
@@ -45,6 +45,7 @@ jobs:
       overall: ${{ steps.diag.outputs.overall }}
       effective_backend: ${{ steps.diag.outputs.effective_backend }}
       login_url: ${{ steps.diag.outputs.login_url }}
+      skip_ci_push: ${{ steps.context.outputs.skip_ci_push }}
     env:
       VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
       VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
@@ -57,6 +58,17 @@ jobs:
       FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Contexto del push
+        id: context
+        run: |
+          MSG="${{ github.event.head_commit.message }}"
+          if [ "${{ github.event_name }}" = "push" ] && echo "$MSG" | grep -qi '\[skip ci\]'; then
+            echo "skip_ci_push=true" >> "$GITHUB_OUTPUT"
+            echo "○ Push con [skip ci] — se disparará deploy vía workflow_call"
+          else
+            echo "skip_ci_push=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: actions/setup-node@v4
         with:
@@ -97,7 +109,8 @@ jobs:
       - name: Auto-fix
         if: >-
           (github.event_name == 'workflow_dispatch' && github.event.inputs.auto_fix != 'false') ||
-          (github.event_name == 'push')
+          github.event_name == 'push' ||
+          github.event_name == 'schedule'
         run: node scripts/spe-cd-auto.mjs --fix --ci
 
       - name: Subir reporte de diagnóstico
@@ -108,7 +121,7 @@ jobs:
           retention-days: 30
 
       - name: Commit auto-fix (bootstrap)
-        if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event_name == 'schedule'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -120,20 +133,15 @@ jobs:
     needs: diagnostico
     if: >-
       needs.diagnostico.result == 'success' &&
-      github.event_name == 'workflow_dispatch' &&
-      github.event.inputs.deploy != 'false'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Disparar publicación GitHub Pages
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          BACKEND="${{ github.event.inputs.backend || 'auto' }}"
-          gh workflow run "Publicar app (GitHub Pages)" \
-            --repo "${{ github.repository }}" \
-            --ref main \
-            -f "backend=${BACKEND}"
-          echo "✓ Workflow «Publicar app (GitHub Pages)» en cola (backend=${BACKEND})"
+      (
+        (github.event_name == 'workflow_dispatch' && github.event.inputs.deploy != 'false') ||
+        (github.event_name == 'push' && needs.diagnostico.outputs.skip_ci_push == 'true') ||
+        github.event_name == 'schedule'
+      )
+    uses: ./.github/workflows/deploy-github-pages.yml
+    with:
+      backend: ${{ github.event.inputs.backend || 'auto' }}
+    secrets: inherit
 
   resumen:
     needs: [diagnostico, deploy]
@@ -149,6 +157,7 @@ jobs:
           echo "| Estado | \`${{ needs.diagnostico.outputs.overall }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Backend | \`${{ needs.diagnostico.outputs.effective_backend }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Login | ${{ needs.diagnostico.outputs.login_url }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Deploy | ${{ needs.deploy.result || 'skipped' }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "**Login demo:** \`admin@eventos.test\` / \`Admin123!\`" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"

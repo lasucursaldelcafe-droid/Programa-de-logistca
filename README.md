@@ -57,10 +57,20 @@ npm run cd:auto            # fix + build Pages local
 | Input | Efecto |
 |-------|--------|
 | auto_fix | Resetea bootstrap a demo si Sheets falla; ejecuta config:sync |
-| deploy | Dispara «Publicar app (GitHub Pages)» tras el diagnóstico |
+| deploy | Publica en GitHub Pages tras el diagnóstico |
 | backend | `auto` \| `demo` \| `sheets` |
 
-También se ejecuta al editar `config/**` o **lunes 08:00 UTC** (solo diagnóstico).
+Se ejecuta en **cada push a `main`**, los **lunes 08:00 UTC**, y al editar `config/**`.
+
+### Por qué a veces «no corre» el push automático
+
+| Situación | Qué pasa |
+|-----------|----------|
+| Commit con **`[skip ci]`** en el mensaje | CI y «Publicar app» **no se re-disparan** (evita bucles). El bot de deploy usa esto. El workflow de diagnóstico **sí corre** y publica vía `workflow_call`. |
+| Merge de PR con workflows nuevos | GitHub a veces **no ejecuta** workflows en el primer merge; el siguiente push a `main` o un Run workflow manual lo corrige. |
+| Solo cambiaste `config/` antes | El diagnóstico solo escuchaba `config/**`; ahora escucha **todo push a main**. |
+
+Para forzar publicación: **Actions → Publicar app (GitHub Pages) → Run workflow**.
 
 
 La app usa **Firebase Auth + Firestore**. Configura credenciales en GitHub Secrets para CI y en `apps/admin/.env.local` para desarrollo.
