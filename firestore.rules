@@ -164,5 +164,26 @@ service cloud.firestore {
       allow update: if isPlatformAdmin() || isMaster();
       allow delete: if isMaster();
     }
+
+    match /conversations/{conversationId} {
+      allow read: if signedIn();
+      allow create: if signedIn();
+      allow update: if signedIn();
+      allow delete: if isPlatformAdmin() || isMaster();
+    }
+
+    match /messages/{messageId} {
+      allow read: if signedIn();
+      allow create: if signedIn();
+      allow update: if signedIn();
+      allow delete: if isMaster();
+    }
+
+    match /videoRooms/{roomId} {
+      allow read: if signedIn();
+      allow create: if signedIn();
+      allow update: if signedIn();
+      allow delete: if isMaster();
+    }
   }
 }

@@ -15,6 +15,9 @@ const SHEET_NAMES = {
   setupConfig: "setupConfig",
   reports: "reports",
   payrollRates: "payrollRates",
+  conversations: "conversations",
+  messages: "messages",
+  videoRooms: "videoRooms",
 };
 
 function getApiToken() {
@@ -174,6 +177,9 @@ function initSheetHeaders(name, sheet) {
     setupConfig: ["id", "completado", "pasoActual", "pasosCompletados", "eventoId", "actualizadoEn", "actualizadoPor", "actualizadoPorNombre"],
     reports: ["id", "workerId", "workerNombre", "shiftId", "siteId", "siteNombre", "eventId", "tipo", "mensaje", "estado", "creadoEn", "resueltoEn", "resueltoPor", "resueltoPorNombre"],
     payrollRates: ["id", "perfil", "tarifaPorHora", "costoRefrigerioAlmuerzo", "costoRefrigerioCena", "costoRefrigerioSnack"],
+    conversations: ["id", "eventId", "eventNombre", "siteId", "siteNombre", "tipo", "titulo", "participantIds", "lastMessageAt", "lastMessagePreview", "creadoEn", "creadoPor"],
+    messages: ["id", "conversationId", "senderUid", "senderNombre", "texto", "creadoEn", "leidoPor"],
+    videoRooms: ["id", "conversationId", "eventId", "eventNombre", "roomName", "creadoPor", "creadoPorNombre", "creadoEn", "activo"],
   };
   const headers = schemas[name] || ["id"];
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);

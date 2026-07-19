@@ -8,6 +8,7 @@ import { NotificacionesPage } from "../pages/NotificacionesPage";
 import { WorkerLayout } from "@worker/components/WorkerLayout";
 import { WorkerHomePage } from "@worker/pages/WorkerHomePage";
 import { ReportarPage } from "@worker/pages/ReportarPage";
+import { ComunicacionPage } from "@core/pages/ComunicacionPage";
 
 function WorkerProtected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -39,6 +40,7 @@ export function WorkerRoutes() {
         <Route path="turnos" element={<TurnosPage />} />
         <Route path="entrada" element={<MarcarEntradaPage />} />
         <Route path="reportar" element={<ReportarPage />} />
+        <Route path="comunicacion" element={<ComunicacionPage />} />
         <Route path="notificaciones" element={<NotificacionesPage />} />
         <Route path="ayuda" element={<AyudaPage platform="worker" />} />
       </Route>

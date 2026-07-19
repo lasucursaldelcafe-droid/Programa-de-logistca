@@ -4,6 +4,8 @@ import type {
   Attendance,
   AttendanceEstado,
   BreakSchedule,
+  ChatConversation,
+  ChatMessage,
   CredencialesIntegracion,
   Evento,
   GeoRegistro,
@@ -17,6 +19,7 @@ import type {
   Sitio,
   TipoIntegracion,
   Turno,
+  VideoRoom,
   Worker,
 } from "@spe/shared";
 import type { GeoPosition } from "../lib/geolocation";
@@ -111,6 +114,9 @@ class DemoStore {
   payrollAudit = [...INITIAL_PAYROLL_AUDIT];
   setupConfig: SetupConfig | null = { ...INITIAL_SETUP_CONFIG };
   reportes = [...INITIAL_REPORTES];
+  conversations: ChatConversation[] = [];
+  messages: ChatMessage[] = [];
+  videoRooms: VideoRoom[] = [];
   clientes = [...INITIAL_CLIENTES];
   productos = [...INITIAL_PRODUCTOS];
   facturas = [...INITIAL_FACTURAS];
@@ -143,6 +149,9 @@ class DemoStore {
       payrollAudit: this.payrollAudit,
       setupConfig: this.setupConfig,
       reportes: this.reportes,
+      conversations: this.conversations,
+      messages: this.messages,
+      videoRooms: this.videoRooms,
       clientes: this.clientes,
       productos: this.productos,
       facturas: this.facturas,
@@ -172,6 +181,9 @@ class DemoStore {
     if (saved.payrollAudit) this.payrollAudit = saved.payrollAudit;
     if (saved.setupConfig !== undefined) this.setupConfig = saved.setupConfig;
     if (saved.reportes) this.reportes = saved.reportes;
+    if (saved.conversations) this.conversations = saved.conversations;
+    if (saved.messages) this.messages = saved.messages;
+    if (saved.videoRooms) this.videoRooms = saved.videoRooms;
     if (saved.clientes) this.clientes = saved.clientes;
     if (saved.productos) this.productos = saved.productos;
     if (saved.facturas) this.facturas = saved.facturas;
@@ -542,6 +554,40 @@ class DemoStore {
 
   updateEvent(eventId: string, patch: Partial<Evento>): void {
     this.events = this.events.map((e) => (e.id === eventId ? { ...e, ...patch } : e));
+    this.notify();
+  }
+
+  addConversation(conv: ChatConversation): void {
+    const exists = this.conversations.some((c) => c.id === conv.id);
+    this.conversations = exists
+      ? this.conversations.map((c) => (c.id === conv.id ? conv : c))
+      : [conv, ...this.conversations];
+    this.notify();
+  }
+
+  addMessage(msg: Omit<ChatMessage, "id">): void {
+    const id = `msg-${Date.now()}`;
+    this.messages = [...this.messages, { ...msg, id }];
+    this.conversations = this.conversations.map((c) =>
+      c.id === msg.conversationId
+        ? {
+            ...c,
+            lastMessageAt: msg.creadoEn,
+            lastMessagePreview: msg.texto.slice(0, 80),
+          }
+        : c,
+    );
+    this.notify();
+  }
+
+  getMessages(conversationId: string): ChatMessage[] {
+    return this.messages
+      .filter((m) => m.conversationId === conversationId)
+      .sort((a, b) => a.creadoEn.localeCompare(b.creadoEn));
+  }
+
+  addVideoRoom(room: VideoRoom): void {
+    this.videoRooms = [room, ...this.videoRooms];
     this.notify();
   }
 

@@ -19,6 +19,9 @@ import type {
   Sitio,
   TipoIntegracion,
   Turno,
+  ChatConversation,
+  ChatMessage,
+  VideoRoom,
   Worker,
 } from "@spe/shared";
 
@@ -47,6 +50,9 @@ export interface DemoPersistedState {
   payrollAudit: PayrollAuditEntry[];
   setupConfig: SetupConfig | null;
   reportes: Reporte[];
+  conversations: ChatConversation[];
+  messages: ChatMessage[];
+  videoRooms: VideoRoom[];
   clientes: Cliente[];
   productos: Producto[];
   facturas: Factura[];

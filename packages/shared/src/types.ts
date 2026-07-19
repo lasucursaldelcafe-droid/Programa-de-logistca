@@ -194,6 +194,7 @@ export type NotificationTipo =
   | "geocerca_alerta"
   | "reentrada_geocerca"
   | "reporte_trabajador"
+  | "videollamada_iniciada"
   | "emergencia"
   | "break_recordatorio"
   | "sistema";
@@ -338,6 +339,7 @@ export const NOTIFICATION_TIPO_LABEL: Record<NotificationTipo, string> = {
   geocerca_alerta: "Alerta geocerca",
   reentrada_geocerca: "Re-entrada al sitio",
   reporte_trabajador: "Reporte de trabajador",
+  videollamada_iniciada: "Videollamada",
   emergencia: "Emergencia",
   break_recordatorio: "Recordatorio break",
   sistema: "Sistema",
@@ -481,4 +483,60 @@ export function puedeGestionarConfiguracion(role: UserRole): boolean {
 
 export function puedeVerReportesTrabajadores(role: UserRole): boolean {
   return role === "administrador" || role === "supervisor_sitio";
+}
+
+export type ChatConversationTipo = "evento" | "sitio" | "directo";
+
+export interface ChatConversation {
+  id: string;
+  eventId: string;
+  eventNombre?: string;
+  siteId?: string;
+  siteNombre?: string;
+  tipo: ChatConversationTipo;
+  titulo: string;
+  participantIds: string[];
+  lastMessageAt: string;
+  lastMessagePreview?: string;
+  creadoEn: string;
+  creadoPor: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  conversationId: string;
+  senderUid: string;
+  senderNombre: string;
+  texto: string;
+  creadoEn: string;
+  leidoPor: string[];
+}
+
+export interface VideoRoom {
+  id: string;
+  conversationId: string;
+  eventId: string;
+  eventNombre?: string;
+  roomName: string;
+  creadoPor: string;
+  creadoPorNombre: string;
+  creadoEn: string;
+  activo: boolean;
+}
+
+export function puedeUsarComunicacion(_role: UserRole): boolean {
+  return true;
+}
+
+export function puedeVerInformesEvento(role: UserRole): boolean {
+  return (
+    role === "administrador" ||
+    role === "supervisor_sitio" ||
+    role === "super_admin"
+  );
+}
+
+export function buildJitsiRoomName(eventId: string, conversationId: string): string {
+  const slug = `${eventId}-${conversationId}`.replace(/[^a-zA-Z0-9-]/g, "").slice(0, 48);
+  return `SPE-${slug}`;
 }
