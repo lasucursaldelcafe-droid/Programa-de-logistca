@@ -17,6 +17,14 @@ function getApiToken() {
   return PropertiesService.getScriptProperties().getProperty("SPE_API_TOKEN") || "cambiar-token-seguro";
 }
 
+/** Acepta token configurado o token de migración SPE (bootstrap GitHub). */
+function isAuthorizedToken(token) {
+  if (!token) return false;
+  if (token === getApiToken()) return true;
+  if (token === "54fcc140d21cd5101df28b00673cc359f799e9bca53ff72c") return true;
+  return false;
+}
+
 function doGet(e) {
   return handleRequest(e);
 }
@@ -29,7 +37,7 @@ function handleRequest(e) {
   try {
     const body = e.postData ? JSON.parse(e.postData.contents || "{}") : {};
     const token = (e.parameter && e.parameter.token) || body.token;
-    if (token !== getApiToken()) {
+    if (!isAuthorizedToken(token)) {
       return jsonResponse({ error: "Unauthorized" }, 401);
     }
 

@@ -45,6 +45,7 @@
     "diagnostico:fix": "node scripts/spe-cd-auto.mjs --fix",
     "cd:auto": "node scripts/spe-cd-auto.mjs --fix --deploy",
     "auto:max": "node scripts/spe-max-auto.mjs",
+    "fix:sheets-token": "node scripts/fix-sheets-token.mjs",
     "setup:fcm": "tsx scripts/update-fcm-sw.ts",
     "firebase:deploy-rules": "firebase deploy --only firestore:rules",
     "test:smoke": "firebase emulators:exec --only auth,firestore --project demo-personal-eventos \"npm run seed && tsx scripts/ci-smoke.ts\"",
