@@ -3,9 +3,9 @@
     "nombre": "Sistema de Personal para Eventos (SPE)",
     "correoProyecto": "lasucursaldelcafe@gmail.com"
   },
-  "backend": "demo",
-  "demoMode": true,
-  "sheetsWebAppUrl": "",
-  "sheetsApiToken": "",
+  "backend": "sheets",
+  "demoMode": false,
+  "sheetsWebAppUrl": "PEGAR_AQUI_TU_URL_exec",
+  "sheetsApiToken": "54fcc140d21cd5101df28b00673cc359f799e9bca53ff72c",
   "firebase": {}
 }
