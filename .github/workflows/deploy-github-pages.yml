@@ -71,6 +71,10 @@ jobs:
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
 
+      - name: Alinear token Sheets con Apps Script (auto)
+        run: npm run fix:sheets-token
+        continue-on-error: true
+
       - name: Cargar config/bootstrap.json (configuración desde celular)
         run: |
           if [ -f config/bootstrap.json ]; then
