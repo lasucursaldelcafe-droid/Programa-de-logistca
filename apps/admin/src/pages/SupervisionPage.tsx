@@ -19,7 +19,7 @@ export function SupervisionPage() {
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <PageHeader
         title="Supervisión"
         description="Ubicación GPS en tiempo real de jornadas activas."

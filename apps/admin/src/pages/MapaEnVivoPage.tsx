@@ -25,7 +25,7 @@ export function MapaEnVivoPage() {
   const alertas = activos.filter((a) => a.estado === "fuera_geocerca" || a.estado === "revision_manual");
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <div>
         <h1 className="font-display text-3xl font-bold">Mapa en vivo</h1>
         <p className="mt-1 text-neutral-400">

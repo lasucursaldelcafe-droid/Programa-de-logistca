@@ -1,30 +1,25 @@
 {
-  "modoDemo": {
-    "descripcion": "Cuentas para GitHub Pages y desarrollo local (emuladores).",
+  "produccion": {
+    "descripcion": "Cuentas reales — backend Google Sheets en ejecución.",
+    "backend": "sheets",
     "cuentas": [
       {
-        "email": "admin@eventos.test",
-        "password": "Admin123!",
-        "nombre": "Administrador",
+        "email": "lasucursaldelcafe@gmail.com",
+        "password": "SpeLaSucursal2026!",
+        "nombre": "La Sucursal del Café",
         "role": "administrador",
         "panel": "/panel"
-      },
-      {
-        "email": "master@eventos.test",
-        "password": "Master123!",
-        "nombre": "Master Plataforma",
-        "role": "super_admin",
-        "panel": "/master"
       }
     ],
     "instrucciones": [
-      "Abre /login en la app web.",
-      "Si falla el login, pulsa «Restablecer modo demo».",
-      "Usa el botón «Usar» junto a la cuenta en la pantalla de login."
+      "Abre /login sin ?spe_backend=demo.",
+      "Usa el correo y contraseña de arriba.",
+      "Trabajadores nuevos: Admin → Personal → Invitar."
     ]
   },
-  "produccionFirebase": {
-    "descripcion": "Tras npm run seed:production — mismas credenciales en Firebase Auth real.",
-    "nota": "El correo lasucursaldelcafe@gmail.com es la cuenta Google del proyecto, no el login de la app salvo que lo crees en Firebase."
+  "modoDemo": {
+    "descripcion": "Desactivado en producción. Solo desarrollo local con emuladores.",
+    "activo": false,
+    "cuentas": []
   }
 }

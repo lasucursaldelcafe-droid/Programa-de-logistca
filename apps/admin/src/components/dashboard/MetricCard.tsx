@@ -20,7 +20,7 @@ export function MetricCard({
 }) {
   return (
     <Card>
-      <div className={`font-mono text-3xl font-semibold ${toneClass[tone]}`}>
+      <div className={`font-mono text-2xl font-semibold ${toneClass[tone]}`}>
         {value}
       </div>
       <div className="text-sm text-neutral-400">{label}</div>

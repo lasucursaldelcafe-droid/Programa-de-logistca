@@ -96,7 +96,7 @@ export function PersonalPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <PageHeader
         title="Personal"
         description="Registra personas y asigna roles. Los cambios se guardan automáticamente."

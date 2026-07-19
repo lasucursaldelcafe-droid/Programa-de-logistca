@@ -54,7 +54,7 @@ export function Card({
 }) {
   return (
     <div
-      className={`rounded-xl border border-border bg-surface p-5 transition hover:border-accent/40 ${className}`}
+      className={`rounded-xl border border-border bg-surface p-4 transition hover:border-accent/40 ${className}`}
     >
       {children}
     </div>

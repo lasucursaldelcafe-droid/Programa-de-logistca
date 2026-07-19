@@ -114,7 +114,7 @@ export function CuentasPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <PageHeader
         title="Cuentas"
         description="Invitaciones por correo. Cada persona elige su contraseña al activar."
