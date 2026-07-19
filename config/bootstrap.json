@@ -5,7 +5,7 @@
   },
   "backend": "sheets",
   "demoMode": false,
-  "sheetsWebAppUrl": "PEGAR_AQUI_TU_URL_exec",
+  "sheetsWebAppUrl": "https://script.google.com/macros/s/AKfycbxrPsI7zzGJSJAq_kShT5Hd5QBzCMtWjpX4PFneVKvtbuWw555-FY6Gcn-4xhn60y8AOw/exec",
   "sheetsApiToken": "54fcc140d21cd5101df28b00673cc359f799e9bca53ff72c",
   "firebase": {}
 }
