@@ -540,6 +540,11 @@ class DemoStore {
     this.notify();
   }
 
+  updateEvent(eventId: string, patch: Partial<Evento>): void {
+    this.events = this.events.map((e) => (e.id === eventId ? { ...e, ...patch } : e));
+    this.notify();
+  }
+
   addSite(site: Sitio): void {
     this.sites = [...this.sites, site];
     this.events = this.events.map((e) =>

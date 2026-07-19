@@ -11,6 +11,10 @@ const SHEET_NAMES = {
   attendance: "attendance",
   invitations: "invitations",
   qrCodes: "qrCodes",
+  notifications: "notifications",
+  setupConfig: "setupConfig",
+  reports: "reports",
+  payrollRates: "payrollRates",
 };
 
 function getApiToken() {
@@ -158,14 +162,18 @@ function getSheet(name) {
 
 function initSheetHeaders(name, sheet) {
   const schemas = {
-    users: ["uid", "email", "password", "nombre", "role", "workerId", "perfilCompleto"],
-    workers: ["id", "nombre", "documento", "telefono", "email", "perfiles", "estado", "rating", "habilitado", "creadoEn"],
+    users: ["uid", "email", "password", "nombre", "role", "workerId", "perfilCompleto", "telefono", "habilitado"],
+    workers: ["id", "nombre", "documento", "telefono", "email", "perfiles", "estado", "rating", "habilitado", "cuentaCreada", "rolPlataforma", "creadoEn"],
     shifts: ["id", "workerId", "workerNombre", "eventId", "eventNombre", "siteId", "siteNombre", "inicio", "fin", "estado"],
-    events: ["id", "nombre", "fechaInicio", "fechaFin", "sitioIds"],
+    events: ["id", "nombre", "fechaInicio", "fechaFin", "sitioIds", "temaLaboral", "reglasOperativas", "tiempoMinimoEstadiaMinutos", "supervisionActiva"],
     sites: ["id", "eventId", "nombre", "lat", "lng", "radioGeocerca"],
     attendance: ["id", "workerId", "workerNombre", "shiftId", "siteId", "siteNombre", "eventId", "eventNombre", "qrId", "estado", "entrada", "salida", "ubicacionActual", "alertasGeocerca", "creadoEn"],
-    invitations: ["id", "token", "workerId", "workerNombre", "email", "codigoAcceso", "role", "estado", "creadaEn", "expiraEn", "creadaPor", "creadaPorNombre"],
+    invitations: ["id", "token", "workerId", "workerNombre", "email", "codigoAcceso", "role", "estado", "creadaEn", "expiraEn", "creadaPor", "creadaPorNombre", "usadaEn", "uid"],
     qrCodes: ["id", "eventId", "eventNombre", "siteId", "siteNombre", "token", "secret", "modo", "intervaloRotacionSegundos", "ventanaInicio", "ventanaFin", "radioGeocerca", "descripcionDatos", "activo", "creadoEn", "creadoPor"],
+    notifications: ["id", "tipo", "titulo", "mensaje", "timestamp", "urgente", "destinatarios", "shiftId", "eventId", "siteId", "attendanceId", "actorUid", "actorNombre", "leidaPor", "accionTurno"],
+    setupConfig: ["id", "completado", "pasoActual", "pasosCompletados", "eventoId", "actualizadoEn", "actualizadoPor", "actualizadoPorNombre"],
+    reports: ["id", "workerId", "workerNombre", "shiftId", "siteId", "siteNombre", "eventId", "tipo", "mensaje", "estado", "creadoEn", "resueltoEn", "resueltoPor", "resueltoPorNombre"],
+    payrollRates: ["id", "perfil", "tarifaPorHora", "costoRefrigerioAlmuerzo", "costoRefrigerioCena", "costoRefrigerioSnack"],
   };
   const headers = schemas[name] || ["id"];
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);

@@ -153,6 +153,14 @@ export interface Evento {
   fechaInicio: string;
   fechaFin: string;
   sitioIds: string[];
+  /** Temática y lineamientos laborales del evento (visible para trabajadores). */
+  temaLaboral?: string;
+  /** Reglas de supervisión: funciones, horarios, conducta en sitio. */
+  reglasOperativas?: string;
+  /** Tiempo mínimo de estadía en sitio (minutos) antes de marcar salida válida. */
+  tiempoMinimoEstadiaMinutos?: number;
+  /** Activa monitoreo GPS y alertas de geocerca para este evento. */
+  supervisionActiva?: boolean;
 }
 
 export interface Sitio {
@@ -182,7 +190,10 @@ export type NotificationTipo =
   | "turno_respuesta"
   | "entrada"
   | "salida"
+  | "llegada_sitio"
   | "geocerca_alerta"
+  | "reentrada_geocerca"
+  | "reporte_trabajador"
   | "emergencia"
   | "break_recordatorio"
   | "sistema";
@@ -323,7 +334,10 @@ export const NOTIFICATION_TIPO_LABEL: Record<NotificationTipo, string> = {
   turno_respuesta: "Respuesta de turno",
   entrada: "Entrada",
   salida: "Salida",
+  llegada_sitio: "Llegada al sitio",
   geocerca_alerta: "Alerta geocerca",
+  reentrada_geocerca: "Re-entrada al sitio",
+  reporte_trabajador: "Reporte de trabajador",
   emergencia: "Emergencia",
   break_recordatorio: "Recordatorio break",
   sistema: "Sistema",
@@ -433,7 +447,22 @@ export function puedeVerNomina(role: UserRole): boolean {
   );
 }
 
-export type SetupPaso = "evento" | "sitios" | "tarifas" | "qr" | "resumen";
+export type SetupPaso =
+  | "evento"
+  | "sitios"
+  | "tarifas"
+  | "qr"
+  | "operaciones"
+  | "resumen";
+
+export const SETUP_PASOS_ORDEN: SetupPaso[] = [
+  "evento",
+  "sitios",
+  "tarifas",
+  "qr",
+  "operaciones",
+  "resumen",
+];
 
 export interface SetupConfig {
   id: string;
