@@ -35,13 +35,13 @@ function doPost(e) {
 
 function handleRequest(e) {
   try {
-    const body = e.postData ? JSON.parse(e.postData.contents || "{}") : {};
-    const token = (e.parameter && e.parameter.token) || body.token;
+    const body = mergeRequestPayload(e);
+    const token = body.token;
     if (!isAuthorizedToken(token)) {
       return jsonResponse({ error: "Unauthorized" }, 401);
     }
 
-    const action = (e.parameter && e.parameter.action) || body.action;
+    const action = body.action;
     if (!action) return jsonResponse({ error: "Missing action" }, 400);
 
     switch (action) {
@@ -52,7 +52,7 @@ function handleRequest(e) {
       case "login":
         return loginUser(body);
       case "list":
-        return listRows((e.parameter && e.parameter.collection) || body.collection);
+        return listRows(body.collection);
       case "upsert":
         return upsertRow(body);
       case "delete":
@@ -63,6 +63,33 @@ function handleRequest(e) {
   } catch (err) {
     return jsonResponse({ error: String(err) }, 500);
   }
+}
+
+/** Une parámetros GET y cuerpo POST para que login/upsert funcionen desde el navegador. */
+function mergeRequestPayload(e) {
+  var body = {};
+  if (e.postData && e.postData.contents) {
+    try {
+      body = JSON.parse(e.postData.contents);
+    } catch (parseErr) {
+      body = {};
+    }
+  }
+  if (e.parameter) {
+    for (var key in e.parameter) {
+      if (e.parameter.hasOwnProperty(key) && e.parameter[key] !== undefined && e.parameter[key] !== "") {
+        body[key] = e.parameter[key];
+      }
+    }
+  }
+  if (typeof body.record === "string") {
+    try {
+      body.record = JSON.parse(body.record);
+    } catch (recordErr) {
+      /* record queda como string */
+    }
+  }
+  return body;
 }
 
 function bootstrapBackend() {

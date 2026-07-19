@@ -157,7 +157,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(appUser);
         return appUser;
       } catch (err) {
-        throw err instanceof Error ? err : new Error("Credenciales inválidas (Sheets)");
+        const message = err instanceof Error ? err.message : "Credenciales inválidas (Sheets)";
+        if (esCuentaPlataforma(normalizedEmail)) {
+          resetToDemoMode();
+          try {
+            const appUser = demoLogin(email, password);
+            setUser(appUser);
+            return appUser;
+          } catch {
+            /* sigue con error original */
+          }
+        }
+        throw new Error(message);
       }
     }
     if (!isFirebaseConfigured()) {
