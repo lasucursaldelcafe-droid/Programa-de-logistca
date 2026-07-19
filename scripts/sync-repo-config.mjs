@@ -17,6 +17,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { isConfigSet } from "./lib/config-placeholders.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const CONFIG = resolve(ROOT, "config");
@@ -33,11 +34,8 @@ function readJson(path) {
 
 function isSet(value) {
   return (
-    typeof value === "string" &&
-    value.trim().length > 0 &&
+    isConfigSet(value) &&
     !value.includes("TU_") &&
-    !value.includes("tu-token") &&
-    !value.includes("TU_CONTRASEÑA") &&
     !value.includes("PEGAR_")
   );
 }

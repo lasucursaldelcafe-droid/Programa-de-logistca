@@ -6,6 +6,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { isConfigSet } from "./lib/config-placeholders.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const BOOTSTRAP = resolve(ROOT, "config/bootstrap.json");
@@ -20,7 +21,7 @@ function readBootstrap() {
 }
 
 function isSet(value) {
-  return typeof value === "string" && value.trim().length > 0 && !value.includes("TU_ID") && !value.includes("tu-token");
+  return isConfigSet(value);
 }
 
 function main() {
