@@ -69,6 +69,7 @@ export function CuentasPage() {
         workerNombre: worker.nombre,
         email: worker.email,
         role: worker.rolPlataforma ?? "trabajador",
+        customRoleId: worker.customRoleId,
         creadaPor: currentUser.uid,
         creadaPorNombre: currentUser.nombre,
       });

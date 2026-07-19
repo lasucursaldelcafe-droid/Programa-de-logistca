@@ -127,6 +127,7 @@ export function getMasterNavSections(): NavSection[] {
       items: [
         { to: "/master", label: "Resumen", icon: "grid", end: true },
         { to: "/master/administradores", label: "Administradores", icon: "shield" },
+        { to: "/master/roles", label: "Roles", icon: "users" },
         { to: "/master/informes", label: "Informes", icon: "chart" },
         { to: "/master/auditoria", label: "Auditoría", icon: "audit" },
         { to: "/master/ayuda", label: "Ayuda", icon: "help" },

@@ -105,6 +105,8 @@ export interface AppUser {
   perfilCompleto?: boolean;
   /** Cuenta activa; el administrador puede inhabilitar acceso. */
   habilitado?: boolean;
+  /** Rol personalizado creado por super admin (permisos granulares). */
+  customRoleId?: string;
 }
 
 export interface Invitation {
@@ -122,6 +124,8 @@ export interface Invitation {
   creadaPorNombre?: string;
   /** Rol de acceso asignado por el administrador al invitar. */
   role: "trabajador" | "supervisor_sitio";
+  /** Rol personalizado opcional (permisos definidos por super admin). */
+  customRoleId?: string;
   usadaEn?: string;
   uid?: string;
 }
@@ -141,6 +145,8 @@ export interface Worker {
   cuentaCreada: boolean;
   /** Rol en la plataforma; lo asigna el administrador al registrar. */
   rolPlataforma: "trabajador" | "supervisor_sitio";
+  /** Rol personalizado (permisos granulares) asignado al crear cuenta. */
+  customRoleId?: string;
   /** Si false, no puede iniciar sesión (admin puede inhabilitar). */
   habilitado?: boolean;
   certificaciones: string[];
@@ -301,34 +307,22 @@ export const ROLE_LABEL: Record<UserRole, string> = {
   trabajador: "Trabajador",
 };
 
-export function puedeGestionarPersonal(role: UserRole): boolean {
-  return role === "administrador" || role === "supervisor_sitio";
-}
-
-export function puedeGestionarTurnos(role: UserRole): boolean {
-  return role === "administrador" || role === "supervisor_sitio";
-}
-
-/** Solo administradores pueden subir y editar credenciales de APIs. */
-export function puedeConfigurarIntegraciones(role: UserRole): boolean {
-  return role === "super_admin" || role === "administrador";
-}
-
-export function puedeGestionarCuentas(role: UserRole): boolean {
-  return role === "administrador";
-}
-
-export function puedeGestionarQr(role: UserRole): boolean {
-  return role === "administrador" || role === "supervisor_sitio";
-}
-
-export function puedeVerMapaEnVivo(role: UserRole): boolean {
-  return role === "administrador" || role === "supervisor_sitio";
-}
-
-export function puedeEnviarEmergencia(role: UserRole): boolean {
-  return role === "administrador" || role === "supervisor_sitio";
-}
+export {
+  puedeGestionarPersonal,
+  puedeGestionarTurnos,
+  puedeConfigurarIntegraciones,
+  puedeGestionarCuentas,
+  puedeGestionarQr,
+  puedeVerMapaEnVivo,
+  puedeEnviarEmergencia,
+  puedeGestionarNomina,
+  puedeVerNomina,
+  puedeGestionarConfiguracion,
+  puedeVerReportesTrabajadores,
+  puedeUsarComunicacion,
+  puedeVerInformesEvento,
+  puedeGestionarRolesCustom,
+} from "./permissions";
 
 export const NOTIFICATION_TIPO_LABEL: Record<NotificationTipo, string> = {
   turno_asignado: "Turno asignado",
@@ -437,18 +431,6 @@ export const REFRIGERIO_TIPO_LABEL: Record<RefrigerioTipo, string> = {
   snack: "Snack",
 };
 
-export function puedeGestionarNomina(role: UserRole): boolean {
-  return role === "administrador";
-}
-
-export function puedeVerNomina(role: UserRole): boolean {
-  return (
-    role === "administrador" ||
-    role === "supervisor_sitio" ||
-    role === "trabajador"
-  );
-}
-
 export type SetupPaso =
   | "evento"
   | "sitios"
@@ -475,14 +457,6 @@ export interface SetupConfig {
   actualizadoEn: string;
   actualizadoPor: string;
   actualizadoPorNombre?: string;
-}
-
-export function puedeGestionarConfiguracion(role: UserRole): boolean {
-  return role === "administrador";
-}
-
-export function puedeVerReportesTrabajadores(role: UserRole): boolean {
-  return role === "administrador" || role === "supervisor_sitio";
 }
 
 export type ChatConversationTipo = "evento" | "sitio" | "directo";
@@ -522,18 +496,6 @@ export interface VideoRoom {
   creadoPorNombre: string;
   creadoEn: string;
   activo: boolean;
-}
-
-export function puedeUsarComunicacion(_role: UserRole): boolean {
-  return true;
-}
-
-export function puedeVerInformesEvento(role: UserRole): boolean {
-  return (
-    role === "administrador" ||
-    role === "supervisor_sitio" ||
-    role === "super_admin"
-  );
 }
 
 export function buildJitsiRoomName(eventId: string, conversationId: string): string {

@@ -185,5 +185,10 @@ service cloud.firestore {
       allow update: if signedIn();
       allow delete: if isMaster();
     }
+
+    match /customRoles/{roleId} {
+      allow read: if signedIn();
+      allow write: if isMaster();
+    }
   }
 }

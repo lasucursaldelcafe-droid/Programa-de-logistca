@@ -21,6 +21,7 @@ import type {
   Turno,
   ChatConversation,
   ChatMessage,
+  CustomRole,
   VideoRoom,
   Worker,
 } from "@spe/shared";
@@ -53,6 +54,7 @@ export interface DemoPersistedState {
   conversations: ChatConversation[];
   messages: ChatMessage[];
   videoRooms: VideoRoom[];
+  customRoles: CustomRole[];
   clientes: Cliente[];
   productos: Producto[];
   facturas: Factura[];

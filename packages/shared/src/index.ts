@@ -14,5 +14,6 @@ export * from "./sheetsClient";
 export * from "./sheetsSession";
 export * from "./runtimeBootstrap";
 export * from "./welcomeMessage";
+export * from "./permissions";
 export * from "./eventReports";
 export * from "./eventBriefing";

@@ -7,6 +7,7 @@ import type {
   ChatConversation,
   ChatMessage,
   CredencialesIntegracion,
+  CustomRole,
   Evento,
   GeoRegistro,
   Invitation,
@@ -117,6 +118,7 @@ class DemoStore {
   conversations: ChatConversation[] = [];
   messages: ChatMessage[] = [];
   videoRooms: VideoRoom[] = [];
+  customRoles: CustomRole[] = [];
   clientes = [...INITIAL_CLIENTES];
   productos = [...INITIAL_PRODUCTOS];
   facturas = [...INITIAL_FACTURAS];
@@ -152,6 +154,7 @@ class DemoStore {
       conversations: this.conversations,
       messages: this.messages,
       videoRooms: this.videoRooms,
+      customRoles: this.customRoles,
       clientes: this.clientes,
       productos: this.productos,
       facturas: this.facturas,
@@ -184,6 +187,7 @@ class DemoStore {
     if (saved.conversations) this.conversations = saved.conversations;
     if (saved.messages) this.messages = saved.messages;
     if (saved.videoRooms) this.videoRooms = saved.videoRooms;
+    if (saved.customRoles) this.customRoles = saved.customRoles;
     if (saved.clientes) this.clientes = saved.clientes;
     if (saved.productos) this.productos = saved.productos;
     if (saved.facturas) this.facturas = saved.facturas;
@@ -322,6 +326,21 @@ class DemoStore {
     this.notify();
   }
 
+  addCustomRole(role: CustomRole): void {
+    this.customRoles = [role, ...this.customRoles];
+    this.notify();
+  }
+
+  updateCustomRole(id: string, patch: Partial<CustomRole>): void {
+    this.customRoles = this.customRoles.map((r) => (r.id === id ? { ...r, ...patch } : r));
+    this.notify();
+  }
+
+  deleteCustomRole(id: string): void {
+    this.customRoles = this.customRoles.filter((r) => r.id !== id);
+    this.notify();
+  }
+
   activateAccount(token: string, password: string, codigoAcceso: string): void {
     const invitation = this.getInvitation(token);
     if (!invitation) throw new Error("Invitación no encontrada");
@@ -343,6 +362,7 @@ class DemoStore {
       nombre: invitation.workerNombre,
       role: assignedRole,
       workerId: invitation.workerId,
+      customRoleId: invitation.customRoleId,
       perfilCompleto: assignedRole === "supervisor_sitio",
       habilitado: true,
     };

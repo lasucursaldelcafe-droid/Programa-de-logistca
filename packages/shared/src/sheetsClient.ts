@@ -8,6 +8,7 @@ export interface SheetsLoginResult {
   nombre: string;
   role: string;
   workerId?: string | null;
+  customRoleId?: string | null;
   perfilCompleto?: boolean;
 }
 
@@ -83,4 +84,18 @@ export async function sheetsUpsert(
   });
   const data = (await res.json()) as { ok?: boolean; error?: string };
   if (!res.ok || data.error) throw new Error(data.error ?? "Upsert Sheets falló");
+}
+
+export async function sheetsDelete(
+  collection: string,
+  id: string,
+  idField = "id",
+): Promise<void> {
+  const res = await fetch(webAppUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "delete", token: apiToken, collection, id, idField }),
+  });
+  const data = (await res.json()) as { ok?: boolean; error?: string };
+  if (!res.ok || data.error) throw new Error(data.error ?? "Delete Sheets falló");
 }

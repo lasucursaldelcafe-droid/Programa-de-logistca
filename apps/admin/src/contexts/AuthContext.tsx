@@ -54,6 +54,7 @@ async function loadAppUser(firebaseUser: User): Promise<AppUser | null> {
     email: firebaseUser.email ?? data.email ?? "",
     role: data.role as UserRole,
     workerId: data.workerId as string | undefined,
+    customRoleId: data.customRoleId as string | undefined,
     nombre: (data.nombre as string) ?? firebaseUser.email ?? "Usuario",
     telefono: data.telefono as string | undefined,
     perfilCompleto: data.perfilCompleto as boolean | undefined,
@@ -134,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           nombre: result.nombre,
           role: result.role as UserRole,
           workerId: result.workerId ?? undefined,
+          customRoleId: result.customRoleId ?? undefined,
           perfilCompleto: result.perfilCompleto ?? true,
         };
         saveSheetsSession(appUser);
