@@ -42,6 +42,26 @@ npm run config:sync   # bootstrap.json + .env.local de las 3 apps + spe-runtime-
 
 **Contraseña Google:** cópiala en `config/credenciales.local.json` en tu máquina (nunca la subas a Git). Correo del proyecto: `lasucursaldelcafe@gmail.com`.
 
+## Diagnóstico y CD automático
+
+Analiza qué falla (config, Sheets, Firebase, Pages, login) y corrige lo posible:
+
+```bash
+npm run diagnostico        # reporte en config/diagnostico-report.json
+npm run diagnostico:fix    # auto-fix + config:sync
+npm run cd:auto            # fix + build Pages local
+```
+
+**GitHub Actions → «SPE — Diagnóstico y CD automático»** (Run workflow):
+
+| Input | Efecto |
+|-------|--------|
+| auto_fix | Resetea bootstrap a demo si Sheets falla; ejecuta config:sync |
+| deploy | Dispara «Publicar app (GitHub Pages)» tras el diagnóstico |
+| backend | `auto` \| `demo` \| `sheets` |
+
+También se ejecuta al editar `config/**` o **lunes 08:00 UTC** (solo diagnóstico).
+
 
 La app usa **Firebase Auth + Firestore**. Configura credenciales en GitHub Secrets para CI y en `apps/admin/.env.local` para desarrollo.
 
