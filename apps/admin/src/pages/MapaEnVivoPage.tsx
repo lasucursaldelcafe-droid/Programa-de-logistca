@@ -1,7 +1,8 @@
 import { ATTENDANCE_LABEL, puedeVerMapaEnVivo } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
 import { Badge, Card } from "../components/ui";
-import { LiveMap } from "../components/LiveMap";
+import { LiveMap, liveMapUsesGoogle } from "../components/LiveMap";
+import { isGoogleMapsEnabled } from "../lib/googleMaps";
 import { useAttendances, useSites } from "../hooks/useDataStore";
 import { isDemoMode } from "../lib/mode";
 import { demoStore } from "../demo/store";
@@ -48,7 +49,19 @@ export function MapaEnVivoPage() {
       </div>
 
       <Card>
-        <h2 className="font-display text-lg font-semibold">Mapa operativo</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display text-lg font-semibold">Mapa operativo</h2>
+          <span className="text-xs text-neutral-500">
+            {liveMapUsesGoogle() ? "Google Maps" : "Vista esquemática (sin API key)"}
+          </span>
+        </div>
+        {!isGoogleMapsEnabled() && (
+          <p className="mt-2 text-xs text-neutral-500">
+            Configura <code className="text-neutral-400">VITE_GOOGLE_MAPS_API_KEY</code> en GitHub
+            Secrets o <code className="text-neutral-400">apps/admin/.env.local</code> para activar
+            Google Maps (Maps JavaScript API).
+          </p>
+        )}
         <div className="mt-4">
           <LiveMap sites={sites} attendances={activos} />
         </div>
