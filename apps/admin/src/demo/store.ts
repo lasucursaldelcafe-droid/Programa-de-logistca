@@ -33,6 +33,13 @@ import {
 import { loadDemoPersistedState, saveDemoPersistedState } from "./persist";
 import { appendChangeLog, type DemoChangeAction, type DemoChangeEntry } from "./changeLog";
 import { PLATFORM_SEED_ACCOUNTS } from "@spe/shared";
+import {
+  DEMO_MAP_ATTENDANCES,
+  DEMO_MAP_EVENT,
+  DEMO_MAP_SHIFTS,
+  DEMO_MAP_SITES,
+  hasDemoMapData,
+} from "./mapSeed";
 
 export const DEMO_ACCOUNTS: Array<{
   email: string;
@@ -178,6 +185,16 @@ class DemoStore {
     this.accounts = [...DEMO_ACCOUNTS, ...workerAccounts];
     this.platformUsers = this.accounts.map((a) => a.user);
     if (saved.changeLog) this.changeLog = saved.changeLog;
+  }
+
+  /** Sitios + jornadas activas de ejemplo para /mapa en modo demo (primer uso). */
+  seedMapPreviewIfEmpty(): void {
+    if (this.sites.length > 0 || hasDemoMapData(this.sites)) return;
+    this.events = [DEMO_MAP_EVENT];
+    this.sites = [...DEMO_MAP_SITES];
+    this.shifts = [...DEMO_MAP_SHIFTS];
+    this.attendances = [...DEMO_MAP_ATTENDANCES];
+    this.notify();
   }
 
   private recordChange(
@@ -605,6 +622,7 @@ class DemoStore {
 
 export const demoStore = new DemoStore();
 demoStore.hydrateFromStorage();
+demoStore.seedMapPreviewIfEmpty();
 
 const SESSION_KEY = "spe-demo-user";
 
