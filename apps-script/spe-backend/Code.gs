@@ -69,7 +69,32 @@ function bootstrapBackend() {
   Object.keys(SHEET_NAMES).forEach(function (k) {
     getSheet(SHEET_NAMES[k]);
   });
+  ensureDefaultUsers();
   return jsonResponse({ ok: true, message: "Hojas SPE creadas", collections: Object.keys(SHEET_NAMES) });
+}
+
+function ensureDefaultUsers() {
+  var defaults = [
+    ["sheets-admin", "admin@eventos.test", "Admin123!", "Administrador", "administrador", "", "true"],
+    ["sheets-master", "master@eventos.test", "Master123!", "Master Plataforma", "super_admin", "", "true"],
+    ["prod-admin-lsc", "lasucursaldelcafe@gmail.com", "SpeLaSucursal2026!", "La Sucursal del Café", "administrador", "", "true"],
+  ];
+  var sheet = getSheet(SHEET_NAMES.users);
+  var data = sheet.getDataRange().getValues();
+  var headers = data[0];
+  var emailCol = headers.indexOf("email");
+  if (emailCol < 0) return;
+  var existing = {};
+  for (var i = 1; i < data.length; i++) {
+    var em = String(data[i][emailCol] || "").toLowerCase().trim();
+    if (em) existing[em] = true;
+  }
+  defaults.forEach(function (row) {
+    var email = String(row[1]).toLowerCase();
+    if (existing[email]) return;
+    sheet.appendRow(row);
+    existing[email] = true;
+  });
 }
 
 function loginUser(body) {
