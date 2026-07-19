@@ -43,7 +43,10 @@ import {
   type AppUser,
   type CustomRole,
   type CustomRoleBase,
+  type RoleAccessMode,
   type SpePermission,
+  ROLE_TEMPLATES,
+  roleTemplateDisplayName,
   parseCustomRolePermisos,
   serializeCustomRolePermisos,
 } from "@spe/shared";
@@ -1446,6 +1449,8 @@ export async function createCustomRole(
     baseRole: CustomRoleBase;
     permisos: SpePermission[];
     activo: boolean;
+    modoAcceso?: RoleAccessMode;
+    plantillaId?: string;
   },
   creadoPor: string,
   creadoPorNombre: string,
@@ -1458,6 +1463,8 @@ export async function createCustomRole(
     baseRole: data.baseRole,
     permisos: data.permisos,
     activo: data.activo,
+    modoAcceso: data.modoAcceso,
+    plantillaId: data.plantillaId,
     creadoEn: new Date().toISOString(),
     creadoPor,
     creadoPorNombre,
@@ -1485,7 +1492,10 @@ export async function createCustomRole(
 export async function updateCustomRole(
   id: string,
   data: Partial<
-    Pick<CustomRole, "nombre" | "descripcion" | "baseRole" | "permisos" | "activo">
+    Pick<
+      CustomRole,
+      "nombre" | "descripcion" | "baseRole" | "permisos" | "activo" | "modoAcceso" | "plantillaId"
+    >
   >,
   _actorUid: string,
   _actorNombre: string,
@@ -1538,4 +1548,34 @@ export async function deleteCustomRole(id: string): Promise<void> {
   }
 
   await deleteDoc(doc(getFirestoreDb(), "customRoles", id));
+}
+
+/** Importa plantillas de ejemplo que aún no existen (por plantillaId). */
+export async function importRoleTemplatesFromCatalog(
+  existingRoles: CustomRole[],
+  creadoPor: string,
+  creadoPorNombre: string,
+): Promise<number> {
+  const existingTemplateIds = new Set(
+    existingRoles.map((r) => r.plantillaId).filter(Boolean),
+  );
+  let imported = 0;
+  for (const template of ROLE_TEMPLATES) {
+    if (existingTemplateIds.has(template.id)) continue;
+    await createCustomRole(
+      {
+        nombre: roleTemplateDisplayName(template),
+        descripcion: template.descripcion,
+        baseRole: template.baseRole,
+        permisos: template.permisos,
+        activo: true,
+        modoAcceso: template.modoAcceso,
+        plantillaId: template.id,
+      },
+      creadoPor,
+      creadoPorNombre,
+    );
+    imported += 1;
+  }
+  return imported;
 }

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import {
   ESTADO_LABEL,
   PERFILES_LABEL,
+  ROLE_ACCESS_MODE_LABEL,
   ROLE_LABEL,
   ROLES_ASIGNABLES_ADMIN,
   puedeAsignarRoles,
@@ -58,6 +59,11 @@ export function PersonalPage() {
 
   const roleNameById = useMemo(
     () => new Map(customRoles.map((r) => [r.id, r.nombre])),
+    [customRoles],
+  );
+
+  const roleModeById = useMemo(
+    () => new Map(customRoles.map((r) => [r.id, r.modoAcceso])),
     [customRoles],
   );
 
@@ -220,6 +226,9 @@ export function PersonalPage() {
                 Rol: {ROLE_LABEL[w.rolPlataforma ?? "trabajador"]}
                 {w.customRoleId && roleNameById.get(w.customRoleId)
                   ? ` · ${roleNameById.get(w.customRoleId)}`
+                  : ""}
+                {w.customRoleId && roleModeById.get(w.customRoleId)
+                  ? ` (${ROLE_ACCESS_MODE_LABEL[roleModeById.get(w.customRoleId)!]})`
                   : ""}
                 {w.cuentaCreada ? " · Cuenta activa" : " · Sin activar"}
                 {w.habilitado === false ? " · Inhabilitado" : ""}

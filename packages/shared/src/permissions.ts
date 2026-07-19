@@ -1,5 +1,13 @@
 import type { UserRole } from "./types";
 
+/** Nivel de acceso: solo consulta o puede modificar. */
+export type RoleAccessMode = "lectura" | "editor";
+
+export const ROLE_ACCESS_MODE_LABEL: Record<RoleAccessMode, string> = {
+  lectura: "Solo lectura",
+  editor: "Editor",
+};
+
 /** Funciones / capacidades asignables a roles personalizados. */
 export type SpePermission =
   | "dashboard_operativo"
@@ -36,6 +44,10 @@ export interface CustomRole {
   baseRole: CustomRoleBase;
   permisos: SpePermission[];
   activo: boolean;
+  /** lectura = solo consulta; editor = puede modificar según permisos. */
+  modoAcceso?: RoleAccessMode;
+  /** ID de plantilla de origen, si se creó desde catálogo. */
+  plantillaId?: string;
   creadoEn: string;
   creadoPor: string;
   creadoPorNombre?: string;

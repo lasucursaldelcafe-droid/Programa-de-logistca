@@ -2,12 +2,19 @@ import { useMemo, useState } from "react";
 import {
   DEFAULT_PERMISSIONS_BY_ROLE,
   PERMISSION_CATALOG,
+  ROLE_ACCESS_MODE_LABEL,
+  ROLE_TEMPLATES,
   getPermissionGroups,
+  getRoleTemplateCategories,
+  getRoleTemplatesByCategory,
   permissionsByGroup,
   permisosDisponiblesParaBase,
   puedeGestionarRolesCustom,
+  roleTemplateToFormValues,
   type CustomRole,
   type CustomRoleBase,
+  type RoleAccessMode,
+  type RoleTemplate,
   type SpePermission,
 } from "@spe/shared";
 import { useAuth } from "@core/contexts/AuthContext";
@@ -15,6 +22,7 @@ import { Card } from "@core/components/ui";
 import {
   createCustomRole,
   deleteCustomRole,
+  importRoleTemplatesFromCatalog,
   updateCustomRole,
 } from "@core/hooks/useDataStore";
 import { useCustomRoles } from "@core/hooks/useCustomRoles";
@@ -25,24 +33,65 @@ const BASE_ROLE_LABEL: Record<CustomRoleBase, string> = {
   trabajador: "App trabajador",
 };
 
-const EMPTY_FORM = {
+type RoleForm = {
+  nombre: string;
+  descripcion: string;
+  baseRole: CustomRoleBase;
+  permisos: SpePermission[];
+  activo: boolean;
+  modoAcceso: RoleAccessMode | "";
+  plantillaId: string;
+};
+
+const EMPTY_FORM: RoleForm = {
   nombre: "",
   descripcion: "",
-  baseRole: "supervisor_sitio" as CustomRoleBase,
-  permisos: [] as SpePermission[],
+  baseRole: "supervisor_sitio",
+  permisos: [],
   activo: true,
+  modoAcceso: "",
+  plantillaId: "",
 };
+
+function AccessModeBadge({ mode }: { mode?: RoleAccessMode }) {
+  if (!mode) return null;
+  const isRead = mode === "lectura";
+  return (
+    <span
+      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+        isRead
+          ? "bg-neutral-800 text-neutral-300"
+          : "bg-accent/20 text-accent"
+      }`}
+    >
+      {ROLE_ACCESS_MODE_LABEL[mode]}
+    </span>
+  );
+}
 
 export function RolesPage() {
   const { user } = useAuth();
   const roles = useCustomRoles();
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState<RoleForm>(EMPTY_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [filterCategoria, setFilterCategoria] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const groups = useMemo(() => getPermissionGroups(), []);
   const byGroup = useMemo(() => permissionsByGroup(), []);
+  const categorias = useMemo(() => getRoleTemplateCategories(), []);
+
+  const plantillasFiltradas = useMemo(
+    () => getRoleTemplatesByCategory(filterCategoria || undefined),
+    [filterCategoria],
+  );
+
+  const importedTemplateIds = useMemo(
+    () => new Set(roles.map((r) => r.plantillaId).filter(Boolean)),
+    [roles],
+  );
 
   const permisosBase = useMemo(
     () => permisosDisponiblesParaBase(form.baseRole),
@@ -55,6 +104,27 @@ export function RolesPage() {
 
   const currentUser = user;
 
+  function aplicarPlantilla(template: RoleTemplate, importar = false) {
+    const values = roleTemplateToFormValues(template);
+    setForm({
+      nombre: values.nombre,
+      descripcion: values.descripcion,
+      baseRole: values.baseRole,
+      permisos: values.permisos,
+      activo: true,
+      modoAcceso: values.modoAcceso,
+      plantillaId: values.plantillaId,
+    });
+    setEditingId(null);
+    setError(null);
+    setSuccess(
+      importar
+        ? null
+        : `Plantilla «${template.puesto}» cargada en el formulario. Ajusta y guarda.`,
+    );
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+  }
+
   function startEdit(role: CustomRole) {
     setEditingId(role.id);
     setForm({
@@ -63,14 +133,18 @@ export function RolesPage() {
       baseRole: role.baseRole,
       permisos: [...role.permisos],
       activo: role.activo,
+      modoAcceso: role.modoAcceso ?? "",
+      plantillaId: role.plantillaId ?? "",
     });
     setError(null);
+    setSuccess(null);
   }
 
   function resetForm() {
     setEditingId(null);
     setForm(EMPTY_FORM);
     setError(null);
+    setSuccess(null);
   }
 
   function togglePermiso(perm: SpePermission) {
@@ -86,6 +160,7 @@ export function RolesPage() {
     setForm((f) => ({
       ...f,
       permisos: [...DEFAULT_PERMISSIONS_BY_ROLE[f.baseRole]],
+      plantillaId: "",
     }));
   }
 
@@ -101,6 +176,7 @@ export function RolesPage() {
     }
     setBusy(true);
     setError(null);
+    setSuccess(null);
     try {
       const payload = {
         nombre: form.nombre.trim(),
@@ -108,11 +184,15 @@ export function RolesPage() {
         baseRole: form.baseRole,
         permisos: form.permisos,
         activo: form.activo,
+        modoAcceso: form.modoAcceso || undefined,
+        plantillaId: form.plantillaId || undefined,
       };
       if (editingId) {
         await updateCustomRole(editingId, payload, currentUser.uid, currentUser.nombre);
+        setSuccess("Rol actualizado.");
       } else {
         await createCustomRole(payload, currentUser.uid, currentUser.nombre);
+        setSuccess("Rol creado.");
       }
       resetForm();
     } catch (err) {
@@ -122,8 +202,65 @@ export function RolesPage() {
     }
   }
 
+  async function importarPlantilla(template: RoleTemplate) {
+    if (importedTemplateIds.has(template.id)) {
+      setError("Esta plantilla ya fue importada. Puedes editarla en la lista de roles.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const values = roleTemplateToFormValues(template);
+      await createCustomRole(
+        {
+          nombre: values.nombre,
+          descripcion: values.descripcion,
+          baseRole: values.baseRole,
+          permisos: values.permisos,
+          activo: true,
+          modoAcceso: values.modoAcceso,
+          plantillaId: values.plantillaId,
+        },
+        currentUser.uid,
+        currentUser.nombre,
+      );
+      setSuccess(`Rol «${values.nombre}» importado desde plantilla.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo importar la plantilla.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function importarTodasPlantillas() {
+    setBusy(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const count = await importRoleTemplatesFromCatalog(
+        roles,
+        currentUser.uid,
+        currentUser.nombre,
+      );
+      setSuccess(
+        count > 0
+          ? `Se importaron ${count} puestos de ejemplo.`
+          : "Todas las plantillas ya estaban importadas.",
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudieron importar las plantillas.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function eliminar(id: string) {
-    if (!window.confirm("¿Eliminar este rol personalizado? Los usuarios asignados volverán a permisos por defecto.")) {
+    if (
+      !window.confirm(
+        "¿Eliminar este rol personalizado? Los usuarios asignados volverán a permisos por defecto.",
+      )
+    ) {
       return;
     }
     setBusy(true);
@@ -141,30 +278,109 @@ export function RolesPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-display text-3xl font-bold">Roles personalizados</h1>
+        <h1 className="font-display text-3xl font-bold">Roles y puestos</h1>
         <p className="mt-1 max-w-2xl text-neutral-400">
-          Crea roles con funciones a medida. El administrador operativo los asigna al registrar
-          personal o enviar invitaciones.
+          Usa plantillas de puestos con modo <strong className="text-neutral-300">lectura</strong> o{" "}
+          <strong className="text-neutral-300">editor</strong>, impórtalas o personalízalas. El
+          administrador operativo las asigna al registrar personal.
         </p>
       </div>
 
       {error && (
         <p className="rounded-lg bg-alert/10 px-3 py-2 text-sm text-alert">{error}</p>
       )}
+      {success && (
+        <p className="rounded-lg bg-positive/10 px-3 py-2 text-sm text-positive">{success}</p>
+      )}
+
+      <Card>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="font-display text-lg font-semibold">Catálogo de puestos (ejemplo)</h2>
+            <p className="mt-1 text-sm text-neutral-400">
+              {ROLE_TEMPLATES.length} plantillas listas · {importedTemplateIds.size} ya importadas
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <select
+              value={filterCategoria}
+              onChange={(e) => setFilterCategoria(e.target.value)}
+              className="rounded-lg border border-border bg-bg px-3 py-2 text-sm"
+            >
+              <option value="">Todas las categorías</option>
+              {categorias.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void importarTodasPlantillas()}
+              className="rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-black disabled:opacity-50"
+            >
+              Importar todas
+            </button>
+          </div>
+        </div>
+
+        <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {plantillasFiltradas.map((template) => {
+            const yaImportada = importedTemplateIds.has(template.id);
+            return (
+              <li
+                key={template.id}
+                className="flex flex-col rounded-xl border border-border bg-bg/50 p-4"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-medium text-neutral-100">{template.puesto}</span>
+                  <AccessModeBadge mode={template.modoAcceso} />
+                </div>
+                <p className="mt-1 text-xs text-neutral-500">
+                  {template.categoria} · {BASE_ROLE_LABEL[template.baseRole]}
+                </p>
+                <p className="mt-2 flex-1 text-sm text-neutral-400">{template.descripcion}</p>
+                <p className="mt-2 text-xs text-neutral-500">
+                  {template.permisos.length} funciones
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => aplicarPlantilla(template)}
+                    className="rounded-lg border border-border px-2.5 py-1 text-xs text-neutral-300 hover:bg-neutral-800"
+                  >
+                    Personalizar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy || yaImportada}
+                    onClick={() => void importarPlantilla(template)}
+                    className="rounded-lg border border-accent/40 px-2.5 py-1 text-xs text-accent disabled:opacity-40"
+                  >
+                    {yaImportada ? "Importada" : "Importar"}
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </Card>
 
       <Card>
         <h2 className="font-display text-lg font-semibold">
-          {editingId ? "Editar rol" : "Nuevo rol"}
+          {editingId ? "Editar rol" : "Rol personalizado"}
         </h2>
         <form onSubmit={guardar} className="mt-4 space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <label className="text-sm">
-              <span className="mb-1 block text-neutral-300">Nombre</span>
+              <span className="mb-1 block text-neutral-300">Nombre del puesto</span>
               <input
                 value={form.nombre}
                 onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
                 className="w-full rounded-lg border border-border bg-bg px-3 py-2"
-                placeholder="Ej. Coordinador logístico"
+                placeholder="Ej. Coordinador logístico (editor)"
                 required
               />
             </label>
@@ -177,6 +393,7 @@ export function RolesPage() {
                     ...f,
                     baseRole: e.target.value as CustomRoleBase,
                     permisos: [],
+                    plantillaId: "",
                   }))
                 }
                 className="w-full rounded-lg border border-border bg-bg px-3 py-2"
@@ -188,6 +405,23 @@ export function RolesPage() {
                 ))}
               </select>
             </label>
+            <label className="text-sm">
+              <span className="mb-1 block text-neutral-300">Modo de acceso</span>
+              <select
+                value={form.modoAcceso}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    modoAcceso: e.target.value as RoleAccessMode | "",
+                  }))
+                }
+                className="w-full rounded-lg border border-border bg-bg px-3 py-2"
+              >
+                <option value="">Sin especificar</option>
+                <option value="lectura">Solo lectura</option>
+                <option value="editor">Editor (puede modificar)</option>
+              </select>
+            </label>
           </div>
 
           <label className="block text-sm">
@@ -197,7 +431,7 @@ export function RolesPage() {
               onChange={(e) => setForm((f) => ({ ...f, descripcion: e.target.value }))}
               rows={2}
               className="w-full rounded-lg border border-border bg-bg px-3 py-2"
-              placeholder="Para qué sirve este rol en la operación"
+              placeholder="Para qué sirve este puesto en la operación"
             />
           </label>
 
@@ -207,7 +441,7 @@ export function RolesPage() {
               onClick={aplicarPlantillaBase}
               className="rounded-lg border border-border px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800"
             >
-              Usar plantilla de {BASE_ROLE_LABEL[form.baseRole].toLowerCase()}
+              Permisos por defecto del rol base
             </button>
             <label className="flex items-center gap-2 text-sm text-neutral-400">
               <input
@@ -238,7 +472,9 @@ export function RolesPage() {
                             onChange={() => togglePermiso(perm)}
                           />
                           <span>
-                            <span className="text-neutral-200">{PERMISSION_CATALOG[perm].label}</span>
+                            <span className="text-neutral-200">
+                              {PERMISSION_CATALOG[perm].label}
+                            </span>
                             {PERMISSION_CATALOG[perm].descripcion && (
                               <span className="mt-0.5 block text-xs text-neutral-500">
                                 {PERMISSION_CATALOG[perm].descripcion}
@@ -276,22 +512,20 @@ export function RolesPage() {
       </Card>
 
       <Card>
-        <h2 className="font-display text-lg font-semibold">Roles definidos ({roles.length})</h2>
+        <h2 className="font-display text-lg font-semibold">Roles activos ({roles.length})</h2>
         {roles.length === 0 ? (
           <p className="mt-3 text-sm text-neutral-500">
-            Aún no hay roles personalizados. Crea uno arriba para que el administrador lo asigne.
+            Importa plantillas del catálogo o crea un rol personalizado arriba.
           </p>
         ) : (
           <ul className="mt-4 space-y-3">
             {roles.map((role) => (
-              <li
-                key={role.id}
-                className="rounded-lg border border-border bg-bg px-4 py-3"
-              >
+              <li key={role.id} className="rounded-lg border border-border bg-bg px-4 py-3">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-medium">{role.nombre}</span>
+                      <AccessModeBadge mode={role.modoAcceso} />
                       {!role.activo && (
                         <span className="rounded bg-neutral-800 px-2 py-0.5 text-xs text-neutral-400">
                           Inactivo

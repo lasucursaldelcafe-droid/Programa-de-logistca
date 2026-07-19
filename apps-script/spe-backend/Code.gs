@@ -182,7 +182,7 @@ function initSheetHeaders(name, sheet) {
     conversations: ["id", "eventId", "eventNombre", "siteId", "siteNombre", "tipo", "titulo", "participantIds", "lastMessageAt", "lastMessagePreview", "creadoEn", "creadoPor"],
     messages: ["id", "conversationId", "senderUid", "senderNombre", "texto", "creadoEn", "leidoPor"],
     videoRooms: ["id", "conversationId", "eventId", "eventNombre", "roomName", "creadoPor", "creadoPorNombre", "creadoEn", "activo"],
-    customRoles: ["id", "nombre", "descripcion", "baseRole", "permisos", "activo", "creadoEn", "creadoPor", "creadoPorNombre"],
+    customRoles: ["id", "nombre", "descripcion", "baseRole", "permisos", "modoAcceso", "plantillaId", "activo", "creadoEn", "creadoPor", "creadoPorNombre"],
   };
   const headers = schemas[name] || ["id"];
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);

@@ -26,6 +26,11 @@ function normalizeCustomRole(raw: Record<string, unknown>): CustomRole {
     descripcion: raw.descripcion ? String(raw.descripcion) : undefined,
     baseRole: (raw.baseRole as CustomRole["baseRole"]) ?? "trabajador",
     permisos: parseCustomRolePermisos(raw.permisos),
+    modoAcceso:
+      raw.modoAcceso === "lectura" || raw.modoAcceso === "editor"
+        ? raw.modoAcceso
+        : undefined,
+    plantillaId: raw.plantillaId ? String(raw.plantillaId) : undefined,
     activo: raw.activo !== "false" && raw.activo !== false,
     creadoEn: String(raw.creadoEn ?? new Date().toISOString()),
     creadoPor: String(raw.creadoPor ?? ""),
