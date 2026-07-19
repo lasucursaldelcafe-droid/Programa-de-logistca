@@ -11,6 +11,12 @@ export const DEMO_MAP_EVENT: Evento = {
   fechaInicio: new Date(Date.now() - 86400000).toISOString(),
   fechaFin: new Date(Date.now() + 86400000 * 2).toISOString(),
   sitioIds: [SITE_ENTRADA, SITE_ESCENARIO],
+  temaLaboral:
+    "Atención al público, montaje de áreas y apoyo logístico. Uniforme visible y actitud profesional.",
+  reglasOperativas:
+    "Marcar entrada con QR en el sitio asignado.\nPermanecer dentro del radio GPS durante la jornada.\nReportar incidentes desde la app.",
+  tiempoMinimoEstadiaMinutos: 30,
+  supervisionActiva: true,
 };
 
 export const DEMO_MAP_SITES: Sitio[] = [
