@@ -1,0 +1,12 @@
+{
+  "_instrucciones": "Copia sheetsWebAppUrl y sheetsApiToken desde CREDENCIALES-SPE-GENERADAS.txt o config/pendientes-setup.json. Edita en GitHub: config/bootstrap.json → commit → deploy automático.",
+  "proyecto": {
+    "nombre": "Sistema de Personal para Eventos (SPE)",
+    "correoProyecto": "lasucursaldelcafe@gmail.com"
+  },
+  "backend": "sheets",
+  "demoMode": false,
+  "sheetsWebAppUrl": "PEGAR_URL_https://script.google.com/macros/s/XXXX/exec",
+  "sheetsApiToken": "PEGAR_TOKEN_DE_CREDENCIALES_SPE_GENERADAS",
+  "firebase": {}
+}

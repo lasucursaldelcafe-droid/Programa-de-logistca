@@ -71,6 +71,8 @@ service-account.json
 firebase-web-config.json
 sheets-web-app-url.txt
 CREDENCIALES-SHEETS-AUTO.txt
+CREDENCIALES-SPE-GENERADAS.txt
+config/pendientes-setup.json
 apps-script/spe-backend/.clasp.json
 config/credenciales.local.json
 config/diagnostico-report.json
