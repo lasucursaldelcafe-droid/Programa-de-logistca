@@ -1,9 +1,10 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, HashRouter } from "react-router-dom";
-import { bootstrapRuntimeConfig, configureFirebase, configureSheetsClient } from "@spe/shared";
+import { bootstrapRuntimeConfig, configureFirebase, configureSheetsClient, isEffectiveDemoMode } from "@spe/shared";
 import { AuthProvider } from "./contexts/AuthContext";
 import { App } from "./App";
+import { demoStore } from "./demo/store";
 import { isElectron, isNativePlatform } from "./lib/platform";
 import "./index.css";
 
@@ -35,6 +36,10 @@ const routerProps = isElectron() || isNativePlatform() ? {} : { basename: import
 
 async function boot() {
   await bootstrapRuntimeConfig(import.meta.env.BASE_URL, buildEnv);
+
+  if (isEffectiveDemoMode(buildEnv)) {
+    demoStore.seedMapPreviewIfEmpty();
+  }
 
   createRoot(document.getElementById("root")!).render(
     <StrictMode>

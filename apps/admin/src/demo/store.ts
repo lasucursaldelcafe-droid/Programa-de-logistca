@@ -189,7 +189,11 @@ class DemoStore {
 
   /** Sitios + jornadas activas de ejemplo para /mapa en modo demo (primer uso). */
   seedMapPreviewIfEmpty(): void {
-    if (this.sites.length > 0 || hasDemoMapData(this.sites)) return;
+    if (hasDemoMapData(this.sites)) return;
+    const hasActiveGps = this.attendances.some(
+      (a) => a.estado !== "cerrado" && a.ubicacionActual,
+    );
+    if (hasActiveGps) return;
     this.events = [DEMO_MAP_EVENT];
     this.sites = [...DEMO_MAP_SITES];
     this.shifts = [...DEMO_MAP_SHIFTS];
@@ -663,6 +667,7 @@ export function demoLogin(email: string, password: string): AppUser {
   }
 
   saveDemoSession(email);
+  demoStore.seedMapPreviewIfEmpty();
   return account.user;
 }
 
