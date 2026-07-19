@@ -57,8 +57,9 @@ export function MapaEnVivoPage() {
         </div>
         {!isGoogleMapsEnabled() && (
           <p className="mt-2 text-xs text-neutral-500">
-            Configura <code className="text-neutral-400">VITE_GOOGLE_MAPS_API_KEY</code> en GitHub
-            Secrets o <code className="text-neutral-400">apps/admin/.env.local</code> para activar
+            Configura <code className="text-neutral-400">googleMapsApiKey</code> en{" "}
+            <code className="text-neutral-400">config/bootstrap.json</code> (GitHub) o{" "}
+            <code className="text-neutral-400">VITE_GOOGLE_MAPS_API_KEY</code> en Secrets para
             Google Maps (Maps JavaScript API).
           </p>
         )}

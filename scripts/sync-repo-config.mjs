@@ -66,6 +66,7 @@ function mergeFirebase(...sources) {
 function buildBootstrap() {
   const proyecto = readJson(resolve(CONFIG, "proyecto.json")) ?? {};
   const local = readJson(resolve(CONFIG, "credenciales.local.json")) ?? {};
+  const existing = readJson(resolve(CONFIG, "bootstrap.json")) ?? {};
   const fbFile = readJson(resolve(ROOT, "firebase-web-config.json")) ?? {};
   const sheetsFile = parseSheetsCredFile();
 
@@ -94,6 +95,12 @@ function buildBootstrap() {
     demoMode = false;
   }
 
+  const googleMapsApiKey =
+    local.googleMapsApiKey?.trim() ||
+    local.google?.mapsApiKey?.trim() ||
+    existing.googleMapsApiKey?.trim() ||
+    "";
+
   return {
     proyecto: {
       nombre: proyecto.nombre,
@@ -103,6 +110,7 @@ function buildBootstrap() {
     demoMode,
     sheetsWebAppUrl: useSheets ? sheetsUrl : "",
     sheetsApiToken: useSheets ? sheetsToken : "",
+    googleMapsApiKey: isSet(googleMapsApiKey) ? googleMapsApiKey : "",
     firebase: useFirebase ? firebase : {},
   };
 }
@@ -121,6 +129,10 @@ function envLines(bootstrap) {
   if (bootstrap.backend === "sheets") {
     lines.push(`VITE_SHEETS_WEB_APP_URL=${bootstrap.sheetsWebAppUrl}`);
     lines.push(`VITE_SHEETS_API_TOKEN=${bootstrap.sheetsApiToken}`);
+  }
+
+  if (isSet(bootstrap.googleMapsApiKey)) {
+    lines.push(`VITE_GOOGLE_MAPS_API_KEY=${bootstrap.googleMapsApiKey}`);
   }
 
   if (bootstrap.backend === "firebase" || Object.keys(fb).length > 0) {
@@ -148,17 +160,20 @@ function runtimeConfig(bootstrap) {
     backend: bootstrap.backend,
     demoMode: bootstrap.demoMode,
   };
+  const maps =
+    isSet(bootstrap.googleMapsApiKey) ? { googleMapsApiKey: bootstrap.googleMapsApiKey } : {};
   if (bootstrap.backend === "sheets") {
     return {
       ...base,
+      ...maps,
       sheetsWebAppUrl: bootstrap.sheetsWebAppUrl,
       sheetsApiToken: bootstrap.sheetsApiToken,
     };
   }
   if (bootstrap.backend === "firebase" && Object.keys(bootstrap.firebase).length > 0) {
-    return { ...base, firebase: bootstrap.firebase };
+    return { ...base, ...maps, firebase: bootstrap.firebase };
   }
-  return base;
+  return { ...base, ...maps };
 }
 
 function writeEnv(app, content) {

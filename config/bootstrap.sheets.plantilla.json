@@ -8,5 +8,6 @@
   "demoMode": false,
   "sheetsWebAppUrl": "PEGAR_URL_https://script.google.com/macros/s/XXXX/exec",
   "sheetsApiToken": "PEGAR_TOKEN_DE_CREDENCIALES_SPE_GENERADAS",
+  "googleMapsApiKey": "PEGAR_CLAVE_AIzaSy...",
   "firebase": {}
 }
