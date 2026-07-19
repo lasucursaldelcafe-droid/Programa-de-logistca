@@ -44,6 +44,7 @@ function main() {
     VITE_DATA_BACKEND: useSheets ? "sheets" : useFirebase ? "firebase" : "demo",
     VITE_SHEETS_WEB_APP_URL: useSheets ? sheetsUrl : "",
     VITE_SHEETS_API_TOKEN: useSheets ? sheetsToken : "",
+    VITE_GOOGLE_MAPS_API_KEY: isSet(cfg?.googleMapsApiKey) ? cfg.googleMapsApiKey.trim() : "",
     VITE_FIREBASE_API_KEY: useFirebase ? (fb.apiKey ?? "") : "",
     VITE_FIREBASE_AUTH_DOMAIN: useFirebase ? (fb.authDomain ?? "") : "",
     VITE_FIREBASE_PROJECT_ID: useFirebase ? (fb.projectId ?? "") : "",

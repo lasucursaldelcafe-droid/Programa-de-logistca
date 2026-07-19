@@ -13,6 +13,7 @@ export interface RuntimeBootstrapConfig {
   demoMode?: boolean;
   sheetsWebAppUrl?: string;
   sheetsApiToken?: string;
+  googleMapsApiKey?: string;
   firebase?: Partial<FirebaseClientConfig>;
 }
 
@@ -28,12 +29,25 @@ const runtime: RuntimeState = {
   demoMode: null,
 };
 
+let runtimeGoogleMapsApiKey: string | null = null;
+
+function setGoogleMapsApiKey(value: string | undefined): void {
+  const trimmed = value?.trim() ?? "";
+  runtimeGoogleMapsApiKey = trimmed.length > 0 ? trimmed : null;
+}
+
+export function getRuntimeGoogleMapsApiKey(): string {
+  return runtimeGoogleMapsApiKey ?? "";
+}
+
 function normalizeBackend(value: string | undefined): EffectiveBackend | null {
   if (value === "demo" || value === "firebase" || value === "sheets") return value;
   return null;
 }
 
 function applyConfig(config: RuntimeBootstrapConfig): void {
+  if (config.googleMapsApiKey) setGoogleMapsApiKey(config.googleMapsApiKey);
+
   if (config.backend === "demo" || config.demoMode === true) {
     runtime.backend = "demo";
     runtime.demoMode = true;
@@ -227,11 +241,14 @@ export async function bootstrapRuntimeConfig(
     });
     if (res.ok) {
       const remote = (await res.json()) as RuntimeBootstrapConfig;
+      if (remote.googleMapsApiKey) setGoogleMapsApiKey(remote.googleMapsApiKey);
       if (remote.backend === "demo" || remote.demoMode === true) {
         persistDemoMode();
       } else if (remote.sheetsWebAppUrl && remote.sheetsApiToken) {
         applyConfig(remote);
       } else if (remote.backend === "firebase" && remote.firebase) {
+        applyConfig(remote);
+      } else if (remote.googleMapsApiKey) {
         applyConfig(remote);
       }
     }
