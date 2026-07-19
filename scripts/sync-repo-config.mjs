@@ -71,13 +71,15 @@ function buildBootstrap() {
   const sheetsUrl =
     local.sheets?.webAppUrl?.trim() ||
     sheetsFile?.webAppUrl ||
+    existing.sheetsWebAppUrl?.trim() ||
     "";
   const sheetsToken =
     local.sheets?.apiToken?.trim() ||
     sheetsFile?.apiToken ||
+    existing.sheetsApiToken?.trim() ||
     "";
 
-  const firebase = mergeFirebase(local.firebase, fbFile);
+  const firebase = mergeFirebase(existing.firebase, local.firebase, fbFile);
 
   const useSheets = isSet(sheetsUrl) && isSet(sheetsToken);
   const useFirebase =
@@ -89,6 +91,9 @@ function buildBootstrap() {
     backend = "sheets";
     demoMode = false;
   } else if (useFirebase) {
+    backend = "firebase";
+    demoMode = false;
+  } else if (existing.backend === "firebase" && existing.demoMode === false) {
     backend = "firebase";
     demoMode = false;
   }
