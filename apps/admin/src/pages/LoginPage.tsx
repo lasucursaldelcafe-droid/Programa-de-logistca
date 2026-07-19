@@ -15,6 +15,7 @@ import {
 import { isDemoMode } from "../lib/mode";
 import { isSheetsBackend } from "../lib/backend";
 import { clearDemoSession } from "../demo/store";
+import { clearDemoPersistedState } from "../demo/persist";
 import { LoginAyudaPanel } from "../components/LoginAyudaPanel";
 import { BiometricLoginButton } from "../components/BiometricLogin";
 import { isBiometricAvailable, saveBiometricCredentials } from "../lib/biometricAuth";
@@ -53,7 +54,8 @@ export function LoginPage() {
     resetToDemoMode();
     clearSheetsSession();
     clearDemoSession();
-    window.location.reload();
+    clearDemoPersistedState();
+    window.location.href = `${import.meta.env.BASE_URL}login?spe_backend=demo`;
   }
 
   if (!loading && user) {
