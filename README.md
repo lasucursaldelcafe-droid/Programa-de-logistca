@@ -42,6 +42,8 @@ npm run config:sync   # bootstrap.json + .env.local de las 3 apps + spe-runtime-
 
 **Contraseña Google:** cópiala en `config/credenciales.local.json` en tu máquina (nunca la subas a Git). Correo del proyecto: `lasucursaldelcafe@gmail.com`.
 
+**¿Te pide un Secret y no sabes dónde conseguirlo?** → [`docs-source/DONDE-CONSEGUIR-CADA-SECRET.md`](docs-source/DONDE-CONSEGUIR-CADA-SECRET.md) (rutas exactas Gmail, Firebase, GitHub).
+
 ## Diagnóstico y CD automático
 
 Analiza qué falla (config, Sheets, Firebase, Pages, login) y corrige lo posible:
