@@ -32,6 +32,7 @@
     "emulators": "firebase emulators:start --only auth,firestore --project demo-personal-eventos",
     "seed": "tsx scripts/seed-emulators.ts",
     "seed:production": "tsx scripts/seed-production.ts",
+    "seed:sheets-production": "node scripts/seed-sheets-production.mjs",
     "setup": "tsx scripts/setup-phase1.ts",
     "setup:all": "npm run setup && npm run seed",
     "setup:auto": "tsx scripts/setup-automation.ts",

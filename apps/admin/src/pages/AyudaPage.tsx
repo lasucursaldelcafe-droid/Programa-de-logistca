@@ -37,7 +37,7 @@ interface AyudaPageProps {
 
 export function AyudaPage({ platform }: AyudaPageProps) {
   return (
-    <div className="mx-auto max-w-2xl space-y-8 py-4">
+    <div className="mx-auto max-w-2xl space-y-5 py-4">
       <div>
         <h1 className="font-display text-2xl font-semibold">Guía de uso</h1>
         <p className="mt-2 text-neutral-400">

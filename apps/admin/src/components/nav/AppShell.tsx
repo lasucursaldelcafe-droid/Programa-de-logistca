@@ -22,7 +22,7 @@ export function AppShell({ user, brand, brandSub, sections, onLogout }: AppShell
   return (
     <div className="min-h-screen bg-bg lg:flex">
       {/* Sidebar — desktop */}
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-gradient-to-b from-surface to-bg lg:flex">
+      <aside className="hidden w-52 shrink-0 flex-col border-r border-border bg-gradient-to-b from-surface to-bg lg:flex">
         <BrandBlock brand={brand} brandSub={brandSub} />
         <div className="flex-1 overflow-y-auto px-3 py-4">
           <SidebarNav sections={sections} />
@@ -80,7 +80,7 @@ export function AppShell({ user, brand, brandSub, sections, onLogout }: AppShell
             </button>
           </div>
         </header>
-        <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8">
+        <main className="flex-1 px-3 py-4 lg:px-6 lg:py-5">
           <Outlet />
         </main>
       </div>

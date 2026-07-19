@@ -106,7 +106,7 @@ export function HomePage() {
 
   if (esTrabajador && workerKpis) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-5">
         <PageHeader
           title="Mi panel"
           description="Turnos, jornada y nómina"
@@ -167,7 +167,7 @@ export function HomePage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       {user && puedeGestionarConfiguracion(user.role) && <SetupBanner />}
       <PageHeader
         title="Resumen"
@@ -192,7 +192,7 @@ export function HomePage() {
         )}
       </PageHeader>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
         <MetricCard value={kpis.workersTotal} label="Trabajadores" />
         <MetricCard value={kpis.workersEnSitio} label="En sitio" tone="positive" />
         <MetricCard value={kpis.turnosPendientes} label="Turnos pendientes" tone="accent" />
@@ -204,14 +204,7 @@ export function HomePage() {
           sublabel={formatCurrencyCOP(kpis.nominaPendienteMonto)}
           tone="accent"
         />
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
-          value={kpis.turnosConfirmados}
-          label="Turnos confirmados"
-          tone="positive"
-        />
+        <MetricCard value={kpis.turnosConfirmados} label="Turnos confirmados" tone="positive" />
         <MetricCard value={kpis.jornadasCerradas} label="Jornadas cerradas" />
         <MetricCard
           value={formatCurrencyCOP(kpis.nominaPagadaMonto)}
@@ -225,7 +218,7 @@ export function HomePage() {
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-3 lg:grid-cols-2">
         <Card>
           <BarChart title="Personal por estado" bars={workerStatusBars(workersScoped)} />
         </Card>
