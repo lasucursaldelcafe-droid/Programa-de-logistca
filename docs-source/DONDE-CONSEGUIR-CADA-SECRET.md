@@ -119,6 +119,20 @@ dentro del objeto `"firebase": { "apiKey": "...", ... }`.
 
 Si no usas notificaciones push, **puedes omitir** este secret.
 
+### VITE_GOOGLE_MAPS_API_KEY (opcional — mapa en vivo con Google Maps)
+
+| Secret | Ruta exacta |
+|--------|-------------|
+| `VITE_GOOGLE_MAPS_API_KEY` | [Google Cloud Console](https://console.cloud.google.com/google/maps-apis/credentials) → **Credenciales** → **Crear credenciales** → **Clave de API** → habilitar **Maps JavaScript API** → restringir por dominio HTTP (`*.github.io`, tu dominio de producción) |
+
+Sin esta clave, `/mapa` y **Supervisión** usan el mapa esquemático SVG (demo). La geolocalización GPS del trabajador **no depende** de Google Maps.
+
+**Local:** añade en `apps/admin/.env.local`:
+
+```bash
+VITE_GOOGLE_MAPS_API_KEY=tu-clave-aqui
+```
+
 ### FIREBASE_SERVICE_ACCOUNT_JSON (solo workflow «Crear usuarios Firebase»)
 
 | Secret | Ruta exacta |

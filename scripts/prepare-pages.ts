@@ -70,6 +70,7 @@ run("npm run build -w @spe/shared && npm run build -w @spe/admin", {
   VITE_FIREBASE_MESSAGING_SENDER_ID: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? "",
   VITE_FIREBASE_APP_ID: process.env.VITE_FIREBASE_APP_ID ?? "",
   VITE_FIREBASE_VAPID_KEY: process.env.VITE_FIREBASE_VAPID_KEY ?? "",
+  VITE_GOOGLE_MAPS_API_KEY: process.env.VITE_GOOGLE_MAPS_API_KEY ?? "",
 });
 
 const adminDist = resolve(ROOT, "apps/admin/dist");
