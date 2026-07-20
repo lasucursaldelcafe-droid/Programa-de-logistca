@@ -151,6 +151,14 @@ export function getSetupChecklist(base: DeploymentBase): SetupChecklistItem[] {
 
   return [
     {
+      id: "pendientes-guia",
+      title: "Guía paso a paso (config. pendiente)",
+      description: "Credenciales, links automáticos y orden de configuración.",
+      priority: "p0",
+      href: `${pages}pendientes`,
+      actionLabel: "Abrir guía",
+    },
+    {
       id: "login-demo",
       title: "Probar login demo en la web",
       description: "Verifica que la app carga y entra con admin automático.",

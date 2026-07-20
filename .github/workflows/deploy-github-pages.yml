@@ -145,13 +145,22 @@ jobs:
           fi
 
           if [ "$BOOT_BACKEND" = "sheets" ] && [ -n "$BOOT_SHEETS_URL" ] && [ -n "$BOOT_SHEETS_TOKEN" ]; then
-            echo "demo_mode=false" >> "$GITHUB_OUTPUT"
-            echo "data_backend=sheets" >> "$GITHUB_OUTPUT"
-            echo "use_sheets=true" >> "$GITHUB_OUTPUT"
-            echo "sheets_url=$BOOT_SHEETS_URL" >> "$GITHUB_OUTPUT"
-            echo "sheets_token=$BOOT_SHEETS_TOKEN" >> "$GITHUB_OUTPUT"
-            echo "✓ Backend Google Sheets desde config/bootstrap.json"
-            exit 0
+            PLACEHOLDER_TOKEN=$(node -e "
+              const t=(process.argv[1]||'').trim().toLowerCase();
+              const bad=new Set(['cambiar-token-seguro','placeholder','changeme','tu-token']);
+              process.exit(t.length>=16&&!bad.has(t)?1:0);
+            " "$BOOT_SHEETS_TOKEN")
+            if [ "$PLACEHOLDER_TOKEN" -eq 0 ]; then
+              echo "○ bootstrap Sheets con token placeholder — se usará modo demo"
+            else
+              echo "demo_mode=false" >> "$GITHUB_OUTPUT"
+              echo "data_backend=sheets" >> "$GITHUB_OUTPUT"
+              echo "use_sheets=true" >> "$GITHUB_OUTPUT"
+              echo "sheets_url=$BOOT_SHEETS_URL" >> "$GITHUB_OUTPUT"
+              echo "sheets_token=$BOOT_SHEETS_TOKEN" >> "$GITHUB_OUTPUT"
+              echo "✓ Backend Google Sheets desde config/bootstrap.json"
+              exit 0
+            fi
           fi
 
           if [ "$VITE_DATA_BACKEND" = "sheets" ] && [ -n "$VITE_SHEETS_WEB_APP_URL" ] && [ -n "$VITE_SHEETS_API_TOKEN" ]; then
@@ -210,9 +219,11 @@ jobs:
         run: |
           test -f docs/index.html
           test -f docs/.nojekyll
+          test -f docs/descargas/index.html
+          test -f docs/pendientes/index.html
           test -f docs/worker/index.html
           test -f docs/master/index.html
-          echo "✓ docs/ listo (app unificada + redirecciones /worker/ y /master/)"
+          echo "✓ docs/ listo (app unificada + /descargas/ + /pendientes/)"
 
       - name: Publicar en gh-pages/docs
         uses: JamesIves/github-pages-deploy-action@v4

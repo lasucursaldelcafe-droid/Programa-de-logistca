@@ -17,7 +17,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { isConfigSet } from "./lib/config-placeholders.mjs";
+import { isConfigSet, isUsableSheetsApiToken } from "./lib/config-placeholders.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const CONFIG = resolve(ROOT, "config");
@@ -81,7 +81,7 @@ function buildBootstrap() {
 
   const firebase = mergeFirebase(existing.firebase, local.firebase, fbFile);
 
-  const useSheets = isSet(sheetsUrl) && isSet(sheetsToken);
+  const useSheets = isSet(sheetsUrl) && isUsableSheetsApiToken(sheetsToken);
   const useFirebase =
     isSet(firebase.apiKey) && isSet(firebase.projectId) && isSet(firebase.appId);
 

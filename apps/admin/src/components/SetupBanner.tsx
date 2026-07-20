@@ -13,12 +13,20 @@ export function SetupBanner() {
           <p className="text-sm font-medium text-accent">Configuración pendiente</p>
           <p className="text-xs text-neutral-400">Evento, sitios, tarifas y QR.</p>
         </div>
-        <Link
-          to="/configuracion"
-          className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-bg hover:bg-accent/90"
-        >
-          Abrir asistente
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            to="/pendientes"
+            className="rounded-lg border border-accent/40 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/10"
+          >
+            Ver guía
+          </Link>
+          <Link
+            to="/configuracion"
+            className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-bg hover:bg-accent/90"
+          >
+            Abrir asistente
+          </Link>
+        </div>
       </div>
     </div>
   );

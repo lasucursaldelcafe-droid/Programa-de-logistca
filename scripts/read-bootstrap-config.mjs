@@ -6,7 +6,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { isConfigSet } from "./lib/config-placeholders.mjs";
+import { isConfigSet, isUsableSheetsApiToken } from "./lib/config-placeholders.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const BOOTSTRAP = resolve(ROOT, "config/bootstrap.json");
@@ -34,7 +34,10 @@ function main() {
   const sheetsToken = cfg?.sheetsApiToken?.trim() ?? "";
   const fb = cfg?.firebase ?? {};
 
-  const useSheets = backend === "sheets" || (isSet(sheetsUrl) && isSet(sheetsToken));
+  const useSheets =
+    (backend === "sheets" || (isSet(sheetsUrl) && isUsableSheetsApiToken(sheetsToken))) &&
+    isSet(sheetsUrl) &&
+    isUsableSheetsApiToken(sheetsToken);
   const useFirebase =
     backend === "firebase" ||
     (isSet(fb.apiKey) && isSet(fb.projectId) && isSet(fb.appId));

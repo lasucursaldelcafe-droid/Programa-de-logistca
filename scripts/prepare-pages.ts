@@ -94,6 +94,8 @@ finalizeSpa(adminDist, [
   "facturacion",
   "inventario",
   "integraciones",
+  "descargas",
+  "pendientes",
   "supervision",
   "master",
   "master/administradores",

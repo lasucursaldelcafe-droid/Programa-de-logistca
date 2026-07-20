@@ -3,10 +3,10 @@
     "nombre": "Sistema de Personal para Eventos (SPE)",
     "correoProyecto": "lasucursaldelcafe@gmail.com"
   },
-  "backend": "sheets",
-  "demoMode": false,
-  "sheetsWebAppUrl": "https://script.google.com/macros/s/AKfycbxrPsI7zzGJSJAq_kShT5Hd5QBzCMtWjpX4PFneVKvtbuWw555-FY6Gcn-4xhn60y8AOw/exec",
-  "sheetsApiToken": "cambiar-token-seguro",
+  "backend": "demo",
+  "demoMode": true,
+  "sheetsWebAppUrl": "",
+  "sheetsApiToken": "",
   "googleMapsApiKey": "AIzaSyBsdglQ29ZUH7_h2HXsk0lqSHtdxhBqOak",
   "firebase": {}
 }
