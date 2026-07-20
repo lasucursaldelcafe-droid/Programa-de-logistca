@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   BREAK_TIPO_LABEL,
   NOTIFICATION_TIPO_LABEL,
-  puedeEnviarEmergencia,
+  puedeEnviarNotificacion,
   notificationUnreadFor,
   type BreakTipo,
 } from "@spe/shared";
@@ -14,6 +14,7 @@ import {
   markNotificationRead,
   processDueBreakReminders,
   scheduleBreakReminder,
+  sendAdminNotification,
   sendEmergencyBroadcast,
   useBreaks,
   useNotifications,
@@ -39,6 +40,15 @@ export function NotificacionesPage() {
     inicio: "",
     fin: "",
   });
+  const [composeForm, setComposeForm] = useState({
+    titulo: "",
+    mensaje: "",
+    scope: "todos" as "todos" | "admins" | "workers" | "event" | "site",
+    workerIds: [] as string[],
+    eventId: "",
+    siteId: "",
+    urgente: false,
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,7 +62,7 @@ export function NotificacionesPage() {
 
   if (!user) return null;
 
-  const canEmergency = puedeEnviarEmergencia(user.role);
+  const canSend = puedeEnviarNotificacion(user.role);
   const currentUser = user;
   const activos = attendances.filter((a) => a.estado !== "cerrado");
 
@@ -66,7 +76,7 @@ export function NotificacionesPage() {
 
   async function enviarEmergencia(e: FormEvent) {
     e.preventDefault();
-    if (!canEmergency || !emergencyMsg.trim()) return;
+    if (!canSend || !emergencyMsg.trim()) return;
     setBusy(true);
     setError(null);
     try {
@@ -91,7 +101,7 @@ export function NotificacionesPage() {
 
   async function programarBreak(e: FormEvent) {
     e.preventDefault();
-    if (!canEmergency || !breakForm.shiftId) return;
+    if (!canSend || !breakForm.shiftId) return;
     const shift = shifts.find((s) => s.id === breakForm.shiftId);
     if (!shift) return;
     setBusy(true);
@@ -110,6 +120,52 @@ export function NotificacionesPage() {
     }
   }
 
+  function toggleWorkerSelection(workerId: string) {
+    setComposeForm((f) => ({
+      ...f,
+      workerIds: f.workerIds.includes(workerId)
+        ? f.workerIds.filter((id) => id !== workerId)
+        : [...f.workerIds, workerId],
+    }));
+  }
+
+  async function enviarNotificacion(e: FormEvent) {
+    e.preventDefault();
+    if (!canSend || !composeForm.titulo.trim() || !composeForm.mensaje.trim()) return;
+    if (composeForm.scope === "workers" && composeForm.workerIds.length === 0) {
+      setError("Selecciona al menos un trabajador.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await sendAdminNotification({
+        titulo: composeForm.titulo.trim(),
+        mensaje: composeForm.mensaje.trim(),
+        scope: composeForm.scope,
+        workerIds: composeForm.scope === "workers" ? composeForm.workerIds : undefined,
+        eventId: composeForm.scope === "event" ? composeForm.eventId : undefined,
+        siteId: composeForm.scope === "site" ? composeForm.siteId : undefined,
+        urgente: composeForm.urgente,
+        actorUid: currentUser.uid,
+        actorNombre: currentUser.nombre,
+      });
+      setComposeForm({
+        titulo: "",
+        mensaje: "",
+        scope: "todos",
+        workerIds: [],
+        eventId: "",
+        siteId: "",
+        urgente: false,
+      });
+    } catch {
+      setError("No se pudo enviar la notificación.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="space-y-5">
       <div>
@@ -121,7 +177,113 @@ export function NotificacionesPage() {
 
       {error && <p className="rounded-lg bg-alert/10 px-3 py-2 text-sm text-alert">{error}</p>}
 
-      {canEmergency && (
+      {canSend && (
+        <Card>
+          <h2 className="font-display text-lg font-semibold">Enviar notificación</h2>
+          <p className="mt-1 text-sm text-neutral-400">
+            Llega a la bandeja en tiempo real{pushAvailable() ? " y como push en el navegador" : ""}.
+          </p>
+          <form onSubmit={enviarNotificacion} className="mt-4 space-y-3">
+            <input
+              value={composeForm.titulo}
+              onChange={(e) => setComposeForm((f) => ({ ...f, titulo: e.target.value }))}
+              placeholder="Título"
+              className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm"
+              required
+            />
+            <textarea
+              value={composeForm.mensaje}
+              onChange={(e) => setComposeForm((f) => ({ ...f, mensaje: e.target.value }))}
+              placeholder="Mensaje para el personal…"
+              className="h-24 w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm"
+              required
+            />
+            <div className="flex flex-wrap gap-2">
+              {(
+                [
+                  ["todos", "Todos"],
+                  ["admins", "Administradores"],
+                  ["workers", "Trabajadores"],
+                  ["event", "Por evento"],
+                  ["site", "Por sitio"],
+                ] as const
+              ).map(([scope, label]) => (
+                <button
+                  key={scope}
+                  type="button"
+                  onClick={() => setComposeForm((f) => ({ ...f, scope }))}
+                  className={`rounded-lg px-3 py-1.5 text-xs ${
+                    composeForm.scope === scope
+                      ? "bg-accent/20 text-accent"
+                      : "border border-border text-neutral-400"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {composeForm.scope === "workers" && (
+              <div className="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-border p-3">
+                {workers.map((w) => (
+                  <label key={w.id} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={composeForm.workerIds.includes(w.id)}
+                      onChange={() => toggleWorkerSelection(w.id)}
+                    />
+                    {w.nombre}
+                  </label>
+                ))}
+              </div>
+            )}
+            {composeForm.scope === "event" && (
+              <select
+                value={composeForm.eventId}
+                onChange={(e) => setComposeForm((f) => ({ ...f, eventId: e.target.value }))}
+                className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm"
+                required
+              >
+                <option value="">Evento…</option>
+                {events.map((ev) => (
+                  <option key={ev.id} value={ev.id}>{ev.nombre}</option>
+                ))}
+              </select>
+            )}
+            {composeForm.scope === "site" && (
+              <select
+                value={composeForm.siteId}
+                onChange={(e) => setComposeForm((f) => ({ ...f, siteId: e.target.value }))}
+                className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm"
+                required
+              >
+                <option value="">Sitio…</option>
+                {[...new Map(shifts.map((s) => [s.siteId, s.siteNombre])).entries()].map(
+                  ([siteId, siteNombre]) => (
+                    <option key={siteId} value={siteId}>{siteNombre}</option>
+                  ),
+                )}
+              </select>
+            )}
+            <label className="flex items-center gap-2 text-sm text-neutral-300">
+              <input
+                type="checkbox"
+                checked={composeForm.urgente}
+                onChange={(e) => setComposeForm((f) => ({ ...f, urgente: e.target.checked }))}
+              />
+              Marcar como urgente
+            </label>
+            <button
+              type="submit"
+              disabled={busy}
+              className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
+            >
+              {busy ? "Enviando…" : "Enviar notificación"}
+            </button>
+          </form>
+        </Card>
+      )}
+
+      {canSend && (
         <Card>
           <h2 className="font-display text-lg font-semibold text-alert">Botón de emergencia</h2>
           <form onSubmit={enviarEmergencia} className="mt-4 space-y-3">
@@ -186,7 +348,7 @@ export function NotificacionesPage() {
         </Card>
       )}
 
-      {canEmergency && (
+      {canSend && (
         <Card>
           <h2 className="font-display text-lg font-semibold">Programar break / almuerzo</h2>
           <form onSubmit={programarBreak} className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -277,7 +439,13 @@ export function NotificacionesPage() {
                       <p className="mt-1 text-sm text-neutral-400">{n.mensaje}</p>
                       <p className="mt-1 font-mono text-[10px] text-neutral-500">
                         {NOTIFICATION_TIPO_LABEL[n.tipo]} · {new Date(n.timestamp).toLocaleString("es-CO")}
+                        {typeof n.pushTokensEnviados === "number" && (
+                          <> · push: {n.pushTokensEnviados}{n.pushError ? " (parcial)" : ""}</>
+                        )}
                       </p>
+                      {n.pushError && (
+                        <p className="mt-1 text-[10px] text-neutral-500">Push: {n.pushError}</p>
+                      )}
                     </div>
                     <Badge
                       label={n.urgente ? "Urgente" : "Info"}

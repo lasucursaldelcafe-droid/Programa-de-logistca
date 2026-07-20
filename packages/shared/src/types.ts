@@ -231,6 +231,10 @@ export interface AppNotification {
   actorNombre?: string;
   leidaPor: string[];
   accionTurno?: boolean;
+  /** Rellenado por Cloud Function al enviar FCM */
+  pushEnviadoEn?: string;
+  pushTokensEnviados?: number;
+  pushError?: string;
 }
 
 export interface BreakSchedule {
@@ -329,6 +333,11 @@ export function puedeVerMapaEnVivo(role: UserRole): boolean {
 
 export function puedeEnviarEmergencia(role: UserRole): boolean {
   return role === "administrador" || role === "supervisor_sitio";
+}
+
+/** Admin/supervisor puede enviar notificaciones manuales y push. */
+export function puedeEnviarNotificacion(role: UserRole): boolean {
+  return puedeEnviarEmergencia(role);
 }
 
 export const NOTIFICATION_TIPO_LABEL: Record<NotificationTipo, string> = {

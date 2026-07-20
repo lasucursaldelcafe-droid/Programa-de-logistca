@@ -42,6 +42,7 @@ apps/desktop/release/
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+functions/lib/
 
 # debug
 npm-debug.log*

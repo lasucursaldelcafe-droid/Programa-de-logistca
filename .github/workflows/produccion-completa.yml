@@ -9,6 +9,7 @@ on:
       - firestore.rules
       - firestore.indexes.json
       - firebase.json
+      - functions/**
       - .github/workflows/produccion-completa.yml
       - scripts/firestore-bootstrap.mjs
       - scripts/deploy-firestore-rules-api.mjs
@@ -89,6 +90,23 @@ jobs:
           npm run firestore:bootstrap -- --uid 8kJ9xnbXwlNVQerimF088JXo8Ql1 --skip-auth || \
           SPE_PROD_PASSWORD="${SPE_PROD_PASSWORD:-SpeAdmin2026!}" npm run firestore:bootstrap
 
+      - name: Desplegar Cloud Functions (push FCM)
+        id: functions
+        continue-on-error: true
+        run: |
+          if [ -z "$FIREBASE_TOKEN" ] && [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "status=skipped" >> "$GITHUB_OUTPUT"
+            echo "::warning::Falta FIREBASE_TOKEN — despliega functions manualmente con npm run firebase:deploy-functions"
+            exit 0
+          fi
+          npm run build:functions
+          if npx firebase-tools deploy --only functions \
+            --project "${VITE_FIREBASE_PROJECT_ID:-programalog-ccc12}" --non-interactive; then
+            echo "status=ok" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=fail" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Verificar login producción
         id: verify
         continue-on-error: true
@@ -112,6 +130,7 @@ jobs:
           echo "| Paso | Estado |" >> "$GITHUB_STEP_SUMMARY"
           echo "|------|--------|" >> "$GITHUB_STEP_SUMMARY"
           echo "| Reglas | \`${{ steps.rules.outputs.status || 'n/a' }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Cloud Functions | \`${{ steps.functions.outputs.status || 'n/a' }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Login verify | \`${{ steps.verify.outputs.status || 'n/a' }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           if [ "${{ steps.verify.outputs.status }}" != "ok" ]; then

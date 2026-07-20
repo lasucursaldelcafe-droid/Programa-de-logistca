@@ -1,4 +1,4 @@
-import { getMessaging, getToken, isSupported, type Messaging } from "firebase/messaging";
+import { getMessaging, getToken, isSupported, onMessage, type Messaging } from "firebase/messaging";
 import { getFirebaseApp, getRuntimeVapidKey } from "@spe/shared";
 import { DEMO_MODE } from "./mode";
 import { saveFcmToken } from "../hooks/useNotifications";
@@ -11,6 +11,20 @@ function resolveVapidKey(): string | undefined {
 }
 
 let messaging: Messaging | null = null;
+let foregroundHandlerRegistered = false;
+
+function registerForegroundHandler(messagingInstance: Messaging): void {
+  if (foregroundHandlerRegistered) return;
+  foregroundHandlerRegistered = true;
+
+  onMessage(messagingInstance, (payload) => {
+    const title = payload.notification?.title ?? "Personal Eventos";
+    const body = payload.notification?.body ?? "";
+    if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+      new Notification(title, { body, icon: "/favicon.ico" });
+    }
+  });
+}
 
 export async function initPushNotifications(uid: string): Promise<string | null> {
   const vapidKey = resolveVapidKey();
@@ -21,6 +35,7 @@ export async function initPushNotifications(uid: string): Promise<string | null>
 
   try {
     messaging = getMessaging(getFirebaseApp());
+    registerForegroundHandler(messaging);
     const token = await getToken(messaging, { vapidKey });
     if (token) {
       await saveFcmToken(uid, token);

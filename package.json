@@ -60,6 +60,8 @@
     "setup:fcm": "tsx scripts/update-fcm-sw.ts",
     "firebase:deploy-rules": "firebase deploy --only firestore:rules",
     "firebase:deploy-firestore": "firebase deploy --only firestore:rules,firestore:indexes",
+    "firebase:deploy-functions": "firebase deploy --only functions",
+    "build:functions": "npm run build -w functions",
     "acceso": "node scripts/print-acceso.mjs",
     "test:smoke": "firebase emulators:exec --only auth,firestore --project demo-personal-eventos \"npm run seed && tsx scripts/ci-smoke.ts\"",
     "check:nav": "tsx scripts/check-nav-routes.ts",
