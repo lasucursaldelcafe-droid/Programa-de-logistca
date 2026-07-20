@@ -43,7 +43,8 @@
     },
     "linux": {
       "target": ["AppImage"],
-      "category": "Office"
+      "category": "Office",
+      "artifactName": "SPE-Eventos-${version}-linux.${ext}"
     },
     "nsis": {
       "oneClick": false,

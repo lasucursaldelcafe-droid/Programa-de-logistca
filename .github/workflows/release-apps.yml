@@ -1,4 +1,4 @@
-name: Publicar instaladores (Windows + Android)
+name: Publicar instaladores (Windows + Linux + Android)
 
 on:
   push:
@@ -14,9 +14,9 @@ concurrency:
 
 env:
   APP_VERSION: "0.2.3"
-  VITE_DEMO_MODE: "false"
   VITE_USE_FIREBASE_EMULATORS: "false"
   NATIVE_BUILD: "true"
+  NATIVE_BUILD_ALLOW_MISSING_FIREBASE: "true"
   CAPACITOR_SERVER_URL: "https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/"
   VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
   VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
@@ -27,9 +27,11 @@ env:
   VITE_FIREBASE_VAPID_KEY: ${{ secrets.VITE_FIREBASE_VAPID_KEY }}
 
 jobs:
-  build-windows:
-    name: Windows — SPE Eventos
-    runs-on: windows-latest
+  detect-mode:
+    name: Detectar modo de build
+    runs-on: ubuntu-latest
+    outputs:
+      demo_mode: ${{ steps.mode.outputs.demo_mode }}
     steps:
       - uses: actions/checkout@v4
 
@@ -41,8 +43,40 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Validar entorno producción
-        run: npx tsx scripts/ensure-production-env.ts
+      - name: ¿Firebase completo o demo?
+        id: mode
+        shell: bash
+        run: |
+          set +e
+          npx tsx scripts/ensure-production-env.ts
+          code=$?
+          if [ "$code" -eq 0 ]; then
+            echo "demo_mode=false" >> "$GITHUB_OUTPUT"
+            echo "✓ Firebase OK — build producción"
+          else
+            echo "demo_mode=true" >> "$GITHUB_OUTPUT"
+            echo "○ Sin Firebase — build demo embebido (instaladores funcionan offline)"
+          fi
+
+  build-windows:
+    name: Windows — SPE Eventos
+    needs: detect-mode
+    runs-on: windows-latest
+    env:
+      VITE_DEMO_MODE: ${{ needs.detect-mode.outputs.demo_mode }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Validar entorno
+        run: npx tsx scripts/ensure-production-env.ts --native
 
       - name: Asegurar Electron en desktop
         run: npm install electron@35.7.5 electron-builder@25.1.8 app-builder-bin@5.0.0-alpha.10 -w @spe/desktop
@@ -71,9 +105,48 @@ jobs:
           path: apps/desktop/release/*.exe
           retention-days: 90
 
+  build-linux:
+    name: Linux — SPE Eventos
+    needs: detect-mode
+    runs-on: ubuntu-latest
+    env:
+      VITE_DEMO_MODE: ${{ needs.detect-mode.outputs.demo_mode }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Validar entorno
+        run: npx tsx scripts/ensure-production-env.ts --native
+
+      - name: Asegurar Electron en desktop
+        run: npm install electron@35.7.5 electron-builder@25.1.8 -w @spe/desktop
+
+      - name: Compilar AppImage Linux
+        run: npm run electron:build:linux
+
+      - name: Listar artefactos
+        run: ls -la apps/desktop/release/
+
+      - name: Subir AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage
+          path: apps/desktop/release/*.AppImage
+          retention-days: 90
+
   build-android:
     name: Android — SPE Eventos
+    needs: detect-mode
     runs-on: ubuntu-latest
+    env:
+      VITE_DEMO_MODE: ${{ needs.detect-mode.outputs.demo_mode }}
     steps:
       - uses: actions/checkout@v4
 
@@ -96,8 +169,8 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Validar entorno producción
-        run: npx tsx scripts/ensure-production-env.ts
+      - name: Validar entorno
+        run: npx tsx scripts/ensure-production-env.ts --native
 
       - name: Sincronizar Capacitor (app unificada)
         run: npm run cap:sync
@@ -123,7 +196,7 @@ jobs:
 
   release:
     name: GitHub Release
-    needs: [build-windows, build-android]
+    needs: [build-windows, build-linux, build-android]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -133,6 +206,12 @@ jobs:
         with:
           name: windows-installers
           path: dist/release/windows
+
+      - name: Descargar Linux
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-appimage
+          path: dist/release/linux
 
       - name: Descargar Android
         uses: actions/download-artifact@v4
@@ -144,6 +223,7 @@ jobs:
         run: |
           mkdir -p dist/release/all
           cp dist/release/windows/* dist/release/all/ 2>/dev/null || true
+          cp dist/release/linux/* dist/release/all/ 2>/dev/null || true
           cp dist/release/android/* dist/release/all/ 2>/dev/null || true
           ls -laR dist/release/
 
@@ -157,33 +237,25 @@ jobs:
           body: |
             ## Descargas
 
-            | Plataforma | App | Archivo |
-            |------------|-----|---------|
-            | **Windows** | SPE Eventos (unificada) | `SPE-Admin-*-nsis.exe` (instalador) |
-            | **Windows** | SPE Eventos (unificada) | `SPE-Admin-*-portable.exe` (sin instalar) |
-            | **Android** | SPE Eventos (unificada) | `SPE-Eventos-*-android.apk` |
-            | **Web** | Navegador | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/ |
+            | Plataforma | Archivo |
+            |------------|---------|
+            | **Web** | https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/descargas |
+            | **Windows** (instalador) | `SPE-Admin-*-nsis.exe` |
+            | **Windows** (portable) | `SPE-Admin-*-portable.exe` |
+            | **Linux** | `SPE-Eventos-*-linux.AppImage` |
+            | **Android** | `SPE-Eventos-*-android.apk` |
+            | **iOS** | Safari → Añadir a pantalla de inicio (PWA) |
 
-            **Una sola app:** descarga Windows o Android, inicia sesión y se abre tu panel (Admin, Master o Trabajador) según tu rol.
+            **Una sola app:** Admin, Master y Trabajador según tu rol al iniciar sesión.
+
+            ### Acceso rápido admin (demo)
+            https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/login?spe_backend=demo&email=admin@eventos.test&password=Admin123%21&auto=1
 
             ### Cuentas demo
             | Rol | Correo | Contraseña |
             |-----|--------|------------|
-            | Master (plataforma) | master@eventos.test | Master123! |
-            | **Administrador único** | admin@eventos.test | Admin123! |
-
-            Supervisores y trabajadores: Admin → Personal (rol) → Cuentas (invitación con datos personales).
-
-            ### Instalar Android
-            1. Descarga el `.apk`
-            2. Permite **orígenes desconocidos** en Ajustes → Seguridad
-            3. Abre el archivo e instala
-            4. La app requiere **internet** (carga la versión web actualizada)
-            5. Inicia sesión o regístrate con invitación → se abre tu panel según tu rol
-
-            ### Instalar Windows
-            1. Descarga `SPE-Admin-*-nsis.exe`
-            2. Ejecuta el instalador
+            | Master | master@eventos.test | Master123! |
+            | Admin | admin@eventos.test | Admin123! |
 
             ---
             Build: `${{ github.sha }}`

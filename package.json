@@ -28,6 +28,7 @@
     "cap:add:android": "npm run cap:add:android -w @spe/worker",
     "electron": "npm run build:native:admin && npm run start -w @spe/desktop",
     "electron:build": "npm run build:native:admin && npm run build:win -w @spe/desktop",
+    "electron:build:linux": "npm run build:native:admin && npm run build:linux -w @spe/desktop",
     "sync:links": "tsx scripts/sync-links.ts",
     "emulators": "firebase emulators:start --only auth,firestore --project demo-personal-eventos",
     "seed": "tsx scripts/seed-emulators.ts",

@@ -169,6 +169,16 @@ export function HomePage() {
   return (
     <div className="space-y-5">
       {user && puedeGestionarConfiguracion(user.role) && <SetupBanner />}
+      <div className="spe-glass overflow-hidden rounded-2xl p-5 sm:p-6">
+        <p className="text-xs font-semibold uppercase tracking-wider text-accent">Panel operativo</p>
+        <h2 className="mt-1 font-display text-2xl font-bold tracking-tight">
+          Hola, {user.nombre.split(" ")[0]}
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm text-neutral-400">
+          Personal, turnos, mapa en vivo y nómina en un solo lugar. Filtra por evento para ver el
+          detalle del día.
+        </p>
+      </div>
       <PageHeader
         title="Resumen"
         description="Personal, turnos, GPS y nómina"
