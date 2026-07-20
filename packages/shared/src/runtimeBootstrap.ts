@@ -15,6 +15,13 @@ export interface RuntimeBootstrapConfig {
   sheetsApiToken?: string;
   googleMapsApiKey?: string;
   firebase?: Partial<FirebaseClientConfig>;
+  setupCompletado?: {
+    sheetsBackend?: boolean;
+    firebaseSecrets?: boolean;
+    googleMaps?: boolean;
+    cuentasPlataforma?: boolean;
+    fcm?: boolean;
+  };
 }
 
 const STORAGE_KEY = "spe-runtime-config-v1";
@@ -30,6 +37,20 @@ const runtime: RuntimeState = {
 };
 
 let runtimeGoogleMapsApiKey: string | null = null;
+
+interface SetupCompletadoRuntime {
+  sheetsBackend?: boolean;
+  firebaseSecrets?: boolean;
+  googleMaps?: boolean;
+  cuentasPlataforma?: boolean;
+  fcm?: boolean;
+}
+
+let runtimeSetupCompletado: SetupCompletadoRuntime = {};
+
+export function getRuntimeSetupCompletado(): SetupCompletadoRuntime {
+  return runtimeSetupCompletado;
+}
 
 function setGoogleMapsApiKey(value: string | undefined): void {
   const trimmed = value?.trim() ?? "";
@@ -57,6 +78,9 @@ function isUsableSheetsToken(token: string): boolean {
 }
 
 function applyConfig(config: RuntimeBootstrapConfig): void {
+  if (config.setupCompletado) {
+    runtimeSetupCompletado = { ...runtimeSetupCompletado, ...config.setupCompletado };
+  }
   if (config.googleMapsApiKey) setGoogleMapsApiKey(config.googleMapsApiKey);
 
   if (config.backend === "demo" || config.demoMode === true) {
@@ -256,6 +280,9 @@ export async function bootstrapRuntimeConfig(
     if (res.ok) {
       const remote = (await res.json()) as RuntimeBootstrapConfig;
       if (remote.googleMapsApiKey) setGoogleMapsApiKey(remote.googleMapsApiKey);
+      if (remote.setupCompletado) {
+        runtimeSetupCompletado = { ...runtimeSetupCompletado, ...remote.setupCompletado };
+      }
 
       // La URL (?spe_backend=demo) tiene prioridad sobre config remota en GitHub Pages.
       if (urlForcedBackend === "demo") {

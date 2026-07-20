@@ -6,6 +6,7 @@ import {
   type DeploymentBase,
 } from "./setupLinks";
 import { PLATFORM_ADMIN_EMAIL, PLATFORM_SEED_ACCOUNTS } from "./accounts";
+import { isSetupItemDone, type ResolvedSetupStatus } from "./setupStatus";
 
 export interface SetupCredentialRow {
   label: string;
@@ -32,7 +33,24 @@ const SECRETS =
 const BOOTSTRAP_EDIT =
   "https://github.com/lasucursaldelcafe-droid/Programa-de-logistca/edit/main/config/bootstrap.json";
 
-export function getSetupGuideSteps(base?: Partial<DeploymentBase>): SetupGuideStep[] {
+export function getSetupGuideSteps(
+  base?: Partial<DeploymentBase>,
+  status?: ResolvedSetupStatus,
+): SetupGuideStep[] {
+  const allSteps = buildAllSetupGuideSteps(base);
+  if (!status) return allSteps;
+  return allSteps.filter((step) => !isSetupItemDone(step.id, status));
+}
+
+export function getSetupGuideStepsCompleted(
+  base?: Partial<DeploymentBase>,
+  status?: ResolvedSetupStatus,
+): SetupGuideStep[] {
+  if (!status) return [];
+  return buildAllSetupGuideSteps(base).filter((step) => isSetupItemDone(step.id, status));
+}
+
+function buildAllSetupGuideSteps(base?: Partial<DeploymentBase>): SetupGuideStep[] {
   const pages = (base?.pagesUrl ?? PAGES).replace(/\/?$/, "/");
   const owner = base?.owner ?? "lasucursaldelcafe-droid";
   const repo = base?.repo ?? "Programa-de-logistca";
@@ -47,7 +65,7 @@ export function getSetupGuideSteps(base?: Partial<DeploymentBase>): SetupGuideSt
   const demoAdmin = PLATFORM_SEED_ACCOUNTS.find((a) => a.role === "administrador")!;
   const demoMaster = PLATFORM_SEED_ACCOUNTS.find((a) => a.role === "super_admin")!;
 
-  return [
+  const allSteps: SetupGuideStep[] = [
     {
       id: "login-demo",
       title: "1. Probar que la app funciona (demo)",
@@ -99,8 +117,8 @@ export function getSetupGuideSteps(base?: Partial<DeploymentBase>): SetupGuideSt
         },
         {
           label: "Admin producción (Sheets)",
-          value: `${PLATFORM_ADMIN_EMAIL} / SpeLaSucursal2026!`,
-          note: "Se crea al ejecutar setupSheets en Apps Script",
+          value: `${PLATFORM_ADMIN_EMAIL} / (clave en Google Sheets)`,
+          note: "Sincroniza con: SPE_PROD_PASSWORD='…' node scripts/sync-sheets-users.mjs",
         },
         { label: "VITE_BLOQUEAR_INTEGRACIONES", value: "true" },
         { label: "VITE_INTEGRACIONES_CLAVE", value: "spe-desbloquear" },
@@ -221,4 +239,6 @@ export function getSetupGuideSteps(base?: Partial<DeploymentBase>): SetupGuideSt
       doneWhen: "Documentado y planificado; no bloquea operación básica.",
     },
   ];
+
+  return allSteps;
 }
