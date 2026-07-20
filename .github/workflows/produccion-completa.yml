@@ -15,6 +15,8 @@ on:
       - scripts/firestore-bootstrap.mjs
       - scripts/deploy-firestore.mjs
       - scripts/deploy-firestore-rules-api.mjs
+      - scripts/desbloquear-operacion.mjs
+      - .github/workflows/configurar-firebase-produccion.yml
   schedule:
     - cron: "0 9 * * *"
 
@@ -68,41 +70,36 @@ jobs:
 
       - name: Desplegar reglas Firestore
         id: rules
-        continue-on-error: true
         run: |
           if [ -z "$FIREBASE_TOKEN" ] && [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
-            echo "status=skipped" >> "$GITHUB_OUTPUT"
-            echo "::warning::Falta FIREBASE_TOKEN — pega reglas manualmente en Firebase Console"
-            exit 0
+            echo "status=missing_token" >> "$GITHUB_OUTPUT"
+            echo "::error::Falta FIREBASE_TOKEN — Pages (la web) sí se publica; Firebase (reglas/QR/cuentas) no."
+            echo "Orden: npx firebase login:ci → Secret FIREBASE_TOKEN → Actions → Configurar Firebase (SPE)"
+            exit 1
           fi
           npm install firebase-tools@14 --no-save
-          if node scripts/deploy-firestore.mjs; then
+          if node scripts/deploy-firestore-rules-api.mjs; then
             echo "status=ok" >> "$GITHUB_OUTPUT"
-          elif node scripts/deploy-firestore-rules-api.mjs; then
+          elif node scripts/deploy-firestore.mjs; then
             echo "status=ok" >> "$GITHUB_OUTPUT"
           elif npx firebase-tools deploy --only firestore:rules,firestore:indexes \
             --project "${VITE_FIREBASE_PROJECT_ID:-programalog-ccc12}" --non-interactive; then
             echo "status=ok" >> "$GITHUB_OUTPUT"
           else
             echo "status=fail" >> "$GITHUB_OUTPUT"
+            exit 1
           fi
 
       - name: Bootstrap Firestore (users + setupConfig)
-        if: env.FIREBASE_TOKEN != '' || env.FIREBASE_SERVICE_ACCOUNT_JSON != ''
         continue-on-error: true
         run: |
           npm run firestore:bootstrap -- --uid 8kJ9xnbXwlNVQerimF088JXo8Ql1 --skip-auth || \
           SPE_PROD_PASSWORD="${SPE_PROD_PASSWORD:-SpeAdmin2026!}" npm run firestore:bootstrap
 
-      - name: Desplegar Cloud Functions (push FCM)
+      - name: Desplegar Cloud Functions (push FCM + correo)
         id: functions
         continue-on-error: true
         run: |
-          if [ -z "$FIREBASE_TOKEN" ] && [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
-            echo "status=skipped" >> "$GITHUB_OUTPUT"
-            echo "::warning::Falta FIREBASE_TOKEN — despliega functions manualmente con npm run firebase:deploy-functions"
-            exit 0
-          fi
           npm run build:functions
           if npx firebase-tools deploy --only functions \
             --project "${VITE_FIREBASE_PROJECT_ID:-programalog-ccc12}" --non-interactive; then
@@ -113,30 +110,33 @@ jobs:
 
       - name: Verificar login producción
         id: verify
-        continue-on-error: true
         run: |
           SPE_PROD_PASSWORD="${SPE_PROD_PASSWORD:-SpeAdmin2026!}" node scripts/verify-prod-login.mjs && \
-            echo "status=ok" >> "$GITHUB_OUTPUT" || echo "status=fail" >> "$GITHUB_OUTPUT"
+            echo "status=ok" >> "$GITHUB_OUTPUT"
 
-      - name: Fallar si Firestore sigue bloqueado (con credenciales)
-        if: >-
-          steps.rules.outputs.status == 'ok' &&
-          steps.verify.outputs.status == 'fail'
+      - name: QR + cuentas de equipo
+        id: unlock
+        continue-on-error: true
         run: |
-          echo "::error::Reglas desplegadas pero login Firestore sigue fallando — revisa verify-prod-login"
-          exit 1
+          SPE_PROD_PASSWORD="${SPE_PROD_PASSWORD:-SpeAdmin2026!}" npm run desbloquear:operacion && \
+            echo "status=ok" >> "$GITHUB_OUTPUT" || echo "status=fail" >> "$GITHUB_OUTPUT"
 
       - name: Resumen
         if: always()
         run: |
-          echo "## Producción completa — Firestore" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Paso | Estado |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|------|--------|" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Reglas | \`${{ steps.rules.outputs.status || 'n/a' }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Cloud Functions | \`${{ steps.functions.outputs.status || 'n/a' }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Login verify | \`${{ steps.verify.outputs.status || 'n/a' }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          if [ "${{ steps.verify.outputs.status }}" != "ok" ]; then
-            echo "**Pendiente:** en PC ejecuta \`firebase login:ci\` → \`npm run setup:firebase-token\` → vuelve a lanzar este workflow." >> "$GITHUB_STEP_SUMMARY"
-          fi
+          {
+            echo "## Producción completa — Firebase"
+            echo ""
+            echo "| Paso | Estado |"
+            echo "|------|--------|"
+            echo "| Reglas | \`${{ steps.rules.outputs.status || 'n/a' }}\` |"
+            echo "| Cloud Functions | \`${{ steps.functions.outputs.status || 'n/a' }}\` |"
+            echo "| Login verify | \`${{ steps.verify.outputs.status || 'n/a' }}\` |"
+            echo "| QR + cuentas | \`${{ steps.unlock.outputs.status || 'n/a' }}\` |"
+            echo ""
+            echo "Nota: **Publicar app (GitHub Pages)** es independiente. Un fallo aquí no tumba la web."
+            if [ "${{ steps.rules.outputs.status }}" = "missing_token" ]; then
+              echo ""
+              echo "**Siguiente paso:** \`npx firebase login:ci\` → Secret \`FIREBASE_TOKEN\` → relanzar **Configurar Firebase (SPE)**."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

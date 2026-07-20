@@ -1,53 +1,79 @@
-# Desbloqueo producción (QR, cuentas, correo)
+# Camino Firebase automático (orden correcto)
 
-## Por qué no funciona hoy
+Todo el producto va por **Firebase** (Auth + Firestore + Functions).  
+GitHub Pages solo **sirve la web**; no sustituye a Firebase.
 
-1. Login con `lasucursaldelcafe@gmail.com` **sí entra**.
-2. Las **reglas Firestore en consola están viejas** (no reconocen el rol `ceo` como maestro).
-3. Por eso **falla crear cuentas, QR e invitaciones** (403).
-4. El workflow de GitHub “Desplegar reglas” salía en verde pero **no desplegaba**: faltaba el secret `FIREBASE_TOKEN`.
-5. Cloud Functions (correo HTML de invitación) **no están desplegadas**.
+## Lo que NO está “rechazando” GitHub
 
-## Qué hacer ahora (elige 1)
+| Workflow | Qué hace | Estado típico hoy |
+|----------|----------|-------------------|
+| **Publicar app (GitHub Pages)** | Sube la UI a github.io | OK (verde) |
+| **CI** | Build + smoke | OK |
+| **Desplegar reglas / Producción completa** | Habla con Firebase | Rojo o vacío **sin** `FIREBASE_TOKEN` |
+| **Auto-merge** | Mergea PRs `cursor/*` | Fallaba si el PR estaba en borrador (ya corregido) |
 
-### Opción A — Consola Firebase (2 min)
+Si ves rojo en Firebase y verde en Pages: **es correcto**. Falta el puente GitHub → Firebase.
 
-1. Abre [Reglas Firestore](https://console.firebase.google.com/project/programalog-ccc12/firestore/rules)
-2. Pega el archivo `firestore.rules` del repo
-3. **Publicar**
-4. En el agente o en PC:
+## Orden (una sola vez, ~5 min)
 
-```bash
-SPE_PROD_PASSWORD='SpeAdmin2026!' npm run desbloquear:operacion
-```
+### 1) Token Firebase en tu PC
 
-Eso crea el QR del evento/sitio existente y cuentas Admin / RH / Contador.
-
-### Opción B — Autorizar al agente
-
-Abre el enlace de login Firebase que te pase el agente, inicia sesión con `lasucursaldelcafe@gmail.com` y **pega el código** en el chat. El agente desplegará reglas + ejecutará el desbloqueo.
-
-### Opción C — Secret permanente
-
-```bash
+```powershell
+cd C:\Users\LENOVO\Projects\Programa-de-logistca
 npx firebase login:ci
 ```
 
-Copia el token a GitHub → Settings → Secrets → Actions → `FIREBASE_TOKEN`.  
-También `SPE_PROD_PASSWORD` con la clave del CEO.
+Inicia sesión con `lasucursaldelcafe@gmail.com`. Copia el token (`1//0…`).
 
-## Correo
+### 2) Secrets en GitHub
 
-| Tipo | Estado |
-|------|--------|
-| Reset / “olvidé contraseña” (Firebase Auth) | Funciona sin Functions |
-| Invitación HTML con código (Cloud Functions + Gmail) | Requiere `firebase deploy --only functions` y secrets `GMAIL_USER` / `GMAIL_APP_PASSWORD` |
+https://github.com/lasucursaldelcafe-droid/Programa-de-logistca/settings/secrets/actions
 
-Mientras tanto: comparte enlace `/activar?token=…` + código de la invitación, o la contraseña impresa al crear la cuenta.
+| Secret | Valor |
+|--------|--------|
+| `FIREBASE_TOKEN` | Token del paso 1 |
+| `SPE_PROD_PASSWORD` | Contraseña del CEO (ej. la que usas en login) |
+| `VITE_FIREBASE_*` | Ya deberían estar (SDK web) |
 
-## Ya existe en producción (lectura OK)
+Atajo si tienes `gh` en el PC:
 
-- Evento: `prueba de aplicacion`
-- Sitio: `Hotel el peñon`
-- Invitación pendiente: `pabcolgom@gmail.com` (supervisor) — código en Firestore
-- QR: **ninguno** (hasta desbloquear escritura)
+```powershell
+# Pega el token en config/credenciales.local.json → "firebaseToken"
+npm run setup:firebase-token
+```
+
+### 3) Un solo botón: todo Firebase solo
+
+Actions → **Configurar Firebase (SPE)** → **Run workflow**
+
+Ese workflow, en orden:
+
+1. Publica `firestore.rules`
+2. Bootstrap CEO
+3. Verifica login **y escritura**
+4. Crea **QR** + cuentas Admin / RH / Contador
+5. Intenta desplegar **Cloud Functions** (correo HTML)
+
+### 4) Correo de invitaciones (opcional, después)
+
+En Firebase Console → Functions → Secrets:
+
+- `GMAIL_USER` = `lasucursaldelcafe@gmail.com`
+- `GMAIL_APP_PASSWORD` = contraseña de aplicación de Google
+
+Sin esto, igual puedes crear cuentas; el correo HTML de invitación no sale, pero sí el reset de Auth.
+
+## Después de eso
+
+- Login: https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/login  
+- CEO: `lasucursaldelcafe@gmail.com`  
+- QR: menú **QR y sitios**  
+- Cuentas: salen en el log del workflow / `npm run desbloquear:operacion`
+
+## Si no puedes usar `login:ci` ahora
+
+Plan B (mismo Firebase, 2 min):
+
+1. https://console.firebase.google.com/project/programalog-ccc12/firestore/rules  
+2. Pega `firestore.rules` del repo → **Publicar**  
+3. Actions → **Configurar Firebase (SPE)** (cuando tengas el token) o pide al agente que ejecute `npm run desbloquear:operacion`

@@ -69,13 +69,31 @@ jobs:
             }
 
             if (pr.draft) {
-              await github.rest.pulls.update({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: pr.number,
-                draft: false,
-              });
-              for (let i = 0; i < 10; i++) {
+              // REST draft:false a menudo no basta; GraphQL markReadyForReview sí.
+              const nodeId = pr.node_id;
+              try {
+                await github.graphql(
+                  `mutation($id: ID!) {
+                    markPullRequestReadyForReview(input: { pullRequestId: $id }) {
+                      pullRequest { isDraft number }
+                    }
+                  }`,
+                  { id: nodeId },
+                );
+              } catch (e) {
+                core.warning(`GraphQL readyForReview: ${e.message}`);
+                try {
+                  await github.rest.pulls.update({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: pr.number,
+                    draft: false,
+                  });
+                } catch (e2) {
+                  core.warning(`REST undraft: ${e2.message}`);
+                }
+              }
+              for (let i = 0; i < 15; i++) {
                 await sleep(2000);
                 const { data: refreshed } = await github.rest.pulls.get({
                   owner: context.repo.owner,
@@ -88,7 +106,9 @@ jobs:
                 }
               }
               if (pr.draft) {
-                core.setFailed(`PR #${pr.number} sigue en borrador tras marcarlo listo`);
+                core.setFailed(
+                  `PR #${pr.number} sigue en borrador. En GitHub: Ready for review, o: gh pr ready ${pr.number}`,
+                );
                 return;
               }
             }
