@@ -4,7 +4,7 @@
 import { getAdminNavSections, getMasterNavSections, getWorkerNavItems } from "../apps/admin/src/config/navigation";
 
 const ADMIN_ROUTES = new Set([
-  "/panel", "/clientes", "/facturacion", "/inventario", "/integraciones",
+  "/panel", "/equipo-admin", "/clientes", "/facturacion", "/inventario", "/integraciones",
   "/supervision", "/personal", "/operacion", "/turnos", "/cuentas", "/qr-sitios", "/mapa",
   "/informes", "/reportes", "/notificaciones", "/nomina", "/configuracion", "/pendientes",
   "/comunicacion", "/descargas", "/ayuda",

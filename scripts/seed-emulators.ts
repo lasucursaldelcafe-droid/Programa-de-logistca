@@ -1,5 +1,5 @@
 /**
- * Seed inicial para Firebase Emulators — plataforma vacía lista para configurar.
+ * Seed inicial para Firebase Emulators — solo cuentas raíz CEO y Master App.
  * Requiere emuladores corriendo: npm run emulators
  */
 import { initializeApp, getApps } from "firebase-admin/app";
@@ -22,12 +22,23 @@ interface SeedUser {
   email: string;
   password: string;
   nombre: string;
-  role: "super_admin" | "administrador" | "supervisor_sitio";
+  role: "ceo" | "master_app";
 }
 
+/** Solo las dos cuentas raíz. El resto se crea desde Master → Equipo administrativo. */
 const USERS: SeedUser[] = [
-  { email: "master@eventos.test", password: "Master123!", nombre: "Master Plataforma", role: "super_admin" },
-  { email: "admin@eventos.test", password: "Admin123!", nombre: "Administrador", role: "administrador" },
+  {
+    email: "ceo@eventos.test",
+    password: "Ceo123!",
+    nombre: "CEO — Propietario",
+    role: "ceo",
+  },
+  {
+    email: "master@eventos.test",
+    password: "Master123!",
+    nombre: "Master App — Plataforma",
+    role: "master_app",
+  },
 ];
 
 async function upsertAuthUser(u: SeedUser): Promise<string> {
@@ -46,7 +57,7 @@ async function upsertAuthUser(u: SeedUser): Promise<string> {
 }
 
 async function main(): Promise<void> {
-  console.log("> Seed — plataforma vacía (solo cuentas de administración)");
+  console.log("> Seed — plataforma vacía (solo CEO y Master App)");
 
   const uids: Record<string, string> = {};
   for (const u of USERS) {
@@ -67,17 +78,17 @@ async function main(): Promise<void> {
     pasoActual: "evento",
     pasosCompletados: [],
     actualizadoEn: new Date().toISOString(),
-    actualizadoPor: uids["admin@eventos.test"] ?? "seed",
-    actualizadoPorNombre: "Administrador",
+    actualizadoPor: uids["ceo@eventos.test"] ?? "seed",
+    actualizadoPorNombre: "CEO",
   });
   console.log("+ configuración inicial (asistente pendiente)");
 
-  console.log("\n✓ Seed completo. Sin eventos, personal ni turnos — empieza desde Configuración.");
-  console.log("  Cuentas de plataforma:");
+  console.log("\n✓ Seed completo. Sin eventos ni personal — empieza creando el equipo administrativo.");
+  console.log("  Cuentas raíz:");
   for (const u of USERS) {
-    console.log(`    ${u.email} / ${u.password}`);
+    console.log(`    ${u.email} / ${u.password}  (${u.role})`);
   }
-  console.log("\n  Supervisores y trabajadores: Admin → Personal (rol) → Cuentas (invitación).");
+  console.log("\n  Siguiente paso: Master → Equipo administrativo → crear Administrador, RH, Contador…");
 }
 
 main().catch((err: unknown) => {

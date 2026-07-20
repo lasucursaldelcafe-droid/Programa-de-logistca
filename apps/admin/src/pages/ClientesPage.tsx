@@ -1,11 +1,24 @@
+import { puedeGestionarClientes, formatCurrencyCOP } from "@spe/shared";
+import { useAuth } from "../contexts/AuthContext";
 import { Card } from "../components/ui";
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/nav/PageHeader";
+import { PermissionDenied } from "../components/FeedbackStates";
 import { useClientes } from "../hooks/useBusiness";
-import { formatCurrencyCOP } from "@spe/shared";
 
 export function ClientesPage() {
+  const { user } = useAuth();
   const clientes = useClientes();
+
+  if (!user || !puedeGestionarClientes(user.role)) {
+    return (
+      <PermissionDenied
+        role={user?.role}
+        title="Sin permiso para clientes"
+        description="Tu rol no incluye gestión de clientes."
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">

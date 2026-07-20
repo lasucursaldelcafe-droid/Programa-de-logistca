@@ -28,9 +28,11 @@ import {
 import { useCustomRoles } from "@core/hooks/useCustomRoles";
 
 const BASE_ROLE_LABEL: Record<CustomRoleBase, string> = {
-  administrador: "Consola admin (acceso amplio)",
-  supervisor_sitio: "Supervisor de sitio",
-  trabajador: "App trabajador",
+  administrador: "Administrador operativo",
+  recursos_humanos: "Recursos Humanos",
+  contador: "Contador / Finanzas",
+  supervisor_sitio: "Supervisor de campo",
+  trabajador: "Empleado de campo",
 };
 
 type RoleForm = {

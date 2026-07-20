@@ -50,6 +50,7 @@ import {
   type ReporteEstado,
   type ReporteTipo,
   type AppUser,
+  type UserRole,
   type CustomRole,
   type CustomRoleBase,
   type RoleAccessMode,
@@ -62,6 +63,9 @@ import {
   workerDocumentPassword,
   type WorkerBulkImportResult,
   type WorkerImportRow,
+  puedeAsignarRol,
+  rolesCuentaPlataforma,
+  normalizeUserRole,
 } from "@spe/shared";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import type { GeoPosition } from "../lib/geolocation";
@@ -1643,6 +1647,45 @@ export function usePlatformUsers(): AppUser[] {
 
   const demoUsers = useDemoSnapshot(() => demoStore.platformUsers);
   return isDemoMode() ? demoUsers : users;
+}
+
+export async function createPlatformAccount(
+  data: {
+    email: string;
+    password: string;
+    nombre: string;
+    role: UserRole;
+  },
+  creator: Pick<AppUser, "uid" | "nombre" | "role">,
+): Promise<string> {
+  const role = normalizeUserRole(data.role);
+  if (!puedeAsignarRol(creator.role, role)) {
+    throw new Error("No tienes permiso para crear una cuenta con ese rol.");
+  }
+  if (!rolesCuentaPlataforma(creator.role).includes(role)) {
+    throw new Error("Este rol debe crearse desde Personal de campo, no como cuenta administrativa.");
+  }
+
+  const email = data.email.trim().toLowerCase();
+  const nombre = data.nombre.trim();
+  if (!email || !nombre || data.password.length < 6) {
+    throw new Error("Completa nombre, correo y contraseña (mínimo 6 caracteres).");
+  }
+
+  if (isDemoMode()) {
+    return demoStore.createPlatformAccount({ email, password: data.password, nombre, role });
+  }
+
+  if (isSheetsBackend()) {
+    throw new Error("Creación de cuentas administrativas no disponible con backend Sheets.");
+  }
+
+  const fn = httpsCallable<
+    { email: string; password: string; nombre: string; role: string },
+    { uid: string }
+  >(getFunctions(getFirebaseApp(), "us-central1"), "createPlatformAccountFn");
+  const result = await fn({ email, password: data.password, nombre, role });
+  return result.data.uid;
 }
 
 export async function createReporte(data: {

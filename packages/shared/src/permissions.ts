@@ -34,7 +34,10 @@ export type SpePermission =
   | "reportar_supervisor"
   | "ver_turnos_propio";
 
-export type CustomRoleBase = Extract<UserRole, "administrador" | "supervisor_sitio" | "trabajador">;
+export type CustomRoleBase = Extract<
+  UserRole,
+  "administrador" | "recursos_humanos" | "contador" | "supervisor_sitio" | "trabajador"
+>;
 
 export interface CustomRole {
   id: string;
@@ -210,9 +213,38 @@ const TRABAJADOR_DEFAULT: SpePermission[] = [
   "usar_comunicacion",
 ];
 
+const RECURSOS_HUMANOS_DEFAULT: SpePermission[] = [
+  "dashboard_operativo",
+  "gestionar_personal",
+  "gestionar_cuentas",
+  "gestionar_turnos",
+  "ver_notificaciones",
+  "usar_comunicacion",
+  "ver_reportes_trabajadores",
+  "ver_informes_evento",
+];
+
+const CONTADOR_DEFAULT: SpePermission[] = [
+  "dashboard_operativo",
+  "gestionar_nomina",
+  "ver_nomina",
+  "gestionar_clientes",
+  "gestionar_facturacion",
+  "ver_inventario",
+  "ver_informes_evento",
+  "ver_notificaciones",
+  "ver_integraciones",
+];
+
+const MASTER_DEFAULT: SpePermission[] = [...ALL_SPE_PERMISSIONS];
+
 export const DEFAULT_PERMISSIONS_BY_ROLE: Record<UserRole, SpePermission[]> = {
-  super_admin: [...ALL_SPE_PERMISSIONS],
+  ceo: MASTER_DEFAULT,
+  master_app: MASTER_DEFAULT,
+  super_admin: MASTER_DEFAULT,
   administrador: ADMIN_FULL,
+  recursos_humanos: RECURSOS_HUMANOS_DEFAULT,
+  contador: CONTADOR_DEFAULT,
   supervisor_sitio: SUPERVISOR_DEFAULT,
   trabajador: TRABAJADOR_DEFAULT,
 };
@@ -229,6 +261,12 @@ export function permisosDisponiblesParaBase(baseRole: CustomRoleBase): SpePermis
   if (baseRole === "supervisor_sitio") {
     return SUPERVISOR_DEFAULT;
   }
+  if (baseRole === "recursos_humanos") {
+    return RECURSOS_HUMANOS_DEFAULT.concat(["ver_nomina", "ver_integraciones"]);
+  }
+  if (baseRole === "contador") {
+    return CONTADOR_DEFAULT.concat(["configurar_integraciones"]);
+  }
   return ADMIN_FULL;
 }
 
@@ -236,7 +274,9 @@ export function resolvePermissions(
   role: UserRole,
   customRole?: CustomRole | null,
 ): SpePermission[] {
-  if (role === "super_admin") return DEFAULT_PERMISSIONS_BY_ROLE.super_admin;
+  if (role === "ceo" || role === "master_app" || role === "super_admin") {
+    return DEFAULT_PERMISSIONS_BY_ROLE[role];
+  }
   if (customRole?.activo && customRole.permisos.length > 0) {
     return [...customRole.permisos];
   }
@@ -339,8 +379,24 @@ export function puedeVerInformesEvento(role: UserRole): boolean {
   return hasPermission(role, "ver_informes_evento");
 }
 
+export function puedeGestionarClientes(role: UserRole): boolean {
+  return hasPermission(role, "gestionar_clientes");
+}
+
+export function puedeGestionarFacturacion(role: UserRole): boolean {
+  return hasPermission(role, "gestionar_facturacion");
+}
+
+export function puedeVerInventario(role: UserRole): boolean {
+  return hasPermission(role, "ver_inventario");
+}
+
+export function puedeVerIntegraciones(role: UserRole): boolean {
+  return hasPermission(role, "ver_integraciones");
+}
+
 export function puedeGestionarRolesCustom(role: UserRole): boolean {
-  return role === "super_admin";
+  return role === "ceo" || role === "master_app" || role === "super_admin";
 }
 
 export function getPermissionGroups(): string[] {

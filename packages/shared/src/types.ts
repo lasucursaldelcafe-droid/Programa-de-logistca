@@ -1,6 +1,11 @@
 export type UserRole =
+  | "ceo"
+  | "master_app"
+  /** @deprecated Alias legacy — se normaliza a master_app al cargar sesión */
   | "super_admin"
   | "administrador"
+  | "recursos_humanos"
+  | "contador"
   | "supervisor_sitio"
   | "trabajador";
 
@@ -327,10 +332,14 @@ export const SHIFT_LABEL: Record<ShiftEstado, string> = {
 };
 
 export const ROLE_LABEL: Record<UserRole, string> = {
-  super_admin: "Super Admin",
-  administrador: "Administrador",
-  supervisor_sitio: "Supervisor de sitio",
-  trabajador: "Trabajador",
+  ceo: "CEO — Propietario",
+  master_app: "Master App — Plataforma",
+  super_admin: "Master App — Plataforma",
+  administrador: "Administrador operativo",
+  recursos_humanos: "Recursos Humanos",
+  contador: "Contador / Finanzas",
+  supervisor_sitio: "Supervisor de campo",
+  trabajador: "Empleado de campo",
 };
 
 import {
@@ -348,6 +357,10 @@ import {
   puedeUsarComunicacion,
   puedeVerInformesEvento,
   puedeGestionarRolesCustom,
+  puedeGestionarClientes,
+  puedeGestionarFacturacion,
+  puedeVerInventario,
+  puedeVerIntegraciones,
 } from "./permissions";
 
 export {
@@ -365,6 +378,10 @@ export {
   puedeUsarComunicacion,
   puedeVerInformesEvento,
   puedeGestionarRolesCustom,
+  puedeGestionarClientes,
+  puedeGestionarFacturacion,
+  puedeVerInventario,
+  puedeVerIntegraciones,
 };
 
 /** Admin/supervisor puede enviar notificaciones manuales y push. */

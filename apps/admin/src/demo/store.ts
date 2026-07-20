@@ -42,7 +42,32 @@ export const DEMO_ACCOUNTS: Array<{
   email: string;
   password: string;
   user: AppUser;
-}> = [];
+}> = [
+  {
+    email: "ceo@eventos.test",
+    password: "Ceo123!",
+    user: {
+      uid: "demo-ceo",
+      email: "ceo@eventos.test",
+      nombre: "CEO — Propietario",
+      role: "ceo",
+      perfilCompleto: true,
+      habilitado: true,
+    },
+  },
+  {
+    email: "master@eventos.test",
+    password: "Master123!",
+    user: {
+      uid: "demo-master",
+      email: "master@eventos.test",
+      nombre: "Master App — Plataforma",
+      role: "master_app",
+      perfilCompleto: true,
+      habilitado: true,
+    },
+  },
+];
 
 export const INITIAL_WORKERS: Worker[] = [];
 
@@ -358,6 +383,30 @@ class DemoStore {
   deleteCustomRole(id: string): void {
     this.customRoles = this.customRoles.filter((r) => r.id !== id);
     this.notify();
+  }
+
+  createPlatformAccount(data: {
+    email: string;
+    password: string;
+    nombre: string;
+    role: AppUser["role"];
+  }): string {
+    const email = data.email.trim().toLowerCase();
+    if (this.accounts.some((a) => a.email.trim().toLowerCase() === email)) {
+      throw new Error("Ya existe una cuenta con ese correo.");
+    }
+    const uid = `demo-platform-${Date.now()}`;
+    const appUser: AppUser = {
+      uid,
+      email,
+      nombre: data.nombre.trim(),
+      role: data.role,
+      perfilCompleto: true,
+      habilitado: true,
+    };
+    this.accounts = [...this.accounts, { email, password: data.password, user: appUser }];
+    this.notify();
+    return uid;
   }
 
   provisionWorkerAccount(workerId: string, actorNombre?: string): void {
@@ -772,7 +821,7 @@ export function demoLogin(email: string, password: string): AppUser {
   const account = demoStore.accounts.find(
     (a) => a.email.trim().toLowerCase() === normalizedEmail && a.password === normalizedPassword,
   );
-  if (!account) throw new Error("Credenciales inválidas. Prueba admin@eventos.test / Admin123!");
+  if (!account) throw new Error("Credenciales inválidas. Prueba ceo@eventos.test / Ceo123! o master@eventos.test / Master123!");
 
   if (account.user.habilitado === false) {
     throw new Error("Cuenta inhabilitada. Contacta al administrador.");

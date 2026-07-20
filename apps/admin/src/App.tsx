@@ -6,6 +6,7 @@ import { PlatformGate } from "./components/PlatformGate";
 import { RoleHomeRedirect } from "./components/RoleHomeRedirect";
 import { LoginPage } from "./pages/LoginPage";
 import { HomePage } from "./pages/HomePage";
+import { EquipoAdministrativoPage } from "./pages/EquipoAdministrativoPage";
 import { PersonalPage } from "./pages/PersonalPage";
 import { TurnosPage } from "./pages/TurnosPage";
 import { CuentasPage } from "./pages/CuentasPage";
@@ -82,6 +83,7 @@ export function App() {
         }
       >
         <Route path="panel" element={<HomePage />} />
+        <Route path="equipo-admin" element={<EquipoAdministrativoPage />} />
         <Route path="clientes" element={<ClientesPage />} />
         <Route path="facturacion" element={<FacturacionPage />} />
         <Route path="inventario" element={<InventarioPage />} />
