@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { useMemo } from "react";
-import {
-  buildDemoLoginUrl,
+import { buildLoginUrl,
   getPlatformDownloads,
   getSetupChecklist,
   type SetupChecklistItem,
@@ -67,7 +66,7 @@ export function DescargasPage() {
   const setupStatus = useProductionSetupStatusLive();
   const checklist = useMemo(() => getSetupChecklist(base, setupStatus), [base, setupStatus]);
   const { loading, tagName, platforms } = useReleaseAssets(deployLinks, platformSpecs);
-  const adminLogin = buildDemoLoginUrl(base.pagesUrl);
+  const adminLogin = buildLoginUrl(base.pagesUrl);
 
   return (
     <div className="spe-page-bg min-h-screen">

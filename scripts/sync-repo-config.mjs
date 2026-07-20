@@ -85,15 +85,10 @@ function buildBootstrap() {
   const useFirebase =
     isSet(firebase.apiKey) && isSet(firebase.projectId) && isSet(firebase.appId);
 
-  let backend = "demo";
-  let demoMode = true;
-  if (useSheets) {
-    backend = "sheets";
-    demoMode = false;
-  } else if (useFirebase) {
-    backend = "firebase";
-    demoMode = false;
-  } else if (existing.backend === "firebase" && existing.demoMode === false) {
+  let backend = "firebase";
+  let demoMode = false;
+
+  if (existing.backend === "firebase" || useFirebase) {
     backend = "firebase";
     demoMode = false;
   }
@@ -116,9 +111,9 @@ function buildBootstrap() {
     googleMapsApiKey: isSet(googleMapsApiKey) ? googleMapsApiKey : "",
     firebase: useFirebase ? firebase : {},
     setupCompletado: {
-      sheetsBackend: useSheets || existing.setupCompletado?.sheetsBackend === true,
       firebaseSecrets:
         useFirebase ||
+        existing.backend === "firebase" ||
         existing.setupCompletado?.firebaseSecrets === true,
       googleMaps:
         isSet(googleMapsApiKey) || existing.setupCompletado?.googleMaps === true,
@@ -176,6 +171,13 @@ function runtimeConfig(bootstrap) {
   };
   const maps =
     isSet(bootstrap.googleMapsApiKey) ? { googleMapsApiKey: bootstrap.googleMapsApiKey } : {};
+  if (bootstrap.backend === "firebase") {
+    return {
+      ...base,
+      ...maps,
+      ...(Object.keys(bootstrap.firebase ?? {}).length > 0 ? { firebase: bootstrap.firebase } : {}),
+    };
+  }
   if (bootstrap.backend === "sheets") {
     return {
       ...base,
@@ -183,9 +185,6 @@ function runtimeConfig(bootstrap) {
       sheetsWebAppUrl: bootstrap.sheetsWebAppUrl,
       sheetsApiToken: bootstrap.sheetsApiToken,
     };
-  }
-  if (bootstrap.backend === "firebase" && Object.keys(bootstrap.firebase).length > 0) {
-    return { ...base, ...maps, firebase: bootstrap.firebase };
   }
   return { ...base, ...maps };
 }
@@ -215,8 +214,7 @@ function main() {
   console.log(`  Backend: ${bootstrap.backend} | demoMode: ${bootstrap.demoMode}`);
 
   if (bootstrap.demoMode) {
-    console.log("\n○ Modo demo — cuentas en config/cuentas-app.json");
-    console.log("  admin@eventos.test / Admin123!");
+    console.log("\n⚠ demoMode activo — debería ser false en producción Firebase.");
   }
 
   const localPath = resolve(CONFIG, "credenciales.local.json");

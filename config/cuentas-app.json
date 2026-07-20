@@ -1,40 +1,20 @@
 {
   "produccion": {
-    "descripcion": "Cuentas reales — backend Google Sheets en ejecución.",
-    "backend": "sheets",
+    "descripcion": "Cuenta real — backend Firebase Auth + Firestore.",
+    "backend": "firebase",
     "cuentas": [
       {
         "email": "lasucursaldelcafe@gmail.com",
-        "password": "(configurada en Google Sheets — contacta al administrador)",
+        "password": "(configurada en Firebase Auth — contacta al administrador)",
         "nombre": "La Sucursal del Café",
         "role": "administrador",
         "panel": "/panel"
-      },
-      {
-        "email": "admin@eventos.test",
-        "password": "Admin123!",
-        "nombre": "Administrador demo Sheets",
-        "role": "administrador",
-        "panel": "/panel"
-      },
-      {
-        "email": "master@eventos.test",
-        "password": "Master123!",
-        "nombre": "Master Plataforma",
-        "role": "super_admin",
-        "panel": "/master"
       }
     ],
     "instrucciones": [
-      "Abre /login sin ?spe_backend=demo.",
-      "Usa las credenciales de tu cuenta (no compartas contraseñas en el repositorio).",
-      "Sincronizar cuentas: SPE_PROD_PASSWORD='…' node scripts/sync-sheets-users.mjs",
+      "Abre /login e inicia sesión con tu cuenta Firebase.",
+      "Crea la cuenta inicial: SPE_PROD_PASSWORD='…' npm run seed:production",
       "Trabajadores nuevos: Admin → Personal → Invitar."
     ]
-  },
-  "modoDemo": {
-    "descripcion": "Desactivado en producción. Solo desarrollo local con emuladores.",
-    "activo": false,
-    "cuentas": []
   }
 }

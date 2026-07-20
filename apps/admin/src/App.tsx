@@ -13,6 +13,7 @@ import { QrSitiosPage } from "./pages/QrSitiosPage";
 import { MapaEnVivoPage } from "./pages/MapaEnVivoPage";
 import { NotificacionesPage } from "./pages/NotificacionesPage";
 import { NominaPage } from "./pages/NominaPage";
+import { ComunicacionPage } from "./pages/ComunicacionPage";
 import { ConfiguracionPage } from "./pages/ConfiguracionPage";
 import { ReportesPage } from "./pages/ReportesPage";
 import { AyudaPage } from "./pages/AyudaPage";
@@ -95,6 +96,7 @@ export function App() {
         <Route path="inventario" element={<InventarioPage />} />
         <Route path="integraciones" element={<IntegracionesPage />} />
         <Route path="supervision" element={<SupervisionPage />} />
+        <Route path="comunicacion" element={<ComunicacionPage />} />
         <Route path="personal" element={<PersonalPage />} />
         <Route path="turnos" element={<TurnosPage />} />
         <Route path="cuentas" element={<CuentasPage />} />

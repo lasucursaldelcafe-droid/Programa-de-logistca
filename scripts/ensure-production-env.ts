@@ -51,9 +51,9 @@ function main(): void {
 
     if (PAGES_MODE || NATIVE_MODE) {
       const target = PAGES_MODE ? "GitHub Pages" : "instaladores nativos";
-      console.warn(`⚠ ${target}: Firebase sin configurar — build en modo demo embebido.`);
+      console.warn(`⚠ ${target}: Firebase sin configurar — el build continúa pero login fallará.`);
       console.warn(`  (${detail})`);
-      console.warn("  Login demo hasta configurar Secrets; ver docs-source/PRODUCCION-FIREBASE.md");
+      console.warn("  Configura GitHub Secrets VITE_FIREBASE_*; ver docs-source/PRODUCCION-FIREBASE.md");
       return;
     }
 

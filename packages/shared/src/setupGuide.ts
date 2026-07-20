@@ -1,11 +1,10 @@
 import {
-  buildDemoLoginUrl,
   buildDescargasUrl,
   buildGitHubSecretsUrl,
   buildReleasesUrl,
   type DeploymentBase,
 } from "./setupLinks";
-import { PLATFORM_ADMIN_EMAIL, PLATFORM_SEED_ACCOUNTS } from "./accounts";
+import { PLATFORM_ADMIN_EMAIL } from "./accounts";
 import { isSetupItemDone, type ResolvedSetupStatus } from "./setupStatus";
 
 export interface SetupCredentialRow {
@@ -62,86 +61,19 @@ function buildAllSetupGuideSteps(base?: Partial<DeploymentBase>): SetupGuideStep
     repo,
   };
 
-  const demoAdmin = PLATFORM_SEED_ACCOUNTS.find((a) => a.role === "administrador")!;
-  const demoMaster = PLATFORM_SEED_ACCOUNTS.find((a) => a.role === "super_admin")!;
-
   const allSteps: SetupGuideStep[] = [
     {
-      id: "login-demo",
-      title: "1. Probar que la app funciona (demo)",
-      priority: "p0",
-      summary: "Sin configurar nada. Solo verifica que entras al panel.",
-      steps: [
-        "Abre el link de acceso automático (abajo).",
-        "Debe decir Backend: demo (navegador) en el login o entrar directo al panel.",
-        "Explora Resumen, Turnos y Personal.",
-        "En móvil: icono ☰ arriba a la izquierda abre el menú lateral.",
-      ],
-      credentials: [
-        { label: "Admin demo", value: `${demoAdmin.email} / ${demoAdmin.password}` },
-        { label: "Master demo", value: `${demoMaster.email} / ${demoMaster.password}` },
-      ],
-      links: [
-        { label: "Entrar admin automático", href: buildDemoLoginUrl(pages, "admin") },
-        { label: "Entrar master automático", href: buildDemoLoginUrl(pages, "master") },
-        { label: "Login manual", href: `${pages}login?spe_backend=demo` },
-      ],
-      doneWhen: "Ves el panel Admin con menú lateral desplegable por categorías.",
-    },
-    {
-      id: "sheets-backend",
-      title: "2. Producción con Google Sheets (recomendado)",
-      priority: "p0",
-      summary: "Datos reales sin descargar JSON de Firebase. Ideal desde celular.",
-      steps: [
-        "En PC ejecuta: npm run setup:sheets-auto (genera token y URL).",
-        "O revisa el correo lasucursaldelcafe@gmail.com → busca CREDENCIALES-SHEETS.",
-        "Copia Web App URL (termina en /exec) y API Token (hex largo).",
-        "Opción A — Edita config/bootstrap.json en GitHub (link abajo).",
-        "Opción B — Pega los mismos valores en GitHub Secrets (tabla de credenciales).",
-        "En Apps Script (script.google.com): clasp push + ejecutar setupSheets si tienes PC.",
-        "Espera 2–5 min al deploy y prueba login producción.",
-      ],
-      credentials: [
-        { label: "VITE_DATA_BACKEND", value: "sheets" },
-        { label: "VITE_DEMO_MODE", value: "false" },
-        {
-          label: "VITE_SHEETS_WEB_APP_URL",
-          value: "https://script.google.com/macros/s/TU_ID/exec",
-          note: "Reemplaza con tu URL real del paso 3",
-        },
-        {
-          label: "VITE_SHEETS_API_TOKEN",
-          value: "(token de CREDENCIALES-SHEETS-AUTO.txt)",
-          note: "64+ caracteres hex; no uses cambiar-token-seguro",
-        },
-        {
-          label: "Admin producción (Sheets)",
-          value: `${PLATFORM_ADMIN_EMAIL} / (clave en Google Sheets)`,
-          note: "Sincroniza con: SPE_PROD_PASSWORD='…' node scripts/sync-sheets-users.mjs",
-        },
-        { label: "VITE_BLOQUEAR_INTEGRACIONES", value: "true" },
-        { label: "VITE_INTEGRACIONES_CLAVE", value: "spe-desbloquear" },
-      ],
-      links: [
-        { label: "Editar bootstrap.json", href: BOOTSTRAP_EDIT },
-        { label: "Configurar desde móvil", href: `${pages}configurar` },
-        { label: "GitHub Secrets", href: SECRETS },
-        { label: "Guía Sheets completa", href: `${REPO}/blob/main/docs-source/OPCION-GOOGLE-SHEETS.md` },
-      ],
-      doneWhen: "Login con lasucursaldelcafe@gmail.com funciona y Backend dice Google Sheets.",
-    },
-    {
       id: "firebase-secrets",
-      title: "3. Alternativa: Firebase (6 secrets)",
+      title: "1. Configurar Firebase (6 secrets)",
       priority: "p0",
-      summary: "Si prefieres Firestore en lugar de Sheets.",
+      summary: "Backend de producción con Firebase Auth y Firestore.",
       steps: [
         "Entra a Firebase Console → tu proyecto → ⚙️ Configuración.",
         "Pestaña General → «Tus apps» → SDK web → copia cada campo.",
         "En GitHub Secrets crea un secret por cada fila de la tabla.",
-        "Opcional: FIREBASE_SERVICE_ACCOUNT_JSON para seed automático.",
-        "Push a main o espera deploy; login con cuenta Firebase Auth.",
+        "Verifica config/bootstrap.json con backend: firebase y demoMode: false.",
+        "Push a main o espera deploy automático.",
+        "Crea la cuenta admin: SPE_PROD_PASSWORD='…' npm run seed:production",
       ],
       credentials: [
         { label: "VITE_DATA_BACKEND", value: "firebase" },
@@ -152,17 +84,40 @@ function buildAllSetupGuideSteps(base?: Partial<DeploymentBase>): SetupGuideStep
         { label: "VITE_FIREBASE_STORAGE_BUCKET", value: "(Firebase → storageBucket)" },
         { label: "VITE_FIREBASE_MESSAGING_SENDER_ID", value: "(Firebase → messagingSenderId)" },
         { label: "VITE_FIREBASE_APP_ID", value: "(Firebase → appId)" },
+        {
+          label: "Admin producción",
+          value: `${PLATFORM_ADMIN_EMAIL} / (contraseña en Firebase Auth)`,
+          note: "Crea con seed:production o Firebase Console → Authentication",
+        },
       ],
       links: [
         { label: "Firebase Console", href: "https://console.firebase.google.com/" },
         { label: "GitHub Secrets", href: buildGitHubSecretsUrl(owner, repo) },
+        { label: "Editar bootstrap.json", href: BOOTSTRAP_EDIT },
         { label: "Guía Firebase", href: `${REPO}/blob/main/docs-source/PRODUCCION-FIREBASE.md` },
       ],
-      doneWhen: "CI en verde y login producción sin modo demo.",
+      doneWhen: "CI en verde, login con lasucursaldelcafe@gmail.com y Backend dice Firebase.",
+    },
+    {
+      id: "firebase-login",
+      title: "2. Probar login en producción",
+      priority: "p0",
+      summary: "Verifica que entras al panel con tu cuenta Firebase.",
+      steps: [
+        "Abre la URL de login (link abajo).",
+        "Debe decir Backend: Firebase en el login.",
+        "Inicia sesión con lasucursaldelcafe@gmail.com y tu contraseña.",
+        "Explora Resumen, Turnos y Personal.",
+      ],
+      links: [
+        { label: "Login producción", href: `${pages}login` },
+        { label: "Panel Admin", href: `${pages}panel` },
+      ],
+      doneWhen: "Ves el panel Admin autenticado con Firebase.",
     },
     {
       id: "releases",
-      title: "4. Descargar Windows, Android y Linux",
+      title: "3. Descargar Windows, Android y Linux",
       priority: "p1",
       summary: "Instaladores generados automáticamente en cada push a main.",
       steps: [
@@ -182,7 +137,7 @@ function buildAllSetupGuideSteps(base?: Partial<DeploymentBase>): SetupGuideStep
     },
     {
       id: "maps",
-      title: "5. Mapa en vivo (Google Maps)",
+      title: "4. Mapa en vivo (Google Maps)",
       priority: "p1",
       summary: "Opcional. Sin clave se ve mapa esquemático.",
       steps: [
@@ -202,7 +157,7 @@ function buildAllSetupGuideSteps(base?: Partial<DeploymentBase>): SetupGuideStep
     },
     {
       id: "fcm",
-      title: "6. Notificaciones push (FCM)",
+      title: "5. Notificaciones push (FCM)",
       priority: "p2",
       summary: "Alertas en móvil cuando hay Firebase configurado.",
       steps: [
@@ -222,16 +177,16 @@ function buildAllSetupGuideSteps(base?: Partial<DeploymentBase>): SetupGuideStep
     },
     {
       id: "integraciones",
-      title: "7. Siigo / WhatsApp (fase 2)",
+      title: "6. Siigo / WhatsApp (fase 2)",
       priority: "p2",
       summary: "Integraciones avanzadas; requieren backend seguro.",
       steps: [
         "Entra al panel Integraciones en la app.",
-        "Desbloquea con clave spe-desbloquear (demo).",
+        "Desbloquea con clave spe-desbloquear.",
         "En producción: credenciales Siigo/WhatsApp van en Cloud Functions, no en el navegador.",
       ],
       credentials: [
-        { label: "VITE_INTEGRACIONES_CLAVE (demo)", value: "spe-desbloquear" },
+        { label: "VITE_INTEGRACIONES_CLAVE", value: "spe-desbloquear" },
       ],
       links: [
         { label: "Integraciones en la app", href: `${pages}integraciones` },

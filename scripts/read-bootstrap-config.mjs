@@ -38,14 +38,13 @@ function main() {
     (backend === "sheets" || (isSet(sheetsUrl) && isUsableSheetsApiToken(sheetsToken))) &&
     isSet(sheetsUrl) &&
     isUsableSheetsApiToken(sheetsToken);
-  const useFirebase =
-    backend === "firebase" ||
-    (isSet(fb.apiKey) && isSet(fb.projectId) && isSet(fb.appId));
-  const demoMode = cfg?.demoMode === true || (!useSheets && !useFirebase);
+  const useFirebase = backend === "firebase" || (isSet(fb.apiKey) && isSet(fb.projectId) && isSet(fb.appId));
+  const demoMode = false;
+  const resolvedBackend = "firebase";
 
   const out = {
     VITE_DEMO_MODE: demoMode ? "true" : "false",
-    VITE_DATA_BACKEND: useSheets ? "sheets" : useFirebase ? "firebase" : "demo",
+    VITE_DATA_BACKEND: resolvedBackend,
     VITE_SHEETS_WEB_APP_URL: useSheets ? sheetsUrl : "",
     VITE_SHEETS_API_TOKEN: useSheets ? sheetsToken : "",
     VITE_GOOGLE_MAPS_API_KEY: isSet(cfg?.googleMapsApiKey) ? cfg.googleMapsApiKey.trim() : "",

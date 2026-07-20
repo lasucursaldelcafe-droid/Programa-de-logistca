@@ -1,7 +1,6 @@
 import { getRuntimeGoogleMapsApiKey } from "./runtimeBootstrap";
 
 export interface SetupCompletadoFlags {
-  sheetsBackend?: boolean;
   firebaseSecrets?: boolean;
   googleMaps?: boolean;
   cuentasPlataforma?: boolean;
@@ -9,7 +8,7 @@ export interface SetupCompletadoFlags {
 }
 
 export interface SetupStatusInput {
-  backend?: "demo" | "firebase" | "sheets";
+  backend?: "firebase";
   demoMode?: boolean;
   setupCompletado?: SetupCompletadoFlags;
   /** Claves Firebase embebidas en build (VITE_*). */
@@ -18,8 +17,7 @@ export interface SetupStatusInput {
 }
 
 export interface ResolvedSetupStatus {
-  backend: "demo" | "firebase" | "sheets";
-  sheetsReady: boolean;
+  backend: "firebase";
   firebaseSecretsReady: boolean;
   mapsReady: boolean;
   fcmReady: boolean;
@@ -39,12 +37,8 @@ export function isSetupItemDone(
   status: ResolvedSetupStatus,
 ): boolean {
   switch (itemId) {
-    case "login-demo":
-      return status.productionLive;
-    case "sheets-backend":
-    case "clasp-push":
-      return status.sheetsReady;
     case "firebase-secrets":
+    case "firebase-login":
       return status.firebaseSecretsReady;
     case "maps":
       return status.mapsReady;
@@ -64,21 +58,17 @@ export function isSetupItemDone(
 
 export function resolveSetupStatus(input: SetupStatusInput = {}): ResolvedSetupStatus {
   const flags = input.setupCompletado ?? {};
-  const backend = input.backend ?? (input.demoMode ? "demo" : "sheets");
   const firebaseFromBuild = isRealFirebaseKey(input.firebaseApiKey);
   const mapsFromRuntime = getRuntimeGoogleMapsApiKey().trim().length > 10;
 
-  const sheetsReady =
-    flags.sheetsBackend === true || (backend === "sheets" && input.demoMode !== true);
   const firebaseSecretsReady =
-    flags.firebaseSecrets === true || firebaseFromBuild || backend === "firebase";
+    flags.firebaseSecrets === true || firebaseFromBuild || input.backend === "firebase";
   const mapsReady = flags.googleMaps === true || mapsFromRuntime;
   const fcmReady = flags.fcm === true || isRealFirebaseKey(input.vapidKey);
-  const productionLive = sheetsReady || firebaseSecretsReady;
+  const productionLive = firebaseSecretsReady;
 
   return {
-    backend,
-    sheetsReady,
+    backend: "firebase",
     firebaseSecretsReady,
     mapsReady,
     fcmReady,
