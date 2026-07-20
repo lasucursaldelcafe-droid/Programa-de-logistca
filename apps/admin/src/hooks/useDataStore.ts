@@ -15,7 +15,10 @@ import {
 } from "firebase/firestore";
 import {
   createUserWithEmailAndPassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
   sendPasswordResetEmail,
+  updatePassword,
 } from "firebase/auth";
 import {
   getFirebaseAuth,
@@ -537,6 +540,32 @@ export async function sendPasswordReset(email: string): Promise<void> {
     return;
   }
   await sendPasswordResetEmail(getFirebaseAuth(), email);
+}
+
+/** Cambiar la contraseña del usuario con sesión activa (Firebase producción). */
+export async function changeOwnPassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  if (isDemoMode()) {
+    const auth = getFirebaseAuth();
+    const fbUser = auth.currentUser;
+    if (!fbUser?.email) throw new Error("No hay sesión activa");
+    setDemoAccountPassword(fbUser.email, newPassword);
+    return;
+  }
+  if (isSheetsBackend()) {
+    throw new Error("Cambio de contraseña en Sheets: contacta al administrador del sistema.");
+  }
+  if (newPassword.length < 8) {
+    throw new Error("La nueva contraseña debe tener al menos 8 caracteres.");
+  }
+  const auth = getFirebaseAuth();
+  const fbUser = auth.currentUser;
+  if (!fbUser?.email) throw new Error("No hay sesión activa");
+  const cred = EmailAuthProvider.credential(fbUser.email, currentPassword);
+  await reauthenticateWithCredential(fbUser, cred);
+  await updatePassword(fbUser, newPassword);
 }
 
 export async function getWorkerById(workerId: string): Promise<Worker | null> {
