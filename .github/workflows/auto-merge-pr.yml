@@ -53,10 +53,29 @@ jobs:
               });
             }
             core.setOutput("number", String(pr.number));
+            core.setOutput("branch", branch);
 
       - name: Merge a main
         if: steps.pr.outputs.number != ''
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh pr merge "${{ steps.pr.outputs.number }}" --merge --delete-branch
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = Number("${{ steps.pr.outputs.number }}");
+            const branch = "${{ steps.pr.outputs.branch }}";
+            await github.rest.pulls.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              merge_method: "merge",
+            });
+            core.info(`PR #${prNumber} mergeado a main`);
+            try {
+              await github.rest.git.deleteRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `heads/${branch}`,
+              });
+              core.info(`Rama ${branch} eliminada`);
+            } catch (e) {
+              core.warning(`No se pudo borrar rama ${branch}: ${e.message}`);
+            }
