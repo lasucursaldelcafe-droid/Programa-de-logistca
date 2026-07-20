@@ -1,16 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import type { NavLinkItem, NavSection } from "../../config/navigation";
+import { isNavItemActive } from "../../lib/navActive";
 import { NavIcon } from "./NavIcons";
 
 const STORAGE_KEY = "spe-nav-expanded-v1";
 
-const itemClass = ({ isActive }: { isActive: boolean }) =>
-  `group flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition ${
+const baseItemClass =
+  "group flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition";
+
+function itemClass(isActive: boolean) {
+  return `${baseItemClass} ${
     isActive
       ? "bg-accent/15 font-medium text-accent shadow-[inset_3px_0_0_0] shadow-accent"
       : "text-neutral-400 hover:bg-neutral-800/80 hover:text-white"
   }`;
+}
 
 interface SidebarNavProps {
   sections: NavSection[];
@@ -31,17 +36,21 @@ function saveExpanded(state: Record<string, boolean>): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
+function sectionHasActive(
+  items: NavLinkItem[],
+  pathname: string,
+  search: string,
+): boolean {
+  return items.some((item) => isNavItemActive(pathname, search, item.to, item.end));
+}
+
 export function SidebarNav({ sections, onNavigate }: SidebarNavProps) {
   const location = useLocation();
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
     const saved = loadExpanded();
     const initial: Record<string, boolean> = {};
     for (const section of sections) {
-      const hasActive = section.items.some((item) =>
-        item.end
-          ? location.pathname === item.to
-          : location.pathname === item.to || location.pathname.startsWith(`${item.to}/`),
-      );
+      const hasActive = sectionHasActive(section.items, location.pathname, location.search);
       initial[section.id] = saved[section.id] ?? hasActive ?? section.id === "inicio";
     }
     return initial;
@@ -52,11 +61,7 @@ export function SidebarNav({ sections, onNavigate }: SidebarNavProps) {
       const next = { ...prev };
       let changed = false;
       for (const section of sections) {
-        const hasActive = section.items.some((item) =>
-          item.end
-            ? location.pathname === item.to
-            : location.pathname === item.to || location.pathname.startsWith(`${item.to}/`),
-        );
+        const hasActive = sectionHasActive(section.items, location.pathname, location.search);
         if (hasActive && !next[section.id]) {
           next[section.id] = true;
           changed = true;
@@ -65,7 +70,7 @@ export function SidebarNav({ sections, onNavigate }: SidebarNavProps) {
       if (changed) saveExpanded(next);
       return changed ? next : prev;
     });
-  }, [location.pathname, sections]);
+  }, [location.pathname, location.search, sections]);
 
   const toggle = useCallback((sectionId: string) => {
     setExpanded((prev) => {
@@ -132,15 +137,17 @@ function SidebarNavItem({
   onNavigate?: () => void;
   indent?: boolean;
 }) {
-  const isExternal = item.external === true;
+  const location = useLocation();
+  const isActive = isNavItemActive(location.pathname, location.search, item.to, item.end);
+  const className = `${itemClass(isActive)} ${indent ? "ml-2" : ""}`;
 
-  if (isExternal) {
+  if (item.external === true) {
     return (
       <a
         href={item.to}
         target="_blank"
         rel="noreferrer"
-        className={`${itemClass({ isActive: false })} ${indent ? "ml-2" : ""}`}
+        className={className}
         onClick={onNavigate}
       >
         <NavIcon name={item.icon} className="h-4 w-4" />
@@ -150,14 +157,9 @@ function SidebarNavItem({
   }
 
   return (
-    <NavLink
-      to={item.to}
-      end={item.end}
-      className={({ isActive }) => `${itemClass({ isActive })} ${indent ? "ml-2" : ""}`}
-      onClick={onNavigate}
-    >
+    <Link to={item.to} className={className} onClick={onNavigate} aria-current={isActive ? "page" : undefined}>
       <NavIcon name={item.icon} className="h-4 w-4" />
       <span className="truncate">{item.label}</span>
-    </NavLink>
+    </Link>
   );
 }

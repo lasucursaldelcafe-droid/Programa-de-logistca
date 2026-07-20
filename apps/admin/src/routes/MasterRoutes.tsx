@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { LoadingScreen } from "../components/FeedbackStates";
 import { useAuth } from "../contexts/AuthContext";
 import { PlatformGate } from "../components/PlatformGate";
 import { MasterLayout } from "@master/components/MasterLayout";
@@ -12,11 +13,7 @@ import { RolesPage } from "@master/pages/RolesPage";
 function MasterProtected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-neutral-400">
-        Cargando…
-      </div>
-    );
+    return <LoadingScreen />;
   }
   if (!user) return <Navigate to="/login" replace />;
   return <PlatformGate platform="master">{children}</PlatformGate>;

@@ -6,6 +6,9 @@ import {
 } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
 import { Badge, Card } from "../components/ui";
+import { EmptyState } from "../components/EmptyState";
+import { PageHeader } from "../components/nav/PageHeader";
+import { PermissionDenied } from "../components/FeedbackStates";
 import { updateReporteEstado, useReportes } from "../hooks/useDataStore";
 
 export function ReportesPage() {
@@ -13,7 +16,13 @@ export function ReportesPage() {
   const reportes = useReportes();
 
   if (!user || !puedeVerReportesTrabajadores(user.role)) {
-    return <p className="text-neutral-400">Sin permisos para ver reportes.</p>;
+    return (
+      <PermissionDenied
+        title="Sin acceso a reportes"
+        description="Tu rol no puede gestionar incidencias de trabajadores."
+        role={user?.role}
+      />
+    );
   }
 
   async function cambiarEstado(id: string, estado: ReporteEstado) {
@@ -25,17 +34,18 @@ export function ReportesPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="font-display text-3xl font-bold">Reportes de trabajadores</h1>
-        <p className="mt-1 text-neutral-400">
-          Incidencias enviadas desde la app Trabajador. Resuélvelas o márcalas en revisión.
-        </p>
-      </div>
+      <PageHeader
+        title="Reportes de trabajadores"
+        description="Incidencias enviadas desde la app Trabajador. Resuélvelas o márcalas en revisión."
+      />
 
       <Card>
         <div className="space-y-3">
           {reportes.length === 0 ? (
-            <p className="text-sm text-neutral-500">No hay reportes pendientes.</p>
+            <EmptyState
+              title="No hay reportes pendientes"
+              description="Cuando un trabajador envíe una incidencia desde la app, aparecerá aquí."
+            />
           ) : (
             reportes.map((r) => (
               <div

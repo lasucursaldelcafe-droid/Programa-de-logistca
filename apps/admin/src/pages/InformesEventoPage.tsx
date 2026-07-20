@@ -8,7 +8,9 @@ import {
 } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
 import { Card } from "../components/ui";
+import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/nav/PageHeader";
+import { PermissionDenied } from "../components/FeedbackStates";
 import {
   useAttendances,
   useEvents,
@@ -61,7 +63,13 @@ export function InformesEventoPage() {
   }, [evento, sites, workers, shifts, attendances, reportes, payroll, invitations]);
 
   if (!user || !puedeVerInformesEvento(user.role)) {
-    return <p className="text-neutral-400">Sin permisos para ver informes.</p>;
+    return (
+      <PermissionDenied
+        title="Sin acceso a informes"
+        description="Tu rol no puede ver informes operativos del evento."
+        role={user?.role}
+      />
+    );
   }
 
   function exportTab() {
@@ -124,9 +132,11 @@ export function InformesEventoPage() {
       </div>
 
       {!informe ? (
-        <Card>
-          <p className="text-sm text-neutral-500">Crea un evento para generar informes.</p>
-        </Card>
+        <EmptyState
+          title="Sin eventos para informar"
+          description="Crea un evento en configuración para generar informes operativos."
+          action={{ to: "/configuracion", label: "Crear evento" }}
+        />
       ) : (
         <>
           {tab === "operativo" && (

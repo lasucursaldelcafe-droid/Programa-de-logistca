@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { getWorkerNavItems } from "../../config/navigation";
+import { getWorkerBottomNavItems } from "../../config/navigation";
 import { NavIcon } from "./NavIcons";
 
 const itemClass = ({ isActive }: { isActive: boolean }) =>
@@ -8,7 +8,7 @@ const itemClass = ({ isActive }: { isActive: boolean }) =>
   }`;
 
 export function WorkerBottomNav() {
-  const items = getWorkerNavItems();
+  const items = getWorkerBottomNavItems();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-surface/95 backdrop-blur safe-area-pb">

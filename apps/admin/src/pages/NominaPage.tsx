@@ -10,6 +10,8 @@ import {
 } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
 import { Badge, Card } from "../components/ui";
+import { EmptyState } from "../components/EmptyState";
+import { PageHeader } from "../components/nav/PageHeader";
 import { useAttendances, useEvents, useWorkers } from "../hooks/useDataStore";
 import {
   calculatePayrollFromAttendances,
@@ -132,14 +134,14 @@ export function NominaPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="font-display text-3xl font-bold">Nómina</h1>
-        <p className="mt-1 text-neutral-400">
-          {esAdmin
+      <PageHeader
+        title="Nómina"
+        description={
+          esAdmin
             ? "Cálculo automático desde jornadas cerradas, refrigerios y exportación contable."
-            : "Historial de horas trabajadas y pagos de tus jornadas."}
-        </p>
-      </div>
+            : "Historial de horas trabajadas y pagos de tus jornadas."
+        }
+      />
 
       {mensaje && (
         <div className="rounded-lg border border-accent/30 bg-accent/10 px-4 py-3 text-sm text-accent">
@@ -280,9 +282,21 @@ export function NominaPage() {
           Registros ({misEntradas.length})
         </h2>
         {misEntradas.length === 0 ? (
-          <p className="mt-4 text-sm text-neutral-500">
-            No hay registros de nómina con los filtros actuales.
-          </p>
+          <EmptyState
+            title="Sin registros de nómina"
+            description={
+              esAdmin
+                ? "Calcula la nómina desde jornadas cerradas o ajusta los filtros."
+                : "Aún no hay pagos registrados para tus jornadas."
+            }
+            action={
+              esAdmin && jornadasPendientes > 0
+                ? undefined
+                : esAdmin
+                  ? { to: "/operacion", label: "Ir al evento" }
+                  : undefined
+            }
+          />
         ) : (
           <div className="mt-4 space-y-3">
             {misEntradas.map((entry) => (

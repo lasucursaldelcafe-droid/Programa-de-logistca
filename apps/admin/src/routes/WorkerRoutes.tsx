@@ -9,16 +9,11 @@ import { WorkerLayout } from "@worker/components/WorkerLayout";
 import { WorkerHomePage } from "@worker/pages/WorkerHomePage";
 import { ComunicacionPage } from "../pages/ComunicacionPage";
 import { ReportarPage } from "@worker/pages/ReportarPage";
+import { LoadingScreen } from "../components/FeedbackStates";
 
 function WorkerProtected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-neutral-400">
-        Cargando…
-      </div>
-    );
-  }
+  if (loading) return <LoadingScreen label="Verificando sesión…" />;
   if (!user) return <Navigate to="/login" replace />;
   if (user.perfilCompleto !== true) {
     return <Navigate to="/completar-perfil" replace />;

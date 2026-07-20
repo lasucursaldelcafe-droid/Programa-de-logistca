@@ -81,59 +81,87 @@ function useDemoSnapshot<T>(selector: () => T): T {
 }
 
 export function useWorkers(): Worker[] {
+  return useWorkersState().workers;
+}
+
+export function useWorkersState(): { workers: Worker[]; loading: boolean } {
   const [workers, setWorkers] = useState<Worker[]>([]);
+  const [loading, setLoading] = useState(() => !isDemoMode() && !isSheetsBackend());
   const sheetsWorkers = useSheetsPoll<Worker>("workers");
 
   useEffect(() => {
     if (isDemoMode() || isSheetsBackend()) return;
     const unsub = onSnapshot(
       query(collection(getFirestoreDb(), "workers"), orderBy("nombre")),
-      (snap) => setWorkers(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Worker))),
+      (snap) => {
+        setWorkers(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Worker)));
+        setLoading(false);
+      },
+      () => setLoading(false),
     );
     return unsub;
   }, []);
 
   const demoWorkers = useDemoSnapshot(() => demoStore.workers);
-  if (isDemoMode()) return demoWorkers;
-  if (isSheetsBackend()) return sheetsWorkers;
-  return workers;
+  if (isDemoMode()) return { workers: demoWorkers, loading: false };
+  if (isSheetsBackend()) return { workers: sheetsWorkers, loading: false };
+  return { workers, loading };
 }
 
 export function useShifts(): Turno[] {
+  return useShiftsState().shifts;
+}
+
+export function useShiftsState(): { shifts: Turno[]; loading: boolean } {
   const [shifts, setShifts] = useState<Turno[]>([]);
+  const [loading, setLoading] = useState(() => !isDemoMode() && !isSheetsBackend());
   const sheetsShifts = useSheetsPoll<Turno>("shifts");
 
   useEffect(() => {
     if (isDemoMode() || isSheetsBackend()) return;
     const unsub = onSnapshot(
       query(collection(getFirestoreDb(), "shifts"), orderBy("inicio")),
-      (snap) => setShifts(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Turno))),
+      (snap) => {
+        setShifts(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Turno)));
+        setLoading(false);
+      },
+      () => setLoading(false),
     );
     return unsub;
   }, []);
 
   const demoShifts = useDemoSnapshot(() => demoStore.shifts);
-  if (isDemoMode()) return demoShifts;
-  if (isSheetsBackend()) return sheetsShifts;
-  return shifts;
+  if (isDemoMode()) return { shifts: demoShifts, loading: false };
+  if (isSheetsBackend()) return { shifts: sheetsShifts, loading: false };
+  return { shifts, loading };
 }
 
 export function useEvents(): Evento[] {
+  return useEventsState().events;
+}
+
+export function useEventsState(): { events: Evento[]; loading: boolean } {
   const [events, setEvents] = useState<Evento[]>([]);
+  const [loading, setLoading] = useState(() => !isDemoMode() && !isSheetsBackend());
   const sheetsEvents = useSheetsPoll<Evento>("events");
 
   useEffect(() => {
     if (isDemoMode() || isSheetsBackend()) return;
-    const unsub = onSnapshot(collection(getFirestoreDb(), "events"), (snap) =>
-      setEvents(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Evento))),
+    const unsub = onSnapshot(
+      collection(getFirestoreDb(), "events"),
+      (snap) => {
+        setEvents(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Evento)));
+        setLoading(false);
+      },
+      () => setLoading(false),
     );
     return unsub;
   }, []);
 
   const demoEvents = useDemoSnapshot(() => demoStore.events);
-  if (isDemoMode()) return demoEvents;
-  if (isSheetsBackend()) return sheetsEvents;
-  return events;
+  if (isDemoMode()) return { events: demoEvents, loading: false };
+  if (isSheetsBackend()) return { events: sheetsEvents, loading: false };
+  return { events, loading };
 }
 
 export function useSites(): Sitio[] {

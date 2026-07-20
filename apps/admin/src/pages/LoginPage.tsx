@@ -52,6 +52,14 @@ export function LoginPage() {
     void isBiometricAvailable().then(setBiometricAvailable);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("email") && !params.has("password") && !params.has("auto")) return;
+    const clean = window.location.pathname + (window.location.hash.split("?")[0] ?? "");
+    window.history.replaceState({}, "", clean);
+  }, []);
+
   const backendReady = isFirebaseConfigured();
   const backendLabel = getRuntimeBackendLabel(buildEnv);
 
@@ -105,7 +113,7 @@ export function LoginPage() {
   return (
     <AuthShell
       title="Personal Eventos"
-      subtitle={`Backend: ${backendLabel}`}
+      subtitle={import.meta.env.DEV ? `Backend: ${backendLabel}` : "Inicia sesión con tu cuenta"}
       footer={
         <>
           <Link to="/descargas" className="text-accent hover:underline">

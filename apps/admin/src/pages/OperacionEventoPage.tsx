@@ -23,6 +23,7 @@ import {
 import { useEventoOperacion } from "../hooks/useEventoOperacion";
 import { EventFlowGuide } from "../components/EventFlowGuide";
 import { EventSupervisionPanel } from "../components/EventSupervisionPanel";
+import { PermissionDenied } from "../components/FeedbackStates";
 
 type OperacionTab = "resumen" | "supervision" | "equipo";
 
@@ -151,7 +152,13 @@ export function OperacionEventoPage() {
   }, [evento]);
 
   if (!user || !puedeGestionarTurnos(user.role)) {
-    return <p className="text-neutral-400">Sin permisos para operar eventos.</p>;
+    return (
+      <PermissionDenied
+        role={user?.role}
+        title="Sin permiso para operación"
+        description="Solo roles con gestión de turnos pueden asignar personal al evento."
+      />
+    );
   }
 
   async function agregarEmpleado(e: React.FormEvent) {
@@ -265,14 +272,32 @@ export function OperacionEventoPage() {
       </div>
 
       {evento && (
-        <div className="flex flex-wrap gap-2 border-b border-border/60 pb-3">
-          <button type="button" className={tabClass("resumen")} onClick={() => setActiveTab("resumen")}>
+        <div className="flex flex-wrap gap-2 border-b border-border/60 pb-3" role="tablist" aria-label="Secciones del evento">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "resumen"}
+            className={tabClass("resumen")}
+            onClick={() => setActiveTab("resumen")}
+          >
             Resumen
           </button>
-          <button type="button" className={tabClass("supervision")} onClick={() => setActiveTab("supervision")}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "supervision"}
+            className={tabClass("supervision")}
+            onClick={() => setActiveTab("supervision")}
+          >
             Supervisión y mapa
           </button>
-          <button type="button" className={tabClass("equipo")} onClick={() => setActiveTab("equipo")}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "equipo"}
+            className={tabClass("equipo")}
+            onClick={() => setActiveTab("equipo")}
+          >
             Equipo
           </button>
         </div>

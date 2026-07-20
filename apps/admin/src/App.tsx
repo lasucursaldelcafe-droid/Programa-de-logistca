@@ -16,13 +16,14 @@ import { NominaPage } from "./pages/NominaPage";
 import { ComunicacionPage } from "./pages/ComunicacionPage";
 import { ConfiguracionPage } from "./pages/ConfiguracionPage";
 import { ReportesPage } from "./pages/ReportesPage";
+import { InformesEventoPage } from "./pages/InformesEventoPage";
+import { LoadingScreen } from "./components/FeedbackStates";
 import { AyudaPage } from "./pages/AyudaPage";
 import { ClientesPage } from "./pages/ClientesPage";
 import { FacturacionPage } from "./pages/FacturacionPage";
 import { InventarioPage } from "./pages/InventarioPage";
 import { IntegracionesPage } from "./pages/IntegracionesPage";
 import { SupervisionPage } from "./pages/SupervisionPage";
-import { InformesEventoPage } from "./pages/InformesEventoPage";
 import { ActivarCuentaPage } from "./pages/ActivarCuentaPage";
 import { UnirseEmpresaPage } from "./pages/UnirseEmpresaPage";
 import { CompletarPerfilPage } from "./pages/CompletarPerfilPage";
@@ -35,26 +36,14 @@ import { WorkerRoutes } from "./routes/WorkerRoutes";
 
 function AdminProtected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-neutral-400">
-        Cargando…
-      </div>
-    );
-  }
+  if (loading) return <LoadingScreen label="Verificando sesión…" />;
   if (!user) return <Navigate to="/login" replace />;
   return <PlatformGate platform="admin">{children}</PlatformGate>;
 }
 
 function WorkerOnboardingGate({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-neutral-400">
-        Cargando…
-      </div>
-    );
-  }
+  if (loading) return <LoadingScreen label="Verificando sesión…" />;
   if (!user) return <Navigate to="/login" replace />;
   if (user.perfilCompleto === true) {
     return <Navigate to={rutaHomePorRol(user.role)} replace />;
