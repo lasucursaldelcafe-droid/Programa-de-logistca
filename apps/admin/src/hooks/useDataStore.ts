@@ -50,17 +50,28 @@ import {
   type ReporteEstado,
   type ReporteTipo,
   type AppUser,
+  type CustomRole,
+  type CustomRoleBase,
+  type RoleAccessMode,
+  type SpePermission,
+  ROLE_TEMPLATES,
+  roleTemplateDisplayName,
+  parseCustomRolePermisos,
+  serializeCustomRolePermisos,
 } from "@spe/shared";
 import type { GeoPosition } from "../lib/geolocation";
 import { isDemoMode } from "../lib/mode";
 import { isSheetsBackend } from "../lib/backend";
 import { useSheetsPoll } from "./useSheetsPoll";
-import { sheetsGetById, sheetsListAll, sheetsUpsertRecord } from "../data/sheetsOps";
+import { sheetsGetById, sheetsListAll, sheetsUpsertRecord, sheetsDeleteRecord } from "../data/sheetsOps";
 import { demoStore, setDemoAccountHabilitado, setDemoAccountPassword } from "../demo/store";
 import {
   notifyCheckIn,
   notifyCheckOut,
   notifyGeofenceAlert,
+  notifyLlegadaSitio,
+  notifyReentradaGeocerca,
+  notifyReporteTrabajador,
   notifyShiftAssigned,
   notifyShiftResponse,
 } from "./useNotifications";
@@ -179,6 +190,7 @@ export async function createWorker(
     email: string;
     perfiles: PerfilTrabajo[];
     rolPlataforma?: "trabajador" | "supervisor_sitio";
+    customRoleId?: string;
   },
   options?: {
     actorNombre?: string;
@@ -199,6 +211,7 @@ export async function createWorker(
         email: data.email.trim().toLowerCase(),
         perfiles: data.perfiles,
         rolPlataforma,
+        customRoleId: data.customRoleId,
         experienciaAnios: 0,
         eventosTrabajados: 0,
         rating: 0,
@@ -221,6 +234,7 @@ export async function createWorker(
     email: data.email.trim().toLowerCase(),
     perfiles: JSON.stringify(data.perfiles),
     rolPlataforma,
+    customRoleId: data.customRoleId ?? "",
     experienciaAnios: 0,
     eventosTrabajados: 0,
     rating: 0,
@@ -483,6 +497,18 @@ export async function findInvitationByEmailAndCode(
     return demoStore.findInvitationByEmailAndCode(normalizedEmail, normalizedCode);
   }
 
+  if (isSheetsBackend()) {
+    const items = await sheetsListAll<Invitation>("invitations");
+    return (
+      items.find(
+        (inv) =>
+          inv.email.toLowerCase() === normalizedEmail &&
+          inv.estado === "pendiente" &&
+          inv.codigoAcceso === normalizedCode,
+      ) ?? null
+    );
+  }
+
   const q = query(
     collection(getFirestoreDb(), "invitations"),
     where("email", "==", normalizedEmail),
@@ -505,6 +531,7 @@ export async function createInvitation(data: {
   workerNombre: string;
   email: string;
   role: "trabajador" | "supervisor_sitio";
+  customRoleId?: string;
   creadaPor: string;
   creadaPorNombre: string;
 }): Promise<{ token: string; codigoAcceso: string }> {
@@ -521,6 +548,7 @@ export async function createInvitation(data: {
     email: data.email.trim().toLowerCase(),
     codigoAcceso,
     role: data.role,
+    customRoleId: data.customRoleId,
     estado: "pendiente",
     creadaEn: now.toISOString(),
     expiraEn: expira.toISOString(),
@@ -546,6 +574,16 @@ export async function revokeInvitation(token: string): Promise<void> {
     demoStore.updateInvitation(token, { estado: "revocada" });
     return;
   }
+  if (isSheetsBackend()) {
+    const inv = await getInvitationByToken(token);
+    if (!inv) throw new Error("Invitación no encontrada");
+    await sheetsUpsertRecord(
+      "invitations",
+      { ...inv, id: token, token, estado: "revocada" },
+      "id",
+    );
+    return;
+  }
   await updateDoc(doc(getFirestoreDb(), "invitations", token), { estado: "revocada" });
 }
 
@@ -569,6 +607,59 @@ export async function activateAccountWithInvitation(
   if (new Date(invitation.expiraEn) < new Date()) throw new Error("La invitación ha expirado");
   if (invitation.codigoAcceso !== codigoAcceso.replace(/\s/g, "").trim()) {
     throw new Error("Código de invitación incorrecto");
+  }
+
+  if (isSheetsBackend()) {
+    const worker = await getWorkerById(invitation.workerId);
+    if (!worker) throw new Error("Trabajador no encontrado");
+    if (worker.cuentaCreada) throw new Error("Este trabajador ya tiene cuenta activa");
+
+    const uid = `sheets-${invitation.workerId}-${Date.now().toString(36)}`;
+    const assignedRole = invitation.role ?? "trabajador";
+    const perfilCompleto = assignedRole === "supervisor_sitio";
+
+    await sheetsUpsertRecord(
+      "users",
+      {
+        uid,
+        email: invitation.email,
+        password,
+        nombre: invitation.workerNombre,
+        role: assignedRole,
+        workerId: invitation.workerId,
+        customRoleId: invitation.customRoleId ?? "",
+        perfilCompleto: String(perfilCompleto),
+        telefono: "",
+        habilitado: "true",
+      },
+      "uid",
+    );
+
+    await sheetsUpsertRecord("workers", { ...worker, cuentaCreada: true });
+
+    await sheetsUpsertRecord(
+      "invitations",
+      {
+        ...invitation,
+        id: token,
+        token,
+        estado: "usada",
+        usadaEn: new Date().toISOString(),
+        uid,
+      },
+      "id",
+    );
+
+    return {
+      uid,
+      email: invitation.email,
+      nombre: invitation.workerNombre,
+      role: assignedRole,
+      workerId: invitation.workerId,
+      customRoleId: invitation.customRoleId,
+      perfilCompleto,
+      habilitado: true,
+    };
   }
 
   const auth = getFirebaseAuth();
@@ -611,6 +702,7 @@ export async function activateAccountWithInvitation(
       nombre: invitation.workerNombre,
       role: invitation.role ?? "trabajador",
       workerId: invitation.workerId,
+      customRoleId: invitation.customRoleId,
       perfilCompleto,
     },
     { merge: true },
@@ -632,6 +724,7 @@ export async function activateAccountWithInvitation(
     nombre: invitation.workerNombre,
     role: invitation.role ?? "trabajador",
     workerId: invitation.workerId,
+    customRoleId: invitation.customRoleId,
     perfilCompleto,
   };
 }
@@ -643,6 +736,34 @@ export async function completeUserProfile(data: {
 }): Promise<void> {
   if (isDemoMode()) {
     demoStore.completeProfile(data.uid, data);
+    return;
+  }
+  if (isSheetsBackend()) {
+    const users = await sheetsListAll<Record<string, unknown>>("users");
+    const user = users.find((u) => String(u.uid) === data.uid);
+    if (!user) throw new Error("Usuario no encontrado");
+    await sheetsUpsertRecord(
+      "users",
+      {
+        ...user,
+        uid: data.uid,
+        nombre: data.nombre,
+        telefono: data.telefono,
+        perfilCompleto: "true",
+      },
+      "uid",
+    );
+    const workerId = user.workerId ? String(user.workerId) : null;
+    if (workerId) {
+      const worker = await getWorkerById(workerId);
+      if (worker) {
+        await sheetsUpsertRecord("workers", {
+          ...worker,
+          nombre: data.nombre,
+          telefono: data.telefono,
+        });
+      }
+    }
     return;
   }
   await updateDoc(doc(getFirestoreDb(), "users", data.uid), {
@@ -1064,6 +1185,36 @@ export async function recordGeofenceAlert(attendanceId: string): Promise<void> {
     return;
   }
 
+  if (isSheetsBackend()) {
+    const att = await sheetsGetById<Attendance>("attendance", attendanceId);
+    if (!att) return;
+    const alertasRaw = att.alertasGeocerca as string[] | string | undefined;
+    const alertas: string[] = Array.isArray(alertasRaw)
+      ? alertasRaw
+      : typeof alertasRaw === "string" && alertasRaw.trim()
+        ? alertasRaw.split(",").filter(Boolean)
+        : [];
+    const now = new Date().toISOString();
+    if (alertas.length > 0 && alertas[alertas.length - 1] === now) return;
+    const isFirstAlert = alertas.length === 0;
+
+    await sheetsUpsertRecord("attendance", {
+      ...att,
+      estado: "fuera_geocerca",
+      alertasGeocerca: [...alertas, now].join(","),
+    });
+
+    if (isFirstAlert) {
+      await notifyGeofenceAlert({
+        workerId: att.workerId,
+        workerNombre: att.workerNombre ?? att.workerId,
+        siteNombre: att.siteNombre,
+        attendanceId,
+      });
+    }
+    return;
+  }
+
   const snap = await getDoc(doc(getFirestoreDb(), "attendance", attendanceId));
   if (!snap.exists()) return;
   const data = snap.data();
@@ -1087,6 +1238,102 @@ export async function recordGeofenceAlert(attendanceId: string): Promise<void> {
       attendanceId,
     });
   }
+}
+
+export async function confirmArrivalAtSite(attendanceId: string): Promise<void> {
+  if (isDemoMode()) {
+    const att = demoStore.attendances.find((a) => a.id === attendanceId);
+    if (!att || att.estado === "activo") return;
+    demoStore.updateAttendanceLocation(
+      attendanceId,
+      att.ubicacionActual ?? { lat: 0, lng: 0 },
+      true,
+    );
+    if (att.estado === "revision_manual" || att.estado === "fuera_geocerca") {
+      await notifyLlegadaSitio({
+        workerId: att.workerId,
+        workerNombre: att.workerNombre ?? att.workerId,
+        siteNombre: att.siteNombre,
+        eventNombre: att.eventNombre,
+        attendanceId,
+      });
+    }
+    return;
+  }
+
+  if (isSheetsBackend()) {
+    const att = await sheetsGetById<Attendance>("attendance", attendanceId);
+    if (!att || att.estado === "activo") return;
+    await sheetsUpsertRecord("attendance", { ...att, estado: "activo" });
+    if (att.estado === "revision_manual" || att.estado === "fuera_geocerca") {
+      await notifyLlegadaSitio({
+        workerId: att.workerId,
+        workerNombre: att.workerNombre ?? att.workerId,
+        siteNombre: att.siteNombre,
+        eventNombre: att.eventNombre,
+        attendanceId,
+      });
+    }
+    return;
+  }
+
+  const snap = await getDoc(doc(getFirestoreDb(), "attendance", attendanceId));
+  if (!snap.exists()) return;
+  const att = { id: snap.id, ...snap.data() } as Attendance;
+  if (att.estado === "activo") return;
+  await updateDoc(doc(getFirestoreDb(), "attendance", attendanceId), { estado: "activo" });
+  if (att.estado === "revision_manual" || att.estado === "fuera_geocerca") {
+    await notifyLlegadaSitio({
+      workerId: att.workerId,
+      workerNombre: att.workerNombre ?? att.workerId,
+      siteNombre: att.siteNombre,
+      eventNombre: att.eventNombre,
+      attendanceId,
+    });
+  }
+}
+
+export async function recordGeofenceReentry(attendanceId: string): Promise<void> {
+  if (isDemoMode()) {
+    const att = demoStore.attendances.find((a) => a.id === attendanceId);
+    if (!att) return;
+    demoStore.updateAttendanceLocation(
+      attendanceId,
+      att.ubicacionActual ?? { lat: 0, lng: 0 },
+      true,
+    );
+    await notifyReentradaGeocerca({
+      workerId: att.workerId,
+      workerNombre: att.workerNombre ?? att.workerId,
+      siteNombre: att.siteNombre,
+      attendanceId,
+    });
+    return;
+  }
+
+  if (isSheetsBackend()) {
+    const att = await sheetsGetById<Attendance>("attendance", attendanceId);
+    if (!att) return;
+    await sheetsUpsertRecord("attendance", { ...att, estado: "activo" });
+    await notifyReentradaGeocerca({
+      workerId: att.workerId,
+      workerNombre: att.workerNombre ?? att.workerId,
+      siteNombre: att.siteNombre,
+      attendanceId,
+    });
+    return;
+  }
+
+  const snap = await getDoc(doc(getFirestoreDb(), "attendance", attendanceId));
+  if (!snap.exists()) return;
+  const att = { id: snap.id, ...snap.data() } as Attendance;
+  await updateDoc(doc(getFirestoreDb(), "attendance", attendanceId), { estado: "activo" });
+  await notifyReentradaGeocerca({
+    workerId: att.workerId,
+    workerNombre: att.workerNombre ?? att.workerId,
+    siteNombre: att.siteNombre,
+    attendanceId,
+  });
 }
 
 export function getActiveAttendance(
@@ -1126,6 +1373,41 @@ export async function createEvent(data: {
 
   await setDoc(doc(getFirestoreDb(), "events", id), evento);
   return id;
+}
+
+export async function updateEvento(
+  eventId: string,
+  data: Partial<
+    Pick<
+      Evento,
+      | "nombre"
+      | "fechaInicio"
+      | "fechaFin"
+      | "temaLaboral"
+      | "reglasOperativas"
+      | "tiempoMinimoEstadiaMinutos"
+      | "supervisionActiva"
+    >
+  >,
+): Promise<void> {
+  if (isDemoMode()) {
+    demoStore.updateEvent(eventId, data);
+    return;
+  }
+  if (isSheetsBackend()) {
+    const evento = await sheetsGetById<Evento>("events", eventId);
+    if (!evento) throw new Error("Evento no encontrado");
+    await sheetsUpsertRecord("events", {
+      ...evento,
+      ...data,
+      supervisionActiva:
+        data.supervisionActiva !== undefined ? data.supervisionActiva : evento.supervisionActiva ?? true,
+      tiempoMinimoEstadiaMinutos:
+        data.tiempoMinimoEstadiaMinutos ?? evento.tiempoMinimoEstadiaMinutos ?? 0,
+    });
+    return;
+  }
+  await updateDoc(doc(getFirestoreDb(), "events", eventId), data);
 }
 
 export async function createSite(data: {
@@ -1169,9 +1451,10 @@ export async function createSite(data: {
 
 export function useReportes(): Reporte[] {
   const [reportes, setReportes] = useState<Reporte[]>([]);
+  const sheetsReportes = useSheetsPoll<Reporte>("reports");
 
   useEffect(() => {
-    if (isDemoMode()) return;
+    if (isDemoMode() || isSheetsBackend()) return;
     const unsub = onSnapshot(
       query(collection(getFirestoreDb(), "reports"), orderBy("creadoEn", "desc")),
       (snap) => setReportes(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Reporte))),
@@ -1180,7 +1463,9 @@ export function useReportes(): Reporte[] {
   }, []);
 
   const demoReportes = useDemoSnapshot(() => demoStore.reportes);
-  return isDemoMode() ? demoReportes : reportes;
+  if (isDemoMode()) return demoReportes;
+  if (isSheetsBackend()) return sheetsReportes;
+  return reportes;
 }
 
 export function usePlatformUsers(): AppUser[] {
@@ -1217,10 +1502,39 @@ export async function createReporte(data: {
 
   if (isDemoMode()) {
     demoStore.addReporte({ ...reporte, id });
+    await notifyReporteTrabajador({
+      workerId: data.workerId,
+      workerNombre: data.workerNombre,
+      siteNombre: data.siteNombre,
+      tipo: data.tipo,
+      mensaje: data.mensaje,
+      reporteId: id,
+    });
+    return id;
+  }
+
+  if (isSheetsBackend()) {
+    await sheetsUpsertRecord("reports", { ...reporte, id });
+    await notifyReporteTrabajador({
+      workerId: data.workerId,
+      workerNombre: data.workerNombre,
+      siteNombre: data.siteNombre,
+      tipo: data.tipo,
+      mensaje: data.mensaje,
+      reporteId: id,
+    });
     return id;
   }
 
   await setDoc(doc(getFirestoreDb(), "reports", id), reporte);
+  await notifyReporteTrabajador({
+    workerId: data.workerId,
+    workerNombre: data.workerNombre,
+    siteNombre: data.siteNombre,
+    tipo: data.tipo,
+    mensaje: data.mensaje,
+    reporteId: id,
+  });
   return id;
 }
 
@@ -1241,5 +1555,150 @@ export async function updateReporteEstado(
     return;
   }
 
+  if (isSheetsBackend()) {
+    const reporte = await sheetsGetById<Reporte>("reports", reporteId);
+    if (!reporte) throw new Error("Reporte no encontrado");
+    await sheetsUpsertRecord("reports", { ...reporte, ...patch });
+    return;
+  }
+
   await updateDoc(doc(getFirestoreDb(), "reports", reporteId), patch);
+}
+
+export async function createCustomRole(
+  data: {
+    nombre: string;
+    descripcion?: string;
+    baseRole: CustomRoleBase;
+    permisos: SpePermission[];
+    activo: boolean;
+    modoAcceso?: RoleAccessMode;
+    plantillaId?: string;
+  },
+  creadoPor: string,
+  creadoPorNombre: string,
+): Promise<string> {
+  const id = `role-${Date.now().toString(36)}`;
+  const role: CustomRole = {
+    id,
+    nombre: data.nombre,
+    descripcion: data.descripcion,
+    baseRole: data.baseRole,
+    permisos: data.permisos,
+    activo: data.activo,
+    modoAcceso: data.modoAcceso,
+    plantillaId: data.plantillaId,
+    creadoEn: new Date().toISOString(),
+    creadoPor,
+    creadoPorNombre,
+  };
+
+  if (isDemoMode()) {
+    demoStore.addCustomRole(role);
+    return id;
+  }
+
+  const record = {
+    ...role,
+    permisos: serializeCustomRolePermisos(role.permisos),
+  };
+
+  if (isSheetsBackend()) {
+    await sheetsUpsertRecord("customRoles", record);
+    return id;
+  }
+
+  await setDoc(doc(getFirestoreDb(), "customRoles", id), record);
+  return id;
+}
+
+export async function updateCustomRole(
+  id: string,
+  data: Partial<
+    Pick<
+      CustomRole,
+      "nombre" | "descripcion" | "baseRole" | "permisos" | "activo" | "modoAcceso" | "plantillaId"
+    >
+  >,
+  _actorUid: string,
+  _actorNombre: string,
+): Promise<void> {
+  if (isDemoMode()) {
+    demoStore.updateCustomRole(id, data);
+    return;
+  }
+
+  if (isSheetsBackend()) {
+    const existing = await sheetsGetById<Record<string, unknown>>("customRoles", id);
+    if (!existing) throw new Error("Rol no encontrado");
+    const currentPermisos = parseCustomRolePermisos(existing.permisos);
+    const merged: CustomRole = {
+      id,
+      nombre: String(existing.nombre ?? ""),
+      descripcion: existing.descripcion ? String(existing.descripcion) : undefined,
+      baseRole: (existing.baseRole as CustomRole["baseRole"]) ?? "trabajador",
+      permisos: data.permisos ?? currentPermisos,
+      activo: data.activo ?? existing.activo !== "false",
+      creadoEn: String(existing.creadoEn ?? new Date().toISOString()),
+      creadoPor: String(existing.creadoPor ?? ""),
+      creadoPorNombre: existing.creadoPorNombre ? String(existing.creadoPorNombre) : undefined,
+      ...data,
+    };
+    await sheetsUpsertRecord("customRoles", {
+      ...merged,
+      permisos: serializeCustomRolePermisos(merged.permisos),
+    });
+    return;
+  }
+
+  const ref = doc(getFirestoreDb(), "customRoles", id);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error("Rol no encontrado");
+  const patch = { ...data } as Record<string, unknown>;
+  if (data.permisos) patch.permisos = serializeCustomRolePermisos(data.permisos);
+  await updateDoc(ref, patch);
+}
+
+export async function deleteCustomRole(id: string): Promise<void> {
+  if (isDemoMode()) {
+    demoStore.deleteCustomRole(id);
+    return;
+  }
+
+  if (isSheetsBackend()) {
+    await sheetsDeleteRecord("customRoles", id);
+    return;
+  }
+
+  await deleteDoc(doc(getFirestoreDb(), "customRoles", id));
+}
+
+/** Importa plantillas de ejemplo que aún no existen (por plantillaId). */
+export async function importRoleTemplatesFromCatalog(
+  existingRoles: CustomRole[],
+  creadoPor: string,
+  creadoPorNombre: string,
+): Promise<number> {
+  const existingTemplateIds = new Set(
+    existingRoles.map((r) => r.plantillaId).filter(Boolean),
+  );
+  let imported = 0;
+  for (const template of ROLE_TEMPLATES) {
+    if (existingTemplateIds.has(template.id)) continue;
+    await createCustomRole(
+      {
+        nombre: roleTemplateDisplayName(template),
+        descripcion: template.descripcion,
+        baseRole: template.baseRole,
+        permisos: template.permisos,
+        activo: true,
+        modoAcceso: template.modoAcceso,
+        plantillaId: template.id,
+      },
+      creadoPor,
+      creadoPorNombre,
+    );
+    imported += 1;
+  }
+  return imported;
 }

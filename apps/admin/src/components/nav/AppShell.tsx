@@ -4,6 +4,7 @@ import { ROLE_LABEL } from "@spe/shared";
 import type { AppUser } from "@spe/shared";
 import type { NavSection } from "../../config/navigation";
 import { NotificationBell } from "../NotificationBell";
+import { WelcomeModal } from "../WelcomeModal";
 import { NavIcon } from "./NavIcons";
 import { SidebarNav } from "./SidebarNav";
 
@@ -21,6 +22,7 @@ export function AppShell({ user, brand, brandSub, sections, onLogout }: AppShell
 
   return (
     <div className="min-h-screen spe-app-bg lg:flex">
+      <WelcomeModal user={user} />
       {/* Sidebar — desktop: siempre visible */}
       <aside className="hidden w-56 shrink-0 flex-col border-r border-border/80 bg-gradient-to-b from-surface-elevated via-surface to-bg lg:flex">
         <BrandBlock brand={brand} brandSub={brandSub} />

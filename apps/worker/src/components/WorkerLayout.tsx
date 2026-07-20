@@ -2,6 +2,7 @@ import { Outlet, Link, useNavigate } from "react-router-dom";
 import { ROLE_LABEL } from "@spe/shared";
 import { useAuth } from "@core/contexts/AuthContext";
 import { NotificationBell } from "@core/components/NotificationBell";
+import { WelcomeModal } from "@core/components/WelcomeModal";
 import { WorkerBottomNav } from "@core/components/nav/WorkerBottomNav";
 
 export function WorkerLayout() {
@@ -12,6 +13,7 @@ export function WorkerLayout() {
 
   return (
     <div className="min-h-screen bg-bg pb-20">
+      <WelcomeModal user={user} />
       <header className="sticky top-0 z-20 border-b border-border bg-bg/90 backdrop-blur">
         <div className="mx-auto flex max-w-lg items-center justify-between gap-2 px-4 py-3">
           <div className="min-w-0">

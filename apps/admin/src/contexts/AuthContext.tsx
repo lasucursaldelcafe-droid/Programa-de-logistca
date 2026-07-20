@@ -20,11 +20,22 @@ import {
   getFirestoreDb,
   isFirebaseConfigured,
   PLATFORM_ADMIN_EMAIL,
+  sheetsLogin,
+  saveSheetsSession,
+  clearSheetsSession,
+  loadSheetsSession,
   type AppUser,
   type UserRole,
 } from "@spe/shared";
+import { isDemoMode } from "../lib/mode";
+import { isSheetsBackend } from "../lib/backend";
 import { formatAuthError } from "../lib/authErrors";
 import { initPushNotifications } from "../lib/fcm";
+import {
+  clearDemoSession,
+  demoLogin,
+  loadDemoSession,
+} from "../demo/store";
 
 interface AuthContextValue {
   user: AppUser | null;
@@ -114,6 +125,7 @@ async function loadAppUser(firebaseUser: User): Promise<AppUser | null> {
     email: firebaseUser.email ?? data.email ?? "",
     role: data.role as UserRole,
     workerId: data.workerId as string | undefined,
+    customRoleId: data.customRoleId as string | undefined,
     nombre: (data.nombre as string) ?? firebaseUser.email ?? "Usuario",
     telefono: data.telefono as string | undefined,
     perfilCompleto: data.perfilCompleto as boolean | undefined,
@@ -125,6 +137,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (isDemoMode()) {
+      setUser(loadDemoSession());
+      setLoading(false);
+      return;
+    }
+
+    if (isSheetsBackend()) {
+      setUser(loadSheetsSession());
+      setLoading(false);
+      return;
+    }
+
     if (!isFirebaseConfigured()) {
       setUser(null);
       setLoading(false);
@@ -146,6 +170,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshUser = useCallback(async () => {
+    if (isDemoMode()) {
+      setUser(loadDemoSession());
+      return;
+    }
+    if (isSheetsBackend()) {
+      setUser(loadSheetsSession());
+      return;
+    }
     const fbUser = getFirebaseAuth().currentUser;
     if (!fbUser) {
       setUser(null);
@@ -156,6 +188,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<AppUser> => {
+    if (isDemoMode()) {
+      try {
+        const appUser = demoLogin(email, password);
+        setUser(appUser);
+        return appUser;
+      } catch (err) {
+        throw err instanceof Error ? err : new Error("Credenciales inválidas");
+      }
+    }
+    if (isSheetsBackend()) {
+      try {
+        const result = await sheetsLogin(email, password);
+        const appUser: AppUser = {
+          uid: result.uid,
+          email: result.email,
+          nombre: result.nombre,
+          role: result.role as UserRole,
+          workerId: result.workerId ?? undefined,
+          customRoleId: result.customRoleId ?? undefined,
+          perfilCompleto: result.perfilCompleto ?? true,
+        };
+        saveSheetsSession(appUser);
+        setUser(appUser);
+        return appUser;
+      } catch (err) {
+        throw err instanceof Error ? err : new Error("Credenciales inválidas (Sheets)");
+      }
+    }
     if (!isFirebaseConfigured()) {
       throw new Error(
         "Firebase no está configurado en este despliegue. El administrador debe añadir las credenciales en GitHub Secrets (ver PRODUCCION-FIREBASE.md).",
@@ -187,6 +247,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    if (isDemoMode()) {
+      clearDemoSession();
+      setUser(null);
+      return;
+    }
+    if (isSheetsBackend()) {
+      clearSheetsSession();
+      setUser(null);
+      return;
+    }
     await signOut(getFirebaseAuth());
     setUser(null);
   }, []);

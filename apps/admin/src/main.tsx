@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter, HashRouter } from "react-router-dom";
 import { bootstrapRuntimeConfig, configureFirebase, purgeLegacyClientStorage, needsHashRouter } from "@spe/shared";
 import { AuthProvider } from "./contexts/AuthContext";
+import { PermissionsProvider } from "./contexts/PermissionsContext";
 import { App } from "./App";
 import "./index.css";
 
@@ -32,7 +33,9 @@ async function boot() {
     <StrictMode>
       <Router {...routerProps}>
         <AuthProvider>
-          <App />
+          <PermissionsProvider>
+            <App />
+          </PermissionsProvider>
         </AuthProvider>
       </Router>
     </StrictMode>,

@@ -10,7 +10,8 @@ import type {
   Worker,
   WorkerEstado,
 } from "./types";
-import { ESTADO_LABEL, SHIFT_LABEL } from "./types";
+import { ESTADO_LABEL, SHIFT_LABEL, type UserRole } from "./types";
+import { hasPermission } from "./permissions";
 
 export interface DashboardKpis {
   workersTotal: number;
@@ -264,6 +265,6 @@ export function buildWorkerDashboardKpis(
   };
 }
 
-export function puedeVerDashboardOperativo(role: string): boolean {
-  return role === "super_admin" || role === "administrador" || role === "supervisor_sitio";
+export function puedeVerDashboardOperativo(role: UserRole): boolean {
+  return hasPermission(role, "dashboard_operativo");
 }

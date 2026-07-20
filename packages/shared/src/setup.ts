@@ -1,4 +1,5 @@
 import type { Evento, PayrollRate, QrCode, SetupConfig, SetupPaso, Sitio } from "./types";
+import { SETUP_PASOS_ORDEN } from "./types";
 
 export const WIZARD_STEPS: Array<{ id: SetupPaso; titulo: string; descripcion: string }> = [
   {
@@ -20,6 +21,11 @@ export const WIZARD_STEPS: Array<{ id: SetupPaso; titulo: string; descripcion: s
     id: "qr",
     titulo: "Códigos QR",
     descripcion: "Activación de entrada por sitio",
+  },
+  {
+    id: "operaciones",
+    titulo: "Operaciones",
+    descripcion: "Temática laboral, supervisión y personal",
   },
   {
     id: "resumen",
@@ -79,6 +85,18 @@ export function validateSitioStep(data: {
   return null;
 }
 
+export function validateOperacionesStep(data: {
+  temaLaboral: string;
+  reglasOperativas: string;
+  tiempoMinimoEstadiaMinutos: string;
+}): string | null {
+  if (!data.temaLaboral.trim()) return "Describe la temática laboral del evento";
+  if (!data.reglasOperativas.trim()) return "Indica las reglas operativas y de supervisión";
+  const minutos = Number(data.tiempoMinimoEstadiaMinutos);
+  if (Number.isNaN(minutos) || minutos < 0) return "Tiempo mínimo de estadía inválido";
+  return null;
+}
+
 export function buildSetupSummary(data: {
   config: SetupConfig;
   evento: Evento | null;
@@ -113,6 +131,13 @@ export function buildSetupSummary(data: {
       label: "Códigos QR activos",
       ok: eventQr.length >= eventSites.length && eventSites.length > 0,
       detalle: `${eventQr.length} QR para ${eventSites.length} sitio(s)`,
+    },
+    {
+      label: "Operaciones y supervisión",
+      ok: Boolean(data.evento?.temaLaboral?.trim() && data.evento?.supervisionActiva !== false),
+      detalle: data.evento?.temaLaboral?.trim()
+        ? "Temática y reglas definidas"
+        : "Pendiente",
     },
     {
       label: "Configuración finalizada",

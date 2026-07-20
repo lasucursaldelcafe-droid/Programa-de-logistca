@@ -16,7 +16,7 @@ import { NominaPage } from "./pages/NominaPage";
 import { ComunicacionPage } from "./pages/ComunicacionPage";
 import { ConfiguracionPage } from "./pages/ConfiguracionPage";
 import { ReportesPage } from "./pages/ReportesPage";
-import { InformesPage } from "./pages/InformesPage";
+import { InformesEventoPage } from "./pages/InformesEventoPage";
 import { LoadingScreen } from "./components/FeedbackStates";
 import { AyudaPage } from "./pages/AyudaPage";
 import { ClientesPage } from "./pages/ClientesPage";
@@ -93,7 +93,7 @@ export function App() {
         <Route path="cuentas" element={<CuentasPage />} />
         <Route path="qr-sitios" element={<QrSitiosPage />} />
         <Route path="mapa" element={<MapaEnVivoPage />} />
-        <Route path="informes" element={<InformesPage />} />
+        <Route path="informes" element={<InformesEventoPage />} />
         <Route path="reportes" element={<ReportesPage />} />
         <Route path="notificaciones" element={<NotificacionesPage />} />
         <Route path="nomina" element={<NominaPage />} />

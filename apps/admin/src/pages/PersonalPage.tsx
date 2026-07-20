@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ESTADO_LABEL,
   PERFILES_LABEL,
+  ROLE_ACCESS_MODE_LABEL,
   ROLE_LABEL,
   ROLES_ASIGNABLES_ADMIN,
   puedeAsignarRoles,
@@ -19,6 +20,7 @@ import {
   updateWorkerEstado,
   useWorkersState,
 } from "../hooks/useDataStore";
+import { getCustomRolesForBase, useCustomRoles } from "../hooks/useCustomRoles";
 import { PageHeader } from "../components/nav/PageHeader";
 import { PermissionDenied, DataLoadingSkeleton } from "../components/FeedbackStates";
 import { isDemoMode } from "../lib/mode";
@@ -37,6 +39,7 @@ const PERFILES: PerfilTrabajo[] = [
 export function PersonalPage() {
   const { user } = useAuth();
   const { workers, loading } = useWorkersState();
+  const customRoles = useCustomRoles();
   const [form, setForm] = useState({
     nombre: "",
     documento: "",
@@ -44,6 +47,7 @@ export function PersonalPage() {
     email: "",
     perfiles: ["logistica"] as PerfilTrabajo[],
     rolPlataforma: "trabajador" as RolAsignablePorAdmin,
+    customRoleId: "",
   });
   const [error, setError] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
@@ -51,6 +55,21 @@ export function PersonalPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const adminAsignaRoles = user ? puedeAsignarRoles(user.role) : false;
+
+  const rolesParaBase = useMemo(
+    () => getCustomRolesForBase(customRoles, form.rolPlataforma),
+    [customRoles, form.rolPlataforma],
+  );
+
+  const roleNameById = useMemo(
+    () => new Map(customRoles.map((r) => [r.id, r.nombre])),
+    [customRoles],
+  );
+
+  const roleModeById = useMemo(
+    () => new Map(customRoles.map((r) => [r.id, r.modoAcceso])),
+    [customRoles],
+  );
 
   if (!user || !puedeGestionarPersonal(user.role)) {
     return (
@@ -83,6 +102,7 @@ export function PersonalPage() {
         {
           ...form,
           rolPlataforma: adminAsignaRoles ? form.rolPlataforma : "trabajador",
+          customRoleId: form.customRoleId || undefined,
         },
         {
           actorNombre: currentUser.nombre,
@@ -98,6 +118,7 @@ export function PersonalPage() {
         email: "",
         perfiles: ["logistica"],
         rolPlataforma: "trabajador",
+        customRoleId: "",
       });
       if (!isDemoMode() && !isSheetsBackend()) {
         setMensaje(
@@ -189,6 +210,7 @@ export function PersonalPage() {
                   setForm((f) => ({
                     ...f,
                     rolPlataforma: e.target.value as RolAsignablePorAdmin,
+                    customRoleId: "",
                   }))
                 }
                 className="w-full rounded-lg border border-border bg-bg px-3 py-2"
@@ -196,6 +218,23 @@ export function PersonalPage() {
                 {ROLES_ASIGNABLES_ADMIN.map((rol) => (
                   <option key={rol} value={rol}>
                     {ROLE_LABEL[rol]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {adminAsignaRoles && rolesParaBase.length > 0 && (
+            <label className="text-sm sm:col-span-2">
+              <span className="mb-1 block text-neutral-300">Rol personalizado (opcional)</span>
+              <select
+                value={form.customRoleId}
+                onChange={(e) => setForm((f) => ({ ...f, customRoleId: e.target.value }))}
+                className="w-full rounded-lg border border-border bg-bg px-3 py-2"
+              >
+                <option value="">Permisos por defecto del rol base</option>
+                {rolesParaBase.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.nombre} ({r.permisos.length} funciones)
                   </option>
                 ))}
               </select>
@@ -225,6 +264,12 @@ export function PersonalPage() {
               </div>
               <div className="mt-1 text-xs text-neutral-500">
                 Rol: {ROLE_LABEL[w.rolPlataforma ?? "trabajador"]}
+                {w.customRoleId && roleNameById.get(w.customRoleId)
+                  ? ` · ${roleNameById.get(w.customRoleId)}`
+                  : ""}
+                {w.customRoleId && roleModeById.get(w.customRoleId)
+                  ? ` (${ROLE_ACCESS_MODE_LABEL[roleModeById.get(w.customRoleId)!]})`
+                  : ""}
                 {w.cuentaCreada ? " · Cuenta activa" : " · Sin activar"}
                 {w.habilitado === false ? " · Inhabilitado" : ""}
               </div>
