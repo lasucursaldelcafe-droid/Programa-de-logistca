@@ -9,20 +9,18 @@ import {
 } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
 import { Badge, Card } from "../components/ui";
+import { EventoOperacionSelect } from "../components/EventoOperacionSelect";
 import { MetricCard } from "../components/dashboard/MetricCard";
 import {
   createShift,
   deleteShift,
   useAttendances,
-  useEvents,
   useQrCodes,
   useShifts,
   useSites,
   useWorkers,
 } from "../hooks/useDataStore";
-import { useSetupConfig } from "../hooks/useSetup";
-
-const EVENTO_STORAGE_KEY = "spe-evento-operacion";
+import { useEventoOperacion } from "../hooks/useEventoOperacion";
 
 function toDatetimeLocal(iso: string): string {
   const d = new Date(iso);
@@ -33,15 +31,13 @@ function toDatetimeLocal(iso: string): string {
 
 export function OperacionEventoPage() {
   const { user } = useAuth();
-  const events = useEvents();
+  const { events, eventId, setEventId, evento } = useEventoOperacion();
   const sites = useSites();
   const shifts = useShifts();
   const workers = useWorkers();
   const attendances = useAttendances();
   const qrCodes = useQrCodes();
-  const setupConfig = useSetupConfig();
 
-  const [eventId, setEventId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
@@ -51,27 +47,6 @@ export function OperacionEventoPage() {
     inicio: "",
     fin: "",
   });
-
-  useEffect(() => {
-    if (events.length === 0) return;
-    const stored = sessionStorage.getItem(EVENTO_STORAGE_KEY);
-    const fromSetup = setupConfig?.eventoId;
-    const initial =
-      (stored && events.some((e) => e.id === stored) ? stored : null) ??
-      (fromSetup && events.some((e) => e.id === fromSetup) ? fromSetup : null) ??
-      events[0]?.id ??
-      "";
-    setEventId(initial);
-  }, [events, setupConfig?.eventoId]);
-
-  useEffect(() => {
-    if (eventId) sessionStorage.setItem(EVENTO_STORAGE_KEY, eventId);
-  }, [eventId]);
-
-  const evento = useMemo(
-    () => events.find((e) => e.id === eventId) ?? null,
-    [events, eventId],
-  );
 
   const sitiosEvento = useMemo(
     () => sites.filter((s) => s.eventId === eventId),
@@ -248,20 +223,12 @@ export function OperacionEventoPage() {
             quitar empleados del equipo.
           </p>
         </div>
-        <label className="text-sm">
-          Evento
-          <select
-            value={eventId}
-            onChange={(e) => setEventId(e.target.value)}
-            className="mt-1 block min-w-[220px] rounded-lg border border-border bg-bg px-3 py-2"
-          >
-            {events.map((ev) => (
-              <option key={ev.id} value={ev.id}>
-                {ev.nombre}
-              </option>
-            ))}
-          </select>
-        </label>
+        <EventoOperacionSelect
+          events={events}
+          eventId={eventId}
+          onChange={setEventId}
+          className="min-w-[220px]"
+        />
       </div>
 
       {error && (
