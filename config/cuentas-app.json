@@ -20,8 +20,8 @@
     ]
   },
   "local_emuladores": {
-    "admin@eventos.test": "Admin123!",
+    "ceo@eventos.test": "Ceo123!",
     "master@eventos.test": "Master123!",
-    "nota": "Solo npm run dev:full — no producción web"
+    "nota": "Solo npm run dev:full — crear Admin/RH/Contador desde Master → Equipo administrativo"
   }
 }
