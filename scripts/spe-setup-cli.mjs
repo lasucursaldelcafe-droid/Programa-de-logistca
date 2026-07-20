@@ -20,6 +20,8 @@ import {
   getServiceAccountSource,
   ghAvailable,
   pushCursorApiKeySecret,
+  pushFirebaseTokenSecret,
+  getFirebaseToken,
   isFirebaseConfigComplete,
   loadFirebaseWebConfig,
   pushFirebaseSecrets,
@@ -129,6 +131,14 @@ async function main() {
         console.log("  · CURSOR_API_KEY omitida (env o config/credenciales.local.json → cursorApiKey)");
         log.push("- CURSOR_API_KEY: omitida (opcional)");
       }
+      if (pushFirebaseTokenSecret()) {
+        console.log("  + secret FIREBASE_TOKEN");
+        log.push("- FIREBASE_TOKEN subida (firebase login:ci — sin JSON SA)");
+      } else if (getFirebaseToken()) {
+        console.log("  ! FIREBASE_TOKEN definido pero gh secret falló");
+      } else {
+        console.log("  · FIREBASE_TOKEN omitido — firebase login:ci → npm run setup:firebase-token");
+      }
       log.push(`- GitHub Secrets Firebase: ${ok} OK, ${fail} fallos`);
     });
   } else if (pushSecrets) {
@@ -166,9 +176,16 @@ async function main() {
   }
 
   if (doFirestore && fb?.projectId) {
-    step("7. Firestore rules + indexes", () => {
+    step("7. Firestore bootstrap (BD + reglas + users)", () => {
+      const token = getFirebaseToken();
+      const sa = getServiceAccountSource();
+      if (token) {
+        const code = run("npm", ["run", "firestore:bootstrap"]);
+        log.push(code === 0 ? "- firestore:bootstrap OK" : "- firestore:bootstrap PENDIENTE");
+        return;
+      }
       const ok = deployFirestoreWithServiceAccount(fb.projectId);
-      log.push(ok ? "- Firestore deploy OK" : "- Firestore deploy PENDIENTE");
+      log.push(ok ? "- Firestore deploy OK" : "- Firestore: firebase login:ci → setup:firebase-token");
     });
   }
 

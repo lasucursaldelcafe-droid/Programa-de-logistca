@@ -50,6 +50,8 @@
     "setup:cli": "node scripts/spe-setup-cli.mjs",
     "setup:cli:full": "node scripts/spe-setup-cli.mjs --full",
     "setup:cursor-key": "node scripts/push-cursor-secret.mjs",
+    "setup:firebase-token": "node scripts/push-firebase-token.mjs",
+    "firestore:bootstrap": "node scripts/firestore-bootstrap.mjs",
     "fix:sheets-token": "node scripts/fix-sheets-token.mjs",
     "setup:fcm": "tsx scripts/update-fcm-sw.ts",
     "firebase:deploy-rules": "firebase deploy --only firestore:rules",

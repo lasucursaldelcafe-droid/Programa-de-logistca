@@ -1,0 +1,99 @@
+name: Bootstrap Firestore (SPE)
+
+# Crea/verifica BD Firestore, despliega reglas y documento users/{uid}
+# SIN JSON de cuenta de servicio — usa FIREBASE_TOKEN (firebase login:ci).
+#
+# Secrets requeridos:
+#   FIREBASE_TOKEN, SPE_PROD_PASSWORD, VITE_FIREBASE_* (6)
+on:
+  workflow_dispatch:
+    inputs:
+      admin_uid:
+        description: "UID existente (opcional — omite Auth si ya creaste el usuario a mano)"
+        required: false
+        type: string
+      skip_auth:
+        description: "Solo Firestore (requiere admin_uid)"
+        type: boolean
+        default: false
+      firestore_location:
+        description: "Región Firestore (ej. nam5)"
+        required: false
+        default: nam5
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    env:
+      FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+      SPE_PROD_PASSWORD: ${{ secrets.SPE_PROD_PASSWORD }}
+      SPE_ADMIN_UID: ${{ github.event.inputs.admin_uid }}
+      FIRESTORE_LOCATION: ${{ github.event.inputs.firestore_location }}
+      VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+      VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+      VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+      VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+      VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+      VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Generar firebase-web-config.json
+        run: |
+          if [ -z "$VITE_FIREBASE_PROJECT_ID" ]; then
+            echo "::error::Faltan secrets VITE_FIREBASE_*"
+            exit 1
+          fi
+          node -e "
+          const fs=require('fs');
+          fs.writeFileSync('firebase-web-config.json', JSON.stringify({
+            apiKey: process.env.VITE_FIREBASE_API_KEY,
+            authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
+            projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+            storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+            messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+            appId: process.env.VITE_FIREBASE_APP_ID,
+          }, null, 2)+'\n');
+          "
+
+      - name: Verificar FIREBASE_TOKEN
+        run: |
+          if [ -z "$FIREBASE_TOKEN" ]; then
+            echo "::error::Falta FIREBASE_TOKEN"
+            echo "  PC: firebase login:ci → npm run setup:firebase-token"
+            echo "  O GitHub Secret FIREBASE_TOKEN manualmente"
+            exit 1
+          fi
+
+      - name: Bootstrap Firestore
+        run: |
+          ARGS=""
+          if [ "${{ github.event.inputs.skip_auth }}" = "true" ]; then
+            ARGS="--skip-auth"
+            if [ -z "$SPE_ADMIN_UID" ]; then
+              echo "::error::skip_auth=true requiere admin_uid"
+              exit 1
+            fi
+            ARGS="$ARGS --uid $SPE_ADMIN_UID"
+          fi
+          npm run firestore:bootstrap -- $ARGS
+
+      - name: Resumen
+        if: always()
+        run: |
+          echo "## Bootstrap Firestore" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Proyecto: \`${{ secrets.VITE_FIREBASE_PROJECT_ID }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Login: https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/login" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Admin: \`lasucursaldelcafe@gmail.com\`" >> "$GITHUB_STEP_SUMMARY"
