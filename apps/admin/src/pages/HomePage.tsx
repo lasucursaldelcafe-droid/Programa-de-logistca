@@ -175,8 +175,11 @@ export function HomePage() {
           Hola, {user.nombre.split(" ")[0]}
         </h2>
         <p className="mt-2 max-w-2xl text-sm text-neutral-400">
-          Personal, turnos, mapa en vivo y nómina en un solo lugar. Filtra por evento para ver el
-          detalle del día.
+          Personal, turnos, mapa en vivo y nómina en un solo lugar.{" "}
+          <Link to="/operacion" className="text-accent hover:underline">
+            Operación por evento
+          </Link>{" "}
+          para revisar el equipo y agregar o quitar empleados.
         </p>
       </div>
       <PageHeader

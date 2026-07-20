@@ -337,6 +337,38 @@ export async function updateShiftEstado(id: string, estado: ShiftEstado): Promis
   }
 }
 
+export async function deleteShift(id: string): Promise<void> {
+  if (isDemoMode()) {
+    const active = demoStore.attendances.find(
+      (a) => a.shiftId === id && a.estado !== "cerrado",
+    );
+    if (active) {
+      throw new Error("No se puede quitar: el trabajador tiene jornada activa en este turno.");
+    }
+    demoStore.removeShift(id);
+    return;
+  }
+  if (isSheetsBackend()) {
+    throw new Error("Quitar del evento no está disponible con backend Google Sheets.");
+  }
+
+  const attSnap = await getDocs(
+    query(
+      collection(getFirestoreDb(), "attendance"),
+      where("shiftId", "==", id),
+    ),
+  );
+  const hasActive = attSnap.docs.some((d) => {
+    const estado = d.data().estado as string | undefined;
+    return estado !== "cerrado";
+  });
+  if (hasActive) {
+    throw new Error("No se puede quitar: el trabajador tiene jornada activa en este turno.");
+  }
+
+  await deleteDoc(doc(getFirestoreDb(), "shifts", id));
+}
+
 export function useInvitations(): Invitation[] {
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const sheetsInvitations = useSheetsPoll<Invitation>("invitations");

@@ -5,7 +5,7 @@ import { getAdminNavSections, getMasterNavSections, getWorkerNavItems } from "..
 
 const ADMIN_ROUTES = new Set([
   "/panel", "/clientes", "/facturacion", "/inventario", "/integraciones",
-  "/supervision", "/personal", "/turnos", "/cuentas", "/qr-sitios", "/mapa",
+  "/supervision", "/personal", "/operacion", "/turnos", "/cuentas", "/qr-sitios", "/mapa",
   "/reportes", "/notificaciones", "/nomina", "/configuracion", "/pendientes",
   "/comunicacion", "/descargas", "/ayuda",
 ]);
