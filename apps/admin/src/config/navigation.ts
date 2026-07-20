@@ -61,6 +61,7 @@ const ADMIN_GATES: Record<string, (r: UserRole) => boolean> = {
   "/turnos": can.operacion,
   "/comunicacion": can.operacion,
   "/reportes": can.reportes,
+  "/informes": can.reportes,
   "/qr-sitios": can.qr,
   "/nomina": can.nomina,
   "/clientes": can.personal,
@@ -91,9 +92,10 @@ export function getAdminNavSections(role: UserRole): NavSection[] {
       id: "operar",
       title: "Durante el evento",
       items: [
-        { to: "/operacion?tab=supervision", label: "Mapa y supervisión", icon: "map" },
+        { to: "/operacion?tab=supervision", label: "Supervisión y mapa", icon: "map" },
         { to: "/turnos", label: "Turnos", icon: "calendar" },
         { to: "/comunicacion", label: "Comunicación", icon: "message" },
+        { to: "/informes", label: "Informes", icon: "chart" },
         { to: "/reportes", label: "Reportes", icon: "flag" },
         { to: "/qr-sitios", label: "QR y sitios", icon: "qr" },
       ],
@@ -116,6 +118,7 @@ export function getAdminNavSections(role: UserRole): NavSection[] {
       id: "sistema",
       title: "Sistema",
       items: [
+        { to: "/notificaciones", label: "Notificaciones", icon: "mail" },
         { to: "/pendientes", label: "Config. pendiente", icon: "list" },
         { to: "/integraciones", label: puedeConfigurarIntegraciones(role) ? "APIs" : "Integraciones", icon: "plug" },
         { to: "/descargas", label: "Descargas", icon: "download" },
@@ -143,14 +146,22 @@ export function getMasterNavSections(): NavSection[] {
   ];
 }
 
+/** Rutas accesibles en la app trabajador (incluye enlaces fuera del bottom nav). */
 export function getWorkerNavItems(): NavLinkItem[] {
+  return [
+    ...getWorkerBottomNavItems(),
+    { to: "/worker/notificaciones", label: "Alertas", icon: "mail" },
+    { to: "/worker/ayuda", label: "Ayuda", icon: "help" },
+  ];
+}
+
+/** Barra inferior móvil — máximo 5 acciones principales. */
+export function getWorkerBottomNavItems(): NavLinkItem[] {
   return [
     { to: "/worker", label: "Inicio", icon: "grid", end: true },
     { to: "/worker/turnos", label: "Turnos", icon: "calendar" },
     { to: "/worker/entrada", label: "Escanear", icon: "qr" },
     { to: "/worker/reportar", label: "Reportar", icon: "flag" },
-    { to: "/worker/comunicacion", label: "Chat / Video", icon: "message" },
-    { to: "/worker/notificaciones", label: "Alertas", icon: "mail" },
-    { to: "/worker/ayuda", label: "Ayuda", icon: "help" },
+    { to: "/worker/comunicacion", label: "Chat", icon: "message" },
   ];
 }

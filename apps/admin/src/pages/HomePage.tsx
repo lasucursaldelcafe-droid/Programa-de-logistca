@@ -4,14 +4,12 @@ import {
   attendanceBySiteBars,
   buildDashboardKpis,
   buildSiteBreakdown,
-  buildWorkerDashboardKpis,
   formatCurrencyCOP,
   notificationsToActivity,
   payrollStatusBars,
   puedeGestionarConfiguracion,
   puedeVerDashboardOperativo,
   shiftStatusBars,
-  workerPath,
   workerStatusBars,
 } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
@@ -22,24 +20,25 @@ import { ActivityFeed } from "../components/dashboard/ActivityFeed";
 import { SiteBreakdown } from "../components/dashboard/SiteBreakdown";
 import {
   useAttendances,
-  useEvents,
+  useEventsState,
   useInvitations,
-  useShifts,
+  useShiftsState,
   useSites,
-  useWorkers,
+  useWorkersState,
 } from "../hooks/useDataStore";
 import { usePayrollEntries } from "../hooks/usePayroll";
 import { useNotifications } from "../hooks/useNotifications";
 import { SetupBanner } from "../components/SetupBanner";
 import { PageHeader } from "../components/nav/PageHeader";
 import { EventFlowGuide, computeEventFlowProgress } from "../components/EventFlowGuide";
+import { DataLoadingSkeleton, LoadingScreen } from "../components/FeedbackStates";
 import { useSetupConfig } from "../hooks/useSetup";
 
 export function HomePage() {
-  const { user } = useAuth();
-  const workers = useWorkers();
-  const shifts = useShifts();
-  const events = useEvents();
+  const { user, loading: authLoading } = useAuth();
+  const { workers, loading: workersLoading } = useWorkersState();
+  const { shifts, loading: shiftsLoading } = useShiftsState();
+  const { events, loading: eventsLoading } = useEventsState();
   const sites = useSites();
   const attendances = useAttendances();
   const payroll = usePayrollEntries();
@@ -49,8 +48,8 @@ export function HomePage() {
   const [filtroEvento, setFiltroEvento] = useState("");
 
   const esOperativo = user && puedeVerDashboardOperativo(user.role);
-  const esTrabajador = user?.role === "trabajador";
   const puedeFlujo = user && puedeGestionarConfiguracion(user.role);
+  const dataLoading = workersLoading || shiftsLoading || eventsLoading;
 
   const flowCompletedIds = useMemo(
     () =>
@@ -98,11 +97,6 @@ export function HomePage() {
     [workers, shifts, attendances, payroll, invitations, filtroEvento],
   );
 
-  const workerKpis = useMemo(() => {
-    if (!user?.workerId) return null;
-    return buildWorkerDashboardKpis(user.workerId, shifts, attendances, payroll);
-  }, [user?.workerId, shifts, attendances, payroll]);
-
   const activity = useMemo(
     () => notificationsToActivity(notifications),
     [notifications],
@@ -120,66 +114,14 @@ export function HomePage() {
     [sites, attendances, shifts, events, filtroEvento],
   );
 
+  if (authLoading) return <LoadingScreen />;
   if (!user) return null;
 
-  if (esTrabajador && workerKpis) {
+  if (dataLoading) {
     return (
       <div className="space-y-5">
-        <PageHeader
-          title="Mi panel"
-          description="Turnos, jornada y nómina"
-        />
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <MetricCard
-            value={workerKpis.turnosPendientes}
-            label="Turnos pendientes"
-            tone="accent"
-          />
-          <MetricCard
-            value={workerKpis.turnosConfirmados}
-            label="Turnos confirmados"
-            tone="positive"
-          />
-          <MetricCard
-            value={workerKpis.jornadaActiva ? "Sí" : "No"}
-            label="Jornada activa"
-            tone={workerKpis.jornadaActiva ? "positive" : "neutral"}
-          />
-          <MetricCard
-            value={formatCurrencyCOP(workerKpis.nominaPendienteMonto)}
-            label="Nómina pendiente"
-            tone="accent"
-          />
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <h2 className="font-display text-lg font-semibold">Accesos rápidos</h2>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <QuickLink to={workerPath("turnos")} label="Mis turnos" />
-              <QuickLink to={workerPath("entrada")} label="Marcar entrada" />
-              <QuickLink to={workerPath("notificaciones")} label="Notificaciones" />
-            </div>
-            {workerKpis.alertaGeocerca && (
-              <p className="mt-4 rounded-lg border border-alert/40 bg-alert/10 px-3 py-2 text-sm text-alert">
-                Tienes una alerta de geocerca activa. Revisa tu ubicación.
-              </p>
-            )}
-            <p className="mt-4 text-sm text-neutral-500">
-              Horas trabajadas (30 días):{" "}
-              <span className="font-mono text-neutral-300">
-                {workerKpis.horasTrabajadasMes}h
-              </span>
-            </p>
-          </Card>
-          <Card>
-            <h2 className="font-display text-lg font-semibold">Actividad reciente</h2>
-            <div className="mt-4">
-              <ActivityFeed items={activity} />
-            </div>
-          </Card>
-        </div>
+        <PageHeader title="Resumen" description="Cargando datos del evento…" />
+        <DataLoadingSkeleton rows={6} />
       </div>
     );
   }
@@ -291,16 +233,5 @@ export function HomePage() {
         </Card>
       </div>
     </div>
-  );
-}
-
-function QuickLink({ to, label }: { to: string; label: string }) {
-  return (
-    <Link
-      to={to}
-      className="rounded-lg border border-border px-4 py-2 text-sm hover:border-accent/50 hover:text-accent"
-    >
-      {label}
-    </Link>
   );
 }

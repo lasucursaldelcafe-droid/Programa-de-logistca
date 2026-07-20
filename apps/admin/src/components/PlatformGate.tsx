@@ -4,6 +4,7 @@ import {
   rutaHomePorRol,
   type AppPlatform,
 } from "@spe/shared";
+import { LoadingScreen } from "../components/FeedbackStates";
 import { useAuth } from "../contexts/AuthContext";
 
 export function PlatformGate({
@@ -16,11 +17,7 @@ export function PlatformGate({
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-neutral-400">
-        Cargando…
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!user) return <Navigate to="/login" replace />;

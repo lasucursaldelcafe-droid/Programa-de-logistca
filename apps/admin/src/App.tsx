@@ -16,6 +16,8 @@ import { NominaPage } from "./pages/NominaPage";
 import { ComunicacionPage } from "./pages/ComunicacionPage";
 import { ConfiguracionPage } from "./pages/ConfiguracionPage";
 import { ReportesPage } from "./pages/ReportesPage";
+import { InformesPage } from "./pages/InformesPage";
+import { LoadingScreen } from "./components/FeedbackStates";
 import { AyudaPage } from "./pages/AyudaPage";
 import { ClientesPage } from "./pages/ClientesPage";
 import { FacturacionPage } from "./pages/FacturacionPage";
@@ -34,26 +36,14 @@ import { WorkerRoutes } from "./routes/WorkerRoutes";
 
 function AdminProtected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-neutral-400">
-        Cargando…
-      </div>
-    );
-  }
+  if (loading) return <LoadingScreen label="Verificando sesión…" />;
   if (!user) return <Navigate to="/login" replace />;
   return <PlatformGate platform="admin">{children}</PlatformGate>;
 }
 
 function WorkerOnboardingGate({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-neutral-400">
-        Cargando…
-      </div>
-    );
-  }
+  if (loading) return <LoadingScreen label="Verificando sesión…" />;
   if (!user) return <Navigate to="/login" replace />;
   if (user.perfilCompleto === true) {
     return <Navigate to={rutaHomePorRol(user.role)} replace />;
@@ -103,6 +93,7 @@ export function App() {
         <Route path="cuentas" element={<CuentasPage />} />
         <Route path="qr-sitios" element={<QrSitiosPage />} />
         <Route path="mapa" element={<MapaEnVivoPage />} />
+        <Route path="informes" element={<InformesPage />} />
         <Route path="reportes" element={<ReportesPage />} />
         <Route path="notificaciones" element={<NotificacionesPage />} />
         <Route path="nomina" element={<NominaPage />} />

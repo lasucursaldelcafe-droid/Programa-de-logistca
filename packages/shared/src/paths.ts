@@ -25,6 +25,6 @@ export function resolveTurnosPath(pathname: string): string {
   return pathname.startsWith("/worker") ? workerPath("turnos") : "/turnos";
 }
 
-export function resolveEntradaPath(pathname: string): string {
-  return pathname.startsWith("/worker") ? workerPath("entrada") : workerPath("entrada");
+export function resolveEntradaPath(_pathname: string): string {
+  return workerPath("entrada");
 }

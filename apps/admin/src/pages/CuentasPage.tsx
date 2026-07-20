@@ -9,6 +9,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { Badge, Card } from "../components/ui";
 import { buildInvitationUrls } from "../lib/urls";
 import { InstruccionesOperacion } from "../components/InstruccionesOperacion";
+import { PermissionDenied } from "../components/FeedbackStates";
 import { useDeploymentLinks } from "../hooks/useDeploymentLinks";
 import {
   createInvitation,
@@ -45,7 +46,13 @@ export function CuentasPage() {
   const puedeCambiarPropiaClave = !isSheetsBackend();
 
   if (!user || !puedeGestionarCuentas(user.role)) {
-    return <p className="text-neutral-400">Sin permisos para gestionar cuentas.</p>;
+    return (
+      <PermissionDenied
+        role={user?.role}
+        title="Sin permiso para invitaciones"
+        description="Solo administradores pueden crear y gestionar cuentas de acceso."
+      />
+    );
   }
 
   const currentUser = user;

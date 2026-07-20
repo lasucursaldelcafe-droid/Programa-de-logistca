@@ -17,9 +17,10 @@ import {
   deleteWorker,
   setWorkerHabilitado,
   updateWorkerEstado,
-  useWorkers,
+  useWorkersState,
 } from "../hooks/useDataStore";
 import { PageHeader } from "../components/nav/PageHeader";
+import { PermissionDenied, DataLoadingSkeleton } from "../components/FeedbackStates";
 import { isDemoMode } from "../lib/mode";
 import { isSheetsBackend } from "../lib/backend";
 
@@ -35,7 +36,7 @@ const PERFILES: PerfilTrabajo[] = [
 
 export function PersonalPage() {
   const { user } = useAuth();
-  const workers = useWorkers();
+  const { workers, loading } = useWorkersState();
   const [form, setForm] = useState({
     nombre: "",
     documento: "",
@@ -52,7 +53,22 @@ export function PersonalPage() {
   const adminAsignaRoles = user ? puedeAsignarRoles(user.role) : false;
 
   if (!user || !puedeGestionarPersonal(user.role)) {
-    return <p className="text-neutral-400">Sin permisos para gestionar personal.</p>;
+    return (
+      <PermissionDenied
+        role={user?.role}
+        title="Sin permiso para personal"
+        description="Solo administradores y supervisores pueden registrar y gestionar trabajadores."
+      />
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-5">
+        <PageHeader title="Personal" description="Cargando…" />
+        <DataLoadingSkeleton rows={5} />
+      </div>
+    );
   }
 
   const currentUser = user;

@@ -32,6 +32,7 @@ import {
 } from "../hooks/useSetup";
 import { upsertPayrollRate, usePayrollRates } from "../hooks/usePayroll";
 import { SiteLocationPicker } from "../components/SiteLocationPicker";
+import { PermissionDenied } from "../components/FeedbackStates";
 
 const DEFAULT_DESCRIPCION =
   "Recopilamos tu ubicación GPS solo durante la jornada activa para verificar presencia en el sitio asignado.";
@@ -87,7 +88,13 @@ export function ConfiguracionPage() {
   }, [rates]);
 
   if (!user || !puedeGestionarConfiguracion(user.role)) {
-    return <p className="text-neutral-400">Sin permisos para configurar el sistema.</p>;
+    return (
+      <PermissionDenied
+        role={user?.role}
+        title="Sin permiso de configuración"
+        description="Solo administradores pueden usar el asistente de evento."
+      />
+    );
   }
 
   const currentUser = user;
