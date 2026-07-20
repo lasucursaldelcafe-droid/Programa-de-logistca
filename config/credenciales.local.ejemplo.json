@@ -17,5 +17,6 @@
     "appId": ""
   },
   "firebaseServiceAccountPath": "service-account.json",
-  "speProdPassword": "TU_CONTRASEÑA_FIREBASE_AUTH"
+  "speProdPassword": "TU_CONTRASEÑA_FIREBASE_AUTH",
+  "cursorApiKey": "TU_CURSOR_API_KEY_DESDE_cursor.com_settings"
 }

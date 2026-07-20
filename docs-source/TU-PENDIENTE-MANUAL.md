@@ -18,8 +18,14 @@
 cp firebase-web-config.example.json firebase-web-config.json
 cp config/credenciales.local.ejemplo.json config/credenciales.local.json
 
+# En credenciales.local.json añade también:
+#   "cursorApiKey": "tu-key-desde-cursor.com/settings"
+
 # Setup completo: sync, secrets gh, seed, Firestore, build
 SPE_PROD_PASSWORD='TuClaveSegura' npm run setup:cli -- --full
+
+# Solo subir Cursor API Key a GitHub Secrets:
+npm run setup:cursor-key
 ```
 
 Windows PowerShell:
@@ -59,10 +65,18 @@ Para **crear usuarios** (workflow Actions):
 
 ## Cursor Agent en GitHub Actions (opcional)
 
-1. [Cursor Dashboard](https://cursor.com) → genera **API Key**
-2. GitHub Secret: `CURSOR_API_KEY`
-3. **Actions** → **Cursor Agent (SPE)** → Run workflow
-4. Tareas: `diagnostico`, `pendientes-firebase` o `custom` con tu prompt
+1. [Cursor Dashboard](https://cursor.com/settings) → **API Keys** → genera key
+2. En PC, en `config/credenciales.local.json`:
+   ```json
+   "cursorApiKey": "tu-api-key-aqui"
+   ```
+3. Sube el secret a GitHub:
+   ```bash
+   npm run setup:cursor-key
+   ```
+   (o incluido en `npm run setup:cli -- --full` / `--push-secrets`)
+4. **Actions** → **Cursor Agent (SPE)** → Run workflow
+5. Tareas: `diagnostico`, `pendientes-firebase` o `custom` con tu prompt
 
 Ver `.github/workflows/cursor-agent.yml` y [docs Cursor CLI](https://cursor.com/docs/cli/github-actions).
 
