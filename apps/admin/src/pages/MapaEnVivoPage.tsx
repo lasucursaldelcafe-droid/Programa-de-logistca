@@ -4,18 +4,10 @@ import { Badge, Card } from "../components/ui";
 import { LiveMap, liveMapUsesGoogle } from "../components/LiveMap";
 import { isGoogleMapsEnabled } from "../lib/googleMaps";
 import { useAttendances, useSites } from "../hooks/useDataStore";
-import { isDemoMode } from "../lib/mode";
-import { demoStore } from "../demo/store";
-import { useEffect } from "react";
-
 export function MapaEnVivoPage() {
   const { user } = useAuth();
   const sites = useSites();
   const attendances = useAttendances();
-
-  useEffect(() => {
-    if (isDemoMode()) demoStore.seedMapPreviewIfEmpty();
-  }, []);
 
   if (!user || !puedeVerMapaEnVivo(user.role)) {
     return <p className="text-neutral-400">Sin permisos para ver el mapa en vivo.</p>;

@@ -38,7 +38,7 @@ async function boot() {
   await bootstrapRuntimeConfig(import.meta.env.BASE_URL, buildEnv);
 
   if (isEffectiveDemoMode(buildEnv)) {
-    demoStore.seedMapPreviewIfEmpty();
+    demoStore.purgeDemoEvents();
   }
 
   createRoot(document.getElementById("root")!).render(

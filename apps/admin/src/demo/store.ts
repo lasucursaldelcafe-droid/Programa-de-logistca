@@ -33,13 +33,7 @@ import {
 import { loadDemoPersistedState, saveDemoPersistedState } from "./persist";
 import { appendChangeLog, type DemoChangeAction, type DemoChangeEntry } from "./changeLog";
 import { PLATFORM_SEED_ACCOUNTS } from "@spe/shared";
-import {
-  DEMO_MAP_ATTENDANCES,
-  DEMO_MAP_EVENT,
-  DEMO_MAP_SHIFTS,
-  DEMO_MAP_SITES,
-  hasDemoMapData,
-} from "./mapSeed";
+import { isDemoEntityId, isDemoEvent } from "./demoPurge";
 
 export const DEMO_ACCOUNTS: Array<{
   email: string;
@@ -187,18 +181,48 @@ class DemoStore {
     if (saved.changeLog) this.changeLog = saved.changeLog;
   }
 
-  /** Sitios + jornadas activas de ejemplo para /mapa en modo demo (primer uso). */
-  seedMapPreviewIfEmpty(): void {
-    if (hasDemoMapData(this.sites)) return;
-    const hasActiveGps = this.attendances.some(
-      (a) => a.estado !== "cerrado" && a.ubicacionActual,
+  /** Elimina eventos de prueba y datos relacionados persistidos en localStorage. */
+  purgeDemoEvents(): void {
+    const demoEventIds = new Set(
+      this.events.filter(isDemoEvent).map((event) => event.id),
     );
-    if (hasActiveGps) return;
-    this.events = [DEMO_MAP_EVENT];
-    this.sites = [...DEMO_MAP_SITES];
-    this.shifts = [...DEMO_MAP_SHIFTS];
-    this.attendances = [...DEMO_MAP_ATTENDANCES];
+    if (demoEventIds.size === 0 && !this.hasDemoEntityData()) return;
+
+    this.events = this.events.filter((event) => !isDemoEvent(event));
+
+    this.sites = this.sites.filter(
+      (site) =>
+        !demoEventIds.has(site.eventId) && !isDemoEntityId(site.id),
+    );
+
+    this.shifts = this.shifts.filter(
+      (shift) =>
+        !demoEventIds.has(shift.eventId) && !isDemoEntityId(shift.id),
+    );
+
+    this.attendances = this.attendances.filter(
+      (attendance) =>
+        !demoEventIds.has(attendance.eventId) && !isDemoEntityId(attendance.id),
+    );
+
+    this.qrCodes = this.qrCodes.filter(
+      (qr) => !demoEventIds.has(qr.eventId) && !isDemoEntityId(qr.id),
+    );
+
+    this.workers = this.workers.filter((worker) => !isDemoEntityId(worker.id));
+
     this.notify();
+  }
+
+  private hasDemoEntityData(): boolean {
+    return (
+      this.events.some(isDemoEvent) ||
+      this.sites.some((site) => isDemoEntityId(site.id)) ||
+      this.shifts.some((shift) => isDemoEntityId(shift.id)) ||
+      this.attendances.some((attendance) => isDemoEntityId(attendance.id)) ||
+      this.qrCodes.some((qr) => isDemoEntityId(qr.id)) ||
+      this.workers.some((worker) => isDemoEntityId(worker.id))
+    );
   }
 
   private recordChange(
@@ -626,7 +650,7 @@ class DemoStore {
 
 export const demoStore = new DemoStore();
 demoStore.hydrateFromStorage();
-demoStore.seedMapPreviewIfEmpty();
+demoStore.purgeDemoEvents();
 
 const SESSION_KEY = "spe-demo-user";
 
@@ -667,7 +691,7 @@ export function demoLogin(email: string, password: string): AppUser {
   }
 
   saveDemoSession(email);
-  demoStore.seedMapPreviewIfEmpty();
+  demoStore.purgeDemoEvents();
   return account.user;
 }
 
