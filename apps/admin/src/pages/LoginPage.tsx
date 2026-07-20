@@ -24,17 +24,41 @@ const buildEnv = {
   dataBackend: import.meta.env.VITE_DATA_BACKEND,
 };
 
+function readLoginQueryParams(): { email: string; password: string; autoLogin: boolean } {
+  if (typeof window === "undefined") {
+    return { email: "", password: "", autoLogin: false };
+  }
+  const params = new URLSearchParams(window.location.search);
+  const hashQuery = window.location.hash.includes("?")
+    ? window.location.hash.slice(window.location.hash.indexOf("?") + 1)
+    : "";
+  const hashParams = new URLSearchParams(hashQuery);
+
+  const email = params.get("email") ?? hashParams.get("email") ?? "";
+  const password = params.get("password") ?? hashParams.get("password") ?? "";
+  const autoRaw = params.get("auto") ?? hashParams.get("auto") ?? "";
+  const autoLogin = autoRaw === "1" || autoRaw.toLowerCase() === "true";
+
+  return { email, password, autoLogin };
+}
+
 export function LoginPage() {
   const { user, loading, login } = useAuth();
   const navigate = useNavigate();
+  const queryParams = readLoginQueryParams();
   const demoUi = buildEnv.demoMode || isDemoMode();
-  const [email, setEmail] = useState(demoUi ? "admin@eventos.test" : "");
-  const [password, setPassword] = useState(demoUi ? "Admin123!" : "");
+  const [email, setEmail] = useState(
+    queryParams.email || (demoUi ? "admin@eventos.test" : ""),
+  );
+  const [password, setPassword] = useState(
+    queryParams.password || (demoUi ? "Admin123!" : ""),
+  );
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [enableBiometric, setEnableBiometric] = useState(false);
+  const [autoLoginAttempted, setAutoLoginAttempted] = useState(false);
 
   useEffect(() => {
     void isBiometricAvailable().then(setBiometricAvailable);
@@ -47,6 +71,32 @@ export function LoginPage() {
     (isSheetsBackend() && isSheetsBackendConfigured());
 
   const backendLabel = getRuntimeBackendLabel(buildEnv);
+
+  useEffect(() => {
+    if (loading || user || autoLoginAttempted || !queryParams.autoLogin) return;
+    if (!email.trim() || !password || !backendReady) return;
+
+    setAutoLoginAttempted(true);
+    setSubmitting(true);
+    setError(null);
+
+    void login(email.trim(), password)
+      .then((appUser) => navigate(rutaHomePorRol(appUser.role)))
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : "Credenciales inválidas.");
+      })
+      .finally(() => setSubmitting(false));
+  }, [
+    autoLoginAttempted,
+    backendReady,
+    email,
+    loading,
+    login,
+    navigate,
+    password,
+    queryParams.autoLogin,
+    user,
+  ]);
 
   function restablecerDemo() {
     resetToDemoMode();
