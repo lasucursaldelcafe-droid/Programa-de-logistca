@@ -12,6 +12,7 @@ on:
       - functions/**
       - .github/workflows/produccion-completa.yml
       - scripts/firestore-bootstrap.mjs
+      - scripts/deploy-firestore.mjs
       - scripts/deploy-firestore-rules-api.mjs
   schedule:
     - cron: "0 9 * * *"
@@ -74,7 +75,9 @@ jobs:
             exit 0
           fi
           npm install firebase-tools@14 --no-save
-          if node scripts/deploy-firestore-rules-api.mjs; then
+          if node scripts/deploy-firestore.mjs; then
+            echo "status=ok" >> "$GITHUB_OUTPUT"
+          elif node scripts/deploy-firestore-rules-api.mjs; then
             echo "status=ok" >> "$GITHUB_OUTPUT"
           elif npx firebase-tools deploy --only firestore:rules,firestore:indexes \
             --project "${VITE_FIREBASE_PROJECT_ID:-programalog-ccc12}" --non-interactive; then

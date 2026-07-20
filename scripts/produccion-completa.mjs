@@ -65,10 +65,10 @@ async function main() {
     return pushGhSecret("SPE_PROD_PASSWORD", pwd);
   });
 
-  mainStep("6. Desplegar reglas Firestore", () => {
+  mainStep("6. Desplegar Firestore (reglas + índices chat)", () => {
     process.env.SPE_PROD_PASSWORD = pwd;
-    return run("node", ["scripts/deploy-firestore-rules-api.mjs"]) === 0
-      || run("npm", ["run", "firestore:bootstrap", "--", "--uid", "8kJ9xnbXwlNVQerimF088JXo8Ql1", "--skip-auth"]) === 0;
+    return run("node", ["scripts/deploy-firestore.mjs"]) === 0
+      || run("node", ["scripts/deploy-firestore-rules-api.mjs"]) === 0;
   });
 
   mainStep("7. Bootstrap Firestore", () => {
