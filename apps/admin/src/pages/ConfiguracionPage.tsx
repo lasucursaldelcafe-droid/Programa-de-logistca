@@ -288,8 +288,8 @@ export function ConfiguracionPage() {
     setBusy(true);
     try {
       await completeSetup({ uid: currentUser.uid, nombre: currentUser.nombre });
-      setMensaje("Configuración completada. El sistema está listo para operar.");
-      navigate("/");
+      setMensaje("Evento listo. Sigue con personal e invitaciones, luego asigna al equipo.");
+      navigate("/operacion");
     } finally {
       setBusy(false);
     }
@@ -310,9 +310,11 @@ export function ConfiguracionPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="font-display text-3xl font-bold">Asistente de configuración</h1>
-        <p className="mt-1 text-neutral-400">
-          Configura un evento nuevo en 5 pasos: evento, sitios, tarifas, QR y resumen.
+        <p className="text-xs font-semibold uppercase tracking-wider text-accent">Paso 1 del flujo</p>
+        <h1 className="font-display text-3xl font-bold">Crear evento</h1>
+        <p className="mt-1 max-w-2xl text-neutral-400">
+          Asistente en 5 pasos: evento, sitios, tarifas, QR y resumen. Después registra personal,
+          envía invitaciones y asigna turnos en Operación.
         </p>
       </div>
 
@@ -565,6 +567,12 @@ export function ConfiguracionPage() {
             >
               Configurar otro evento
             </button>
+            <Link to="/personal" className="rounded-lg border border-border px-4 py-2 text-sm">
+              Siguiente: Personal →
+            </Link>
+            <Link to="/operacion" className="rounded-lg border border-border px-4 py-2 text-sm">
+              Asignar al evento →
+            </Link>
             <Link to="/qr-sitios" className="rounded-lg border border-border px-4 py-2 text-sm">
               Ver QR sitios
             </Link>

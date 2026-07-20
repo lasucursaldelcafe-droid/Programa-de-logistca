@@ -32,6 +32,8 @@ import { usePayrollEntries } from "../hooks/usePayroll";
 import { useNotifications } from "../hooks/useNotifications";
 import { SetupBanner } from "../components/SetupBanner";
 import { PageHeader } from "../components/nav/PageHeader";
+import { EventFlowGuide, computeEventFlowProgress } from "../components/EventFlowGuide";
+import { useSetupConfig } from "../hooks/useSetup";
 
 export function HomePage() {
   const { user } = useAuth();
@@ -43,10 +45,26 @@ export function HomePage() {
   const payroll = usePayrollEntries();
   const invitations = useInvitations();
   const notifications = useNotifications(user);
+  const setupConfig = useSetupConfig();
   const [filtroEvento, setFiltroEvento] = useState("");
 
   const esOperativo = user && puedeVerDashboardOperativo(user.role);
   const esTrabajador = user?.role === "trabajador";
+  const puedeFlujo = user && puedeGestionarConfiguracion(user.role);
+
+  const flowCompletedIds = useMemo(
+    () =>
+      computeEventFlowProgress({
+        hasEvents: events.length > 0,
+        setupComplete: setupConfig?.completado === true,
+        workersCount: workers.length,
+        pendingInvitations: invitations.filter((i) => i.estado === "pendiente").length,
+        shiftsForEvent: filtroEvento
+          ? shifts.filter((s) => s.eventId === filtroEvento).length
+          : shifts.length,
+      }),
+    [events.length, setupConfig?.completado, workers.length, invitations, shifts, filtroEvento],
+  );
 
   const shiftsScoped = useMemo(
     () => (filtroEvento ? shifts.filter((s) => s.eventId === filtroEvento) : shifts),
@@ -175,13 +193,20 @@ export function HomePage() {
           Hola, {user.nombre.split(" ")[0]}
         </h2>
         <p className="mt-2 max-w-2xl text-sm text-neutral-400">
-          Personal, turnos, mapa en vivo y nómina en un solo lugar.{" "}
+          Sigue el flujo:{" "}
+          <Link to="/configuracion" className="text-accent hover:underline">
+            crear evento
+          </Link>
+          , registrar personal, invitar cuentas y{" "}
           <Link to="/operacion" className="text-accent hover:underline">
-            Operación por evento
-          </Link>{" "}
-          para revisar el equipo y agregar o quitar empleados.
+            asignar al evento
+          </Link>
+          . El mapa y la supervisión se usan el día del evento.
         </p>
       </div>
+      {puedeFlujo && (
+        <EventFlowGuide completedStepIds={flowCompletedIds} title="Tu flujo de trabajo" />
+      )}
       <PageHeader
         title="Resumen"
         description="Personal, turnos, GPS y nómina"
