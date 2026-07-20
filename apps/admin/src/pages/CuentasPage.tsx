@@ -19,7 +19,10 @@ import {
   useWorkers,
   resetWorkerPassword,
   setWorkerHabilitado,
+  changeOwnPassword,
 } from "../hooks/useDataStore";
+import { isDemoMode } from "../lib/mode";
+import { isSheetsBackend } from "../lib/backend";
 import { PageHeader } from "../components/nav/PageHeader";
 
 export function CuentasPage() {
@@ -33,6 +36,13 @@ export function CuentasPage() {
   const [error, setError] = useState<string | null>(null);
   const [resetEmail, setResetEmail] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [ownNewPassword, setOwnNewPassword] = useState("");
+  const [ownConfirmPassword, setOwnConfirmPassword] = useState("");
+  const [ownPasswordMsg, setOwnPasswordMsg] = useState<string | null>(null);
+  const [ownPasswordBusy, setOwnPasswordBusy] = useState(false);
+
+  const puedeCambiarPropiaClave = !isSheetsBackend();
 
   if (!user || !puedeGestionarCuentas(user.role)) {
     return <p className="text-neutral-400">Sin permisos para gestionar cuentas.</p>;
@@ -129,6 +139,92 @@ export function CuentasPage() {
 
       {error && (
         <p className="rounded-lg bg-alert/10 px-3 py-2 text-sm text-alert">{error}</p>
+      )}
+
+      {puedeCambiarPropiaClave && (
+        <Card>
+          <h2 className="font-display text-lg font-semibold">Mi contraseña</h2>
+          <p className="mt-1 text-sm text-neutral-400">
+            Cambia tu clave de acceso al panel. {isDemoMode() ? "Modo demo: solo local." : "Firebase producción."}
+          </p>
+          <form
+            className="mt-4 grid gap-3 sm:grid-cols-2"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (ownNewPassword !== ownConfirmPassword) {
+                setOwnPasswordMsg("Las contraseñas nuevas no coinciden.");
+                return;
+              }
+              setOwnPasswordBusy(true);
+              setOwnPasswordMsg(null);
+              try {
+                await changeOwnPassword(currentPassword, ownNewPassword);
+                setCurrentPassword("");
+                setOwnNewPassword("");
+                setOwnConfirmPassword("");
+                setOwnPasswordMsg("Contraseña actualizada correctamente.");
+              } catch (err) {
+                setOwnPasswordMsg(
+                  err instanceof Error ? err.message : "No se pudo cambiar la contraseña.",
+                );
+              } finally {
+                setOwnPasswordBusy(false);
+              }
+            }}
+          >
+            <label className="block text-sm sm:col-span-2">
+              <span className="mb-1 block text-neutral-400">Contraseña actual</span>
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2"
+                required
+                autoComplete="current-password"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block text-neutral-400">Nueva contraseña</span>
+              <input
+                type="password"
+                value={ownNewPassword}
+                onChange={(e) => setOwnNewPassword(e.target.value)}
+                className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2"
+                required
+                minLength={8}
+                autoComplete="new-password"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block text-neutral-400">Confirmar nueva</span>
+              <input
+                type="password"
+                value={ownConfirmPassword}
+                onChange={(e) => setOwnConfirmPassword(e.target.value)}
+                className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2"
+                required
+                minLength={8}
+                autoComplete="new-password"
+              />
+            </label>
+            <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
+              <button
+                type="submit"
+                disabled={ownPasswordBusy}
+                className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
+              >
+                {ownPasswordBusy ? "Guardando…" : "Cambiar mi contraseña"}
+              </button>
+              {ownPasswordMsg && (
+                <p
+                  className={`text-sm ${ownPasswordMsg.includes("actualizada") ? "text-success" : "text-alert"}`}
+                >
+                  {ownPasswordMsg}
+                </p>
+              )}
+            </div>
+          </form>
+        </Card>
       )}
 
       {lastSent && (
