@@ -119,6 +119,7 @@ export async function runDiagnostic(opts = {}) {
   const credEjemplo = existsSync(resolve(CONFIG, "credenciales.local.ejemplo.json"));
   const sheetsTxt = existsSync(resolve(ROOT, "CREDENCIALES-SHEETS-AUTO.txt"));
   const fbWebFile = readJson(resolve(ROOT, "firebase-web-config.json"));
+  const runtimeProd = readJson(resolve(ROOT, "docs/spe-runtime-config.json"));
   const serviceAccount = existsSync(resolve(ROOT, "service-account.json"));
 
   // --- Archivos base ---
@@ -161,7 +162,10 @@ export async function runDiagnostic(opts = {}) {
     credLocal?.sheets?.apiToken?.trim() ||
     "";
 
-  const fb = mergeFirebase(bootstrap?.firebase ?? {}, mergeFirebase(fbWebFile ?? {}, envFirebase()));
+  const fb = mergeFirebase(
+    bootstrap?.firebase ?? {},
+    mergeFirebase(fbWebFile ?? {}, mergeFirebase(runtimeProd?.firebase ?? {}, envFirebase())),
+  );
   const fbCheck = firebaseComplete(fb);
 
   let effectiveBackend = bootstrap?.backend ?? "demo";
@@ -346,6 +350,10 @@ export async function runDiagnostic(opts = {}) {
     fix: "node scripts/write-runtime-config.mjs con VITE_FIREBASE_* en env",
   });
 
+  const hasDeployCreds =
+    !!(process.env.FIREBASE_TOKEN ?? "").trim() ||
+    !!(process.env.FIREBASE_SERVICE_ACCOUNT_JSON ?? "").trim();
+
   if (fbCheck.complete && fb.apiKey) {
     try {
       const pwd = process.env.SPE_PROD_PASSWORD?.trim() || "SpeAdmin2026!";
@@ -368,17 +376,24 @@ export async function runDiagnostic(opts = {}) {
           { headers: { Authorization: `Bearer ${authData.idToken}` } },
         );
         const fsOk = fsRes.ok;
+        const fsStatus = fsOk ? "ok" : hasDeployCreds ? "fail" : "warn";
         checks.push({
           id: "firestore.live",
-          status: fsOk ? "ok" : "fail",
+          status: fsStatus,
           message: fsOk
             ? "Firestore users/{uid} legible — login completo OK"
-            : "Firestore rechaza permisos — faltan reglas desplegadas",
-          fix: "firebase login:ci → npm run setup:firebase-token → Actions → Producción completa (SPE)",
+            : hasDeployCreds
+              ? "Firestore rechaza permisos — reglas no desplegadas (hay credenciales CI)"
+              : "Firestore rechaza permisos — falta FIREBASE_TOKEN en GitHub Secrets",
+          fix: fsOk
+            ? undefined
+            : "PC: .\\scripts\\windows\\SPE-Produccion-Completa.ps1 — o GitHub → Settings → Secrets → FIREBASE_TOKEN",
         });
         if (!fsOk) {
           recommendations.push(
-            "Firestore: ejecuta «Producción completa (SPE)» o pega firestore.rules en Firebase Console",
+            hasDeployCreds
+              ? "Firestore: Actions → Producción completa (SPE) o pega firestore.rules en Firebase Console"
+              : "Añade FIREBASE_TOKEN (firebase login:ci) y relanza Producción completa (SPE)",
           );
         }
       }
@@ -390,6 +405,15 @@ export async function runDiagnostic(opts = {}) {
         fix: "npm run verify:prod-login",
       });
     }
+  }
+
+  if (ci && !hasDeployCreds) {
+    checks.push({
+      id: "firebase.deploy",
+      status: "warn",
+      message: "Sin FIREBASE_TOKEN ni FIREBASE_SERVICE_ACCOUNT_JSON — reglas Firestore no se despliegan en CI",
+      fix: "GitHub → Settings → Secrets → FIREBASE_TOKEN (firebase login:ci)",
+    });
   }
 
   // --- Login demo guidance ---
@@ -477,7 +501,8 @@ async function main() {
     console.log(`Reporte guardado: config/diagnostico-report.json`);
   }
 
-  process.exit(report.overall === "error" ? 1 : 0);
+  const noFail = process.argv.includes("--no-fail");
+  process.exit(noFail || report.overall !== "error" ? 0 : 1);
 }
 
 const isMain = process.argv[1]?.endsWith("spe-diagnostico.mjs");

@@ -90,9 +90,18 @@ jobs:
 
       - name: Verificar login producción
         id: verify
+        continue-on-error: true
         run: |
           SPE_PROD_PASSWORD="${SPE_PROD_PASSWORD:-SpeAdmin2026!}" node scripts/verify-prod-login.mjs && \
             echo "status=ok" >> "$GITHUB_OUTPUT" || echo "status=fail" >> "$GITHUB_OUTPUT"
+
+      - name: Fallar si Firestore sigue bloqueado (con credenciales)
+        if: >-
+          steps.rules.outputs.status == 'ok' &&
+          steps.verify.outputs.status == 'fail'
+        run: |
+          echo "::error::Reglas desplegadas pero login Firestore sigue fallando — revisa verify-prod-login"
+          exit 1
 
       - name: Resumen
         if: always()

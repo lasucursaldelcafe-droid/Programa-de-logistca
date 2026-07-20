@@ -30,22 +30,23 @@ https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/cuentas
 
 ## Si sale "Missing or insufficient permissions"
 
-**Automático (PC, una vez):**
+Firestore necesita **reglas desplegadas**. Sin `FIREBASE_TOKEN` en GitHub, la web entra con sesión admin **provisional** (sin sync de datos).
+
+### Opción A — PC Windows (recomendado, un comando)
 
 ```powershell
 .\scripts\windows\SPE-Produccion-Completa.ps1
 ```
 
-O:
+### Opción B — Manual en GitHub
 
-```bash
-firebase login:ci
-npm run produccion:completa
-```
+1. En PC: `firebase login:ci` → copia el token
+2. GitHub → **Settings** → **Secrets and variables** → **Actions**
+3. **New repository secret**: `FIREBASE_TOKEN` = token del paso 1
+4. Actions → **Configurar Firebase (SPE)** → Run workflow
 
-**Manual:** Firebase Console → Firestore → Reglas → pegar `firestore.rules` → Publicar
+### Opción C — Consola Firebase
 
-1. Firebase Console → **Firestore** → **Reglas** → **Publicar** (o pega `firestore.rules` del repo)
-2. GitHub Actions → **Producción completa (SPE)** o **Bootstrap Firestore (SPE)**
+Firebase Console → Firestore → Reglas → pegar `firestore.rules` → Publicar
 
-Proyecto Firebase: `programalog-ccc12`
+Proyecto: `programalog-ccc12` | UID admin: `8kJ9xnbXwlNVQerimF088JXo8Ql1`
