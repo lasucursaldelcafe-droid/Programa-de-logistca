@@ -1,5 +1,5 @@
-import { useCallback, useState } from "react";
-import { APIProvider, Circle, Map, Marker, type MapMouseEvent } from "@vis.gl/react-google-maps";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { APIProvider, Circle, Map, Marker, useMap, type MapMouseEvent } from "@vis.gl/react-google-maps";
 import { geocodeAddress, reverseGeocode } from "../lib/geocode";
 import { getGoogleMapsApiKey, isGoogleMapsEnabled } from "../lib/googleMaps";
 
@@ -52,15 +52,17 @@ function SchematicSiteMap({
   };
 
   const radiusSvg = (radioMeters / 111_000) * 100 * (100 / SCHEMATIC_SPAN / 2);
+  const pinX = toX(lng);
+  const pinY = toY(lat);
 
   return (
-    <div className="relative h-72 overflow-hidden rounded-xl border border-border bg-[#111]">
+    <div className="relative h-80 overflow-hidden rounded-xl border border-accent/30 bg-[#111]">
       <svg
         viewBox="0 0 100 100"
         className="h-full w-full cursor-crosshair"
         onClick={handleClick}
         role="img"
-        aria-label="Mapa esquemático: haz clic para ubicar el sitio"
+        aria-label="Mapa esquemático: haz clic para seleccionar el punto de trabajo"
       >
         {[20, 40, 60, 80].map((n) => (
           <g key={n} className="text-neutral-800">
@@ -68,22 +70,107 @@ function SchematicSiteMap({
             <line x1={0} y1={n} x2={100} y2={n} stroke="currentColor" strokeWidth={0.15} />
           </g>
         ))}
+        <line x1={pinX} y1={0} x2={pinX} y2={100} stroke="#E8823C" strokeWidth={0.12} strokeOpacity={0.35} />
+        <line x1={0} y1={pinY} x2={100} y2={pinY} stroke="#E8823C" strokeWidth={0.12} strokeOpacity={0.35} />
         <circle
-          cx={toX(lng)}
-          cy={toY(lat)}
+          cx={pinX}
+          cy={pinY}
           r={Math.min(radiusSvg, 45)}
           fill="#E8823C"
-          fillOpacity={0.15}
+          fillOpacity={0.12}
           stroke="#E8823C"
-          strokeWidth={0.5}
+          strokeWidth={0.45}
           strokeOpacity={0.85}
+          pointerEvents="none"
         />
-        <circle cx={toX(lng)} cy={toY(lat)} r={2.2} fill="#E8823C" stroke="white" strokeWidth={0.4} />
+        <circle cx={pinX} cy={pinY} r={3.2} fill="#E8823C" stroke="white" strokeWidth={0.55} pointerEvents="none" />
+        <circle cx={pinX} cy={pinY} r={0.9} fill="white" pointerEvents="none" />
       </svg>
-      <p className="absolute bottom-2 left-2 right-2 rounded bg-bg/90 px-2 py-1 text-center text-xs text-neutral-400">
-        Haz clic en el mapa para marcar la ubicación · Círculo = área de trabajo
+      <p className="pointer-events-none absolute bottom-2 left-2 right-2 rounded bg-bg/95 px-2 py-1.5 text-center text-xs text-neutral-300">
+        <span className="font-medium text-accent">Selecciona el punto:</span> haz clic en el mapa
       </p>
     </div>
+  );
+}
+
+/** Recentra suavemente cuando cambian las coordenadas (búsqueda o clic), sin bloquear pan/zoom manual. */
+function PanToPin({ lat, lng }: { lat: number; lng: number }) {
+  const map = useMap();
+  const prev = useRef<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    if (!map) return;
+    const prevCoords = prev.current;
+    if (prevCoords && prevCoords.lat === lat && prevCoords.lng === lng) return;
+    prev.current = { lat, lng };
+    if (prevCoords) {
+      map.panTo({ lat, lng });
+    }
+  }, [map, lat, lng]);
+
+  return null;
+}
+
+function GoogleSiteMapInner({
+  lat,
+  lng,
+  radioMeters,
+  onPick,
+}: {
+  lat: number;
+  lng: number;
+  radioMeters: number;
+  onPick: (coords: { lat: number; lng: number }) => void;
+}) {
+  const handleMapClick = useCallback(
+    (event: MapMouseEvent) => {
+      const ll = event.detail.latLng;
+      if (!ll) return;
+      onPick({ lat: ll.lat, lng: ll.lng });
+    },
+    [onPick],
+  );
+
+  const handleMarkerDragEnd = useCallback(
+    (event: google.maps.MapMouseEvent) => {
+      const ll = event.latLng;
+      if (!ll) return;
+      onPick({ lat: ll.lat(), lng: ll.lng() });
+    },
+    [onPick],
+  );
+
+  return (
+    <Map
+      defaultCenter={{ lat, lng }}
+      defaultZoom={17}
+      gestureHandling="greedy"
+      disableDefaultUI={false}
+      zoomControl
+      streetViewControl={false}
+      mapTypeControl
+      onClick={handleMapClick}
+      className="h-full w-full cursor-crosshair"
+    >
+      <PanToPin lat={lat} lng={lng} />
+      <Marker
+        key={`${lat.toFixed(6)}-${lng.toFixed(6)}`}
+        position={{ lat, lng }}
+        draggable
+        title="Arrastra el pin o haz clic en el mapa"
+        onDragEnd={handleMarkerDragEnd}
+      />
+      <Circle
+        center={{ lat, lng }}
+        radius={radioMeters}
+        clickable={false}
+        strokeColor="#E8823C"
+        strokeOpacity={0.9}
+        strokeWeight={2}
+        fillColor="#E8823C"
+        fillOpacity={0.15}
+      />
+    </Map>
   );
 }
 
@@ -100,43 +187,13 @@ function GoogleSiteMap({
   radioMeters: number;
   onPick: (coords: { lat: number; lng: number }) => void;
 }) {
-  const handleMapClick = useCallback(
-    (event: MapMouseEvent) => {
-      const ll = event.detail.latLng;
-      if (!ll) return;
-      onPick({ lat: ll.lat, lng: ll.lng });
-    },
-    [onPick],
-  );
-
   return (
-    <div className="relative h-72 overflow-hidden rounded-xl border border-border">
+    <div className="relative h-80 overflow-hidden rounded-xl border border-accent/30">
       <APIProvider apiKey={apiKey} language="es" region="CO">
-        <Map
-          center={{ lat, lng }}
-          zoom={17}
-          gestureHandling="greedy"
-          disableDefaultUI={false}
-          zoomControl
-          streetViewControl={false}
-          mapTypeControl
-          onClick={handleMapClick}
-          className="h-full w-full"
-        >
-          <Marker position={{ lat, lng }} title="Centro del área de trabajo" />
-          <Circle
-            center={{ lat, lng }}
-            radius={radioMeters}
-            strokeColor="#E8823C"
-            strokeOpacity={0.9}
-            strokeWeight={2}
-            fillColor="#E8823C"
-            fillOpacity={0.15}
-          />
-        </Map>
+        <GoogleSiteMapInner lat={lat} lng={lng} radioMeters={radioMeters} onPick={onPick} />
       </APIProvider>
-      <p className="pointer-events-none absolute bottom-2 left-2 right-2 rounded bg-bg/90 px-2 py-1 text-center text-xs text-neutral-400">
-        Clic en el mapa para mover el punto · El círculo naranja es el área de trabajo
+      <p className="pointer-events-none absolute bottom-2 left-2 right-2 rounded bg-bg/95 px-2 py-1.5 text-center text-xs text-neutral-300">
+        <span className="font-medium text-accent">Selecciona el punto:</span> clic en el mapa o arrastra el pin
       </p>
     </div>
   );
@@ -230,6 +287,14 @@ export function SiteLocationPicker({ value, onChange }: SiteLocationPickerProps)
         <p className="text-sm text-alert">{geocodeError}</p>
       )}
 
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-sm font-medium text-neutral-200">Seleccionar punto en el mapa</h3>
+          <span className="rounded-full border border-border px-2 py-0.5 font-mono text-xs text-neutral-400">
+            {lat.toFixed(5)}, {lng.toFixed(5)}
+          </span>
+        </div>
+
       {mapsEnabled ? (
         <GoogleSiteMap
           apiKey={apiKey}
@@ -242,12 +307,13 @@ export function SiteLocationPicker({ value, onChange }: SiteLocationPickerProps)
         <>
           <SchematicSiteMap lat={lat} lng={lng} radioMeters={radio} onPick={(c) => void handlePick(c)} />
           <p className="text-xs text-neutral-500">
-            Sin clave de Google Maps: usa clic en el mapa esquemático o ingresa latitud/longitud abajo.
-            Configura <code className="text-neutral-400">VITE_GOOGLE_MAPS_API_KEY</code> para mapa real y
-            búsqueda por dirección.
+            Sin clave de Google Maps: haz clic en el mapa esquemático o ingresa latitud/longitud abajo.
+            Configura <code className="text-neutral-400">VITE_GOOGLE_MAPS_API_KEY</code> para mapa real,
+            arrastrar el pin y búsqueda por dirección.
           </p>
         </>
       )}
+      </div>
 
       <label className="block text-sm">
         Área de trabajo (radio geocerca: {radio} m)
