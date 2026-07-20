@@ -10,6 +10,7 @@ import {
   puedeGestionarConfiguracion,
   setupStepIndex,
   validateEventoStep,
+  validateOperacionesStep,
   validateSitioStep,
   type SetupPaso,
 } from "@spe/shared";
@@ -19,6 +20,7 @@ import {
   createEvent,
   createQrCode,
   createSite,
+  updateEvento,
   useEvents,
   useQrCodes,
   useSites,
@@ -63,6 +65,12 @@ export function ConfiguracionPage() {
     radioGeocerca: "80",
   });
   const [tarifasEdit, setTarifasEdit] = useState<Record<string, string>>({});
+  const [operacionesForm, setOperacionesForm] = useState({
+    temaLaboral: "",
+    reglasOperativas: "",
+    tiempoMinimoEstadiaMinutos: "30",
+    supervisionActiva: true,
+  });
 
   const eventoActivo = useMemo(() => {
     const id = config?.eventoId;
@@ -85,6 +93,16 @@ export function ConfiguracionPage() {
     }
     setTarifasEdit(map);
   }, [rates]);
+
+  useEffect(() => {
+    if (!eventoActivo) return;
+    setOperacionesForm({
+      temaLaboral: eventoActivo.temaLaboral ?? "",
+      reglasOperativas: eventoActivo.reglasOperativas ?? "",
+      tiempoMinimoEstadiaMinutos: String(eventoActivo.tiempoMinimoEstadiaMinutos ?? 30),
+      supervisionActiva: eventoActivo.supervisionActiva !== false,
+    });
+  }, [eventoActivo?.id, eventoActivo?.temaLaboral, eventoActivo?.reglasOperativas]);
 
   if (!user || !puedeGestionarConfiguracion(user.role)) {
     return <p className="text-neutral-400">Sin permisos para configurar el sistema.</p>;
@@ -271,7 +289,7 @@ export function ConfiguracionPage() {
         actor: { uid: currentUser.uid, nombre: currentUser.nombre },
         current: cfg,
       });
-      setPaso("resumen");
+      setPaso("operaciones");
       setMensaje(
         creados > 0
           ? `Se generaron ${creados} código(s) QR.`
@@ -279,6 +297,42 @@ export function ConfiguracionPage() {
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al generar QR");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function guardarOperaciones(e: React.FormEvent) {
+    e.preventDefault();
+    if (!eventoActivo) {
+      setError("No hay evento activo.");
+      return;
+    }
+    setError(null);
+    const validation = validateOperacionesStep(operacionesForm);
+    if (validation) {
+      setError(validation);
+      return;
+    }
+    setBusy(true);
+    try {
+      await updateEvento(eventoActivo.id, {
+        temaLaboral: operacionesForm.temaLaboral.trim(),
+        reglasOperativas: operacionesForm.reglasOperativas.trim(),
+        tiempoMinimoEstadiaMinutos: Number(operacionesForm.tiempoMinimoEstadiaMinutos),
+        supervisionActiva: operacionesForm.supervisionActiva,
+      });
+      const cfg = await ensureConfig();
+      await advanceSetupPaso({
+        paso: "operaciones",
+        eventoId: eventoActivo.id,
+        actor: { uid: currentUser.uid, nombre: currentUser.nombre },
+        current: cfg,
+      });
+      setPaso("resumen");
+      setMensaje("Reglas operativas y supervisión guardadas.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al guardar operaciones");
     } finally {
       setBusy(false);
     }
@@ -313,8 +367,8 @@ export function ConfiguracionPage() {
         <p className="text-xs font-semibold uppercase tracking-wider text-accent">Paso 1 del flujo</p>
         <h1 className="font-display text-3xl font-bold">Crear evento</h1>
         <p className="mt-1 max-w-2xl text-neutral-400">
-          Asistente en 5 pasos: evento, sitios, tarifas, QR y resumen. Después registra personal,
-          envía invitaciones y asigna turnos en Operación.
+          Asistente en 6 pasos: evento, sitios, tarifas, QR, operaciones (temática y reglas) y
+          resumen. Después registra personal, envía invitaciones y asigna turnos en Operación.
         </p>
       </div>
 
@@ -533,9 +587,101 @@ export function ConfiguracionPage() {
         </Card>
       )}
 
+      {paso === "operaciones" && (
+        <Card>
+          <h2 className="font-display text-lg font-semibold">5. Operaciones y supervisión</h2>
+          <p className="mt-1 text-sm text-neutral-400">
+            Define la temática laboral, reglas en sitio y checklist de personal antes de operar.
+          </p>
+          <form onSubmit={guardarOperaciones} className="mt-4 grid gap-3">
+            <label className="text-sm">
+              Temática laboral del evento
+              <textarea
+                value={operacionesForm.temaLaboral}
+                onChange={(e) =>
+                  setOperacionesForm((f) => ({ ...f, temaLaboral: e.target.value }))
+                }
+                rows={3}
+                className="mt-1 w-full rounded-lg border border-border bg-bg px-3 py-2"
+                placeholder="Ej.: Montaje de stand, atención al público, uniforme corporativo…"
+                required
+              />
+            </label>
+            <label className="text-sm">
+              Reglas operativas y supervisión
+              <textarea
+                value={operacionesForm.reglasOperativas}
+                onChange={(e) =>
+                  setOperacionesForm((f) => ({ ...f, reglasOperativas: e.target.value }))
+                }
+                rows={4}
+                className="mt-1 w-full rounded-lg border border-border bg-bg px-3 py-2"
+                placeholder="Horarios, funciones por sitio, reportes obligatorios, conducta en área…"
+                required
+              />
+            </label>
+            <label className="text-sm sm:max-w-xs">
+              Tiempo mínimo de estadía (minutos)
+              <input
+                type="number"
+                min={0}
+                value={operacionesForm.tiempoMinimoEstadiaMinutos}
+                onChange={(e) =>
+                  setOperacionesForm((f) => ({
+                    ...f,
+                    tiempoMinimoEstadiaMinutos: e.target.value,
+                  }))
+                }
+                className="mt-1 w-full rounded-lg border border-border bg-bg px-3 py-2"
+              />
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={operacionesForm.supervisionActiva}
+                onChange={(e) =>
+                  setOperacionesForm((f) => ({ ...f, supervisionActiva: e.target.checked }))
+                }
+              />
+              Activar supervisión GPS (llegada, movimiento y geocerca)
+            </label>
+            <div className="rounded-lg border border-border bg-bg/50 px-4 py-3 text-sm text-neutral-400">
+              <p className="font-medium text-neutral-300">Checklist antes de operar</p>
+              <ul className="mt-2 list-inside list-disc space-y-1">
+                <li>
+                  <Link to="/personal" className="text-accent hover:underline">
+                    Registrar personal
+                  </Link>{" "}
+                  en el evento
+                </li>
+                <li>
+                  <Link to="/cuentas" className="text-accent hover:underline">
+                    Enviar invitaciones
+                  </Link>{" "}
+                  para que descarguen la app
+                </li>
+                <li>
+                  <Link to="/turnos" className="text-accent hover:underline">
+                    Asignar turnos
+                  </Link>{" "}
+                  por sitio y horario
+                </li>
+              </ul>
+            </div>
+            <button
+              type="submit"
+              disabled={busy || !eventoActivo}
+              className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg disabled:opacity-50"
+            >
+              Guardar operaciones y continuar
+            </button>
+          </form>
+        </Card>
+      )}
+
       {paso === "resumen" && (
         <Card>
-          <h2 className="font-display text-lg font-semibold">5. Resumen</h2>
+          <h2 className="font-display text-lg font-semibold">6. Resumen</h2>
           <ul className="mt-4 space-y-3">
             {resumen.map((item) => (
               <li

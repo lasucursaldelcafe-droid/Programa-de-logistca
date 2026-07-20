@@ -22,6 +22,7 @@ import { FacturacionPage } from "./pages/FacturacionPage";
 import { InventarioPage } from "./pages/InventarioPage";
 import { IntegracionesPage } from "./pages/IntegracionesPage";
 import { SupervisionPage } from "./pages/SupervisionPage";
+import { InformesEventoPage } from "./pages/InformesEventoPage";
 import { ActivarCuentaPage } from "./pages/ActivarCuentaPage";
 import { UnirseEmpresaPage } from "./pages/UnirseEmpresaPage";
 import { CompletarPerfilPage } from "./pages/CompletarPerfilPage";
@@ -103,6 +104,7 @@ export function App() {
         <Route path="cuentas" element={<CuentasPage />} />
         <Route path="qr-sitios" element={<QrSitiosPage />} />
         <Route path="mapa" element={<MapaEnVivoPage />} />
+        <Route path="informes" element={<InformesEventoPage />} />
         <Route path="reportes" element={<ReportesPage />} />
         <Route path="notificaciones" element={<NotificacionesPage />} />
         <Route path="nomina" element={<NominaPage />} />

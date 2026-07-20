@@ -20,18 +20,88 @@ import {
   type BreakTipo,
   type NotificationTipo,
 } from "@spe/shared";
-import { DEMO_MODE } from "../lib/mode";
+import { isDemoMode } from "../lib/mode";
+import { isSheetsBackend } from "../lib/backend";
 import { demoStore } from "../demo/store";
+import { sheetsGetById, sheetsUpsertRecord } from "../data/sheetsOps";
+import { useSheetsPoll } from "./useSheetsPoll";
 
 function useDemoSnapshot<T>(selector: () => T): T {
   return useSyncExternalStore(demoStore.subscribe.bind(demoStore), selector, selector);
 }
 
+function parseNotification(raw: Record<string, unknown>): AppNotification {
+  let destinatarios: string[] = [];
+  let leidaPor: string[] = [];
+
+  if (Array.isArray(raw.destinatarios)) {
+    destinatarios = raw.destinatarios as string[];
+  } else if (typeof raw.destinatarios === "string" && raw.destinatarios.trim()) {
+    try {
+      destinatarios = JSON.parse(raw.destinatarios) as string[];
+    } catch {
+      destinatarios = raw.destinatarios.split(",").filter(Boolean);
+    }
+  }
+
+  if (Array.isArray(raw.leidaPor)) {
+    leidaPor = raw.leidaPor as string[];
+  } else if (typeof raw.leidaPor === "string" && raw.leidaPor.trim()) {
+    try {
+      leidaPor = JSON.parse(raw.leidaPor) as string[];
+    } catch {
+      leidaPor = raw.leidaPor.split(",").filter(Boolean);
+    }
+  }
+
+  return {
+    id: String(raw.id ?? ""),
+    tipo: raw.tipo as NotificationTipo,
+    titulo: String(raw.titulo ?? ""),
+    mensaje: String(raw.mensaje ?? ""),
+    timestamp: String(raw.timestamp ?? ""),
+    urgente: raw.urgente === true || raw.urgente === "true",
+    destinatarios,
+    shiftId: raw.shiftId ? String(raw.shiftId) : undefined,
+    eventId: raw.eventId ? String(raw.eventId) : undefined,
+    siteId: raw.siteId ? String(raw.siteId) : undefined,
+    attendanceId: raw.attendanceId ? String(raw.attendanceId) : undefined,
+    actorUid: raw.actorUid ? String(raw.actorUid) : undefined,
+    actorNombre: raw.actorNombre ? String(raw.actorNombre) : undefined,
+    leidaPor,
+    accionTurno: raw.accionTurno === true || raw.accionTurno === "true",
+  };
+}
+
+function serializeNotification(
+  id: string,
+  data: Omit<AppNotification, "id">,
+): Record<string, unknown> {
+  return {
+    id,
+    tipo: data.tipo,
+    titulo: data.titulo,
+    mensaje: data.mensaje,
+    timestamp: data.timestamp,
+    urgente: data.urgente,
+    destinatarios: JSON.stringify(data.destinatarios),
+    shiftId: data.shiftId ?? "",
+    eventId: data.eventId ?? "",
+    siteId: data.siteId ?? "",
+    attendanceId: data.attendanceId ?? "",
+    actorUid: data.actorUid ?? "",
+    actorNombre: data.actorNombre ?? "",
+    leidaPor: JSON.stringify(data.leidaPor),
+    accionTurno: data.accionTurno ?? false,
+  };
+}
+
 export function useNotifications(user: AppUser | null): AppNotification[] {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const sheetsNotifications = useSheetsPoll<Record<string, unknown>>("notifications");
 
   useEffect(() => {
-    if (DEMO_MODE || !user) return;
+    if (isDemoMode() || isSheetsBackend() || !user) return;
     const unsub = onSnapshot(
       query(collection(getFirestoreDb(), "notifications"), orderBy("timestamp", "desc")),
       (snap) =>
@@ -42,13 +112,21 @@ export function useNotifications(user: AppUser | null): AppNotification[] {
     return unsub;
   }, [user]);
 
+  useEffect(() => {
+    if (!isSheetsBackend()) return;
+    const parsed = sheetsNotifications
+      .map((row) => parseNotification(row))
+      .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+    setNotifications(parsed);
+  }, [sheetsNotifications]);
+
   const demoNotifications = useDemoSnapshot(() => demoStore.notifications);
 
   return useMemo(() => {
-    const all = DEMO_MODE ? demoNotifications : notifications;
+    const all = isDemoMode() ? demoNotifications : notifications;
     if (!user) return [];
     return all.filter((n) => notificationVisibleTo(n, user));
-  }, [DEMO_MODE, demoNotifications, notifications, user]);
+  }, [demoNotifications, notifications, user]);
 }
 
 export function useUnreadCount(user: AppUser | null): number {
@@ -71,7 +149,7 @@ export async function sendNotification(data: {
   actorNombre?: string;
   accionTurno?: boolean;
 }): Promise<void> {
-  const payload = {
+  const payload: Omit<AppNotification, "id"> = {
     tipo: data.tipo,
     titulo: data.titulo,
     mensaje: data.mensaje,
@@ -84,14 +162,21 @@ export async function sendNotification(data: {
     attendanceId: data.attendanceId,
     actorUid: data.actorUid,
     actorNombre: data.actorNombre,
-    leidaPor: [] as string[],
+    leidaPor: [],
     accionTurno: data.accionTurno ?? false,
   };
 
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     demoStore.addNotification(payload);
     return;
   }
+
+  if (isSheetsBackend()) {
+    const id = `notif-${Date.now().toString(36)}`;
+    await sheetsUpsertRecord("notifications", serializeNotification(id, payload), "id");
+    return;
+  }
+
   await addDoc(collection(getFirestoreDb(), "notifications"), payload);
 }
 
@@ -129,10 +214,27 @@ export async function markNotificationRead(
   notificationId: string,
   uid: string,
 ): Promise<void> {
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     demoStore.markNotificationRead(notificationId, uid);
     return;
   }
+
+  if (isSheetsBackend()) {
+    const row = await sheetsGetById<Record<string, unknown>>("notifications", notificationId);
+    if (!row) return;
+    const notif = parseNotification(row);
+    if (notif.leidaPor.includes(uid)) return;
+    await sheetsUpsertRecord(
+      "notifications",
+      serializeNotification(notificationId, {
+        ...notif,
+        leidaPor: [...notif.leidaPor, uid],
+      }),
+      "id",
+    );
+    return;
+  }
+
   const ref = doc(getFirestoreDb(), "notifications", notificationId);
   const snap = await getDoc(ref);
   if (!snap.exists()) return;
@@ -178,7 +280,7 @@ export async function scheduleBreakReminder(data: {
   inicio: string;
   fin: string;
 }): Promise<void> {
-  if (DEMO_MODE) {
+  if (isDemoMode()) {
     demoStore.addBreak({ ...data, notificado: false });
     return;
   }
@@ -192,7 +294,7 @@ export function useBreaks(): BreakSchedule[] {
   const [breaks, setBreaks] = useState<BreakSchedule[]>([]);
 
   useEffect(() => {
-    if (DEMO_MODE) return;
+    if (isDemoMode()) return;
     const unsub = onSnapshot(collection(getFirestoreDb(), "breaks"), (snap) =>
       setBreaks(snap.docs.map((d) => ({ id: d.id, ...d.data() } as BreakSchedule))),
     );
@@ -200,11 +302,11 @@ export function useBreaks(): BreakSchedule[] {
   }, []);
 
   const demoBreaks = useDemoSnapshot(() => demoStore.breaks);
-  return DEMO_MODE ? demoBreaks : breaks;
+  return isDemoMode() ? demoBreaks : breaks;
 }
 
 export async function saveFcmToken(uid: string, token: string): Promise<void> {
-  if (DEMO_MODE) return;
+  if (isDemoMode() || isSheetsBackend()) return;
   await setDoc(doc(getFirestoreDb(), "fcmTokens", uid), {
     token,
     actualizadoEn: new Date().toISOString(),
@@ -261,7 +363,7 @@ export async function notifyCheckIn(data: {
   await sendNotification({
     tipo: "entrada",
     titulo: "Entrada registrada",
-    mensaje: `${data.workerNombre} marcó entrada en ${data.siteNombre ?? "sitio"}${data.dentroGeocerca ? "" : " (revisión manual)"}.`,
+    mensaje: `${data.workerNombre} marcó entrada en ${data.siteNombre ?? "sitio"}${data.dentroGeocerca ? "" : " (revisión manual — fuera de geocerca)"}.`,
     destinatarios: ["_admins", data.workerId],
     attendanceId: data.attendanceId,
   });
@@ -282,6 +384,22 @@ export async function notifyCheckOut(data: {
   });
 }
 
+export async function notifyLlegadaSitio(data: {
+  workerId: string;
+  workerNombre: string;
+  siteNombre?: string;
+  eventNombre?: string;
+  attendanceId: string;
+}): Promise<void> {
+  await sendNotification({
+    tipo: "llegada_sitio",
+    titulo: "Llegada al área asignada",
+    mensaje: `${data.workerNombre} ingresó al radio del sitio ${data.siteNombre ?? "asignado"} (${data.eventNombre ?? "evento"}).`,
+    destinatarios: ["_admins", data.workerId],
+    attendanceId: data.attendanceId,
+  });
+}
+
 export async function notifyGeofenceAlert(data: {
   workerId: string;
   workerNombre: string;
@@ -291,10 +409,44 @@ export async function notifyGeofenceAlert(data: {
   await sendNotification({
     tipo: "geocerca_alerta",
     titulo: "Fuera de geocerca",
-    mensaje: `${data.workerNombre} salió del radio asignado en ${data.siteNombre ?? "sitio"}.`,
+    mensaje: `${data.workerNombre} se movió fuera del radio asignado en ${data.siteNombre ?? "sitio"}.`,
     urgente: true,
     destinatarios: ["_admins", data.workerId],
     attendanceId: data.attendanceId,
+  });
+}
+
+export async function notifyReentradaGeocerca(data: {
+  workerId: string;
+  workerNombre: string;
+  siteNombre?: string;
+  attendanceId: string;
+}): Promise<void> {
+  await sendNotification({
+    tipo: "reentrada_geocerca",
+    titulo: "Re-entrada al sitio",
+    mensaje: `${data.workerNombre} volvió al área asignada en ${data.siteNombre ?? "sitio"}.`,
+    destinatarios: ["_admins", data.workerId],
+    attendanceId: data.attendanceId,
+  });
+}
+
+export async function notifyReporteTrabajador(data: {
+  workerId: string;
+  workerNombre: string;
+  siteNombre?: string;
+  tipo: string;
+  mensaje: string;
+  reporteId: string;
+}): Promise<void> {
+  await sendNotification({
+    tipo: "reporte_trabajador",
+    titulo: `Reporte: ${data.tipo}`,
+    mensaje: `${data.workerNombre}${data.siteNombre ? ` (${data.siteNombre})` : ""}: ${data.mensaje}`,
+    urgente: true,
+    destinatarios: ["_admins"],
+    actorUid: data.workerId,
+    actorNombre: data.workerNombre,
   });
 }
 
@@ -315,7 +467,7 @@ export async function processDueBreakReminders(
       shiftId: b.shiftId,
     });
 
-    if (DEMO_MODE) {
+    if (isDemoMode()) {
       demoStore.markBreakNotified(b.id);
     } else {
       await updateDoc(doc(getFirestoreDb(), "breaks", b.id), { notificado: true });

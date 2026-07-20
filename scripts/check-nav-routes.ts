@@ -7,11 +7,11 @@ const ADMIN_ROUTES = new Set([
   "/panel", "/clientes", "/facturacion", "/inventario", "/integraciones",
   "/supervision", "/personal", "/operacion", "/turnos", "/cuentas", "/qr-sitios", "/mapa",
   "/reportes", "/notificaciones", "/nomina", "/configuracion", "/pendientes",
-  "/comunicacion", "/descargas", "/ayuda",
+  "/comunicacion", "/informes", "/descargas", "/ayuda",
 ]);
 
 const MASTER_ROUTES = new Set([
-  "/master", "/master/administradores", "/master/informes", "/master/auditoria", "/master/ayuda",
+  "/master", "/master/administradores", "/master/roles", "/master/informes", "/master/auditoria", "/master/ayuda",
 ]);
 
 const WORKER_ROUTES = new Set([
