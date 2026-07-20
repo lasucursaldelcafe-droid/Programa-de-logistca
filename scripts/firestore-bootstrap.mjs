@@ -203,13 +203,14 @@ async function main() {
     docId: uid,
     data: {
       email: ADMIN_EMAIL,
-      nombre: "La Sucursal del Café",
-      role: "administrador",
+      nombre: "CEO — Dirección general",
+      role: "ceo",
       workerId: null,
       perfilCompleto: true,
+      habilitado: true,
     },
   });
-  console.log(`  + users/${uid} creado/actualizado`);
+  console.log(`  + users/${uid} creado/actualizado (CEO)`);
 
   await upsertFirestoreDocument({
     accessToken,

@@ -11,10 +11,16 @@ service cloud.firestore {
       return userDoc().data.role;
     }
     function isMaster() {
+      // ceo / master_app (nuevos) + super_admin (legacy)
       return signedIn() && role() in ['ceo', 'master_app', 'super_admin'];
     }
     function isPlatformAdmin() {
-      return signedIn() && role() in ['administrador', 'recursos_humanos', 'contador', 'supervisor_sitio'];
+      return signedIn() && role() in [
+        'administrador',
+        'recursos_humanos',
+        'contador',
+        'supervisor_sitio',
+      ];
     }
     function isFinanceAdmin() {
       return signedIn() && role() in ['contador', 'administrador'];
@@ -45,9 +51,14 @@ service cloud.firestore {
         || (signedIn()
           && request.auth.uid == userId
           && request.auth.token.email == 'lasucursaldelcafe@gmail.com'
-          && request.resource.data.role == 'administrador'
+          && request.resource.data.role in ['ceo', 'administrador']
           && request.resource.data.email == request.auth.token.email);
       allow update: if isAdmin()
+        || (signedIn()
+          && request.auth.uid == userId
+          && request.auth.token.email == 'lasucursaldelcafe@gmail.com'
+          && request.resource.data.role == 'ceo'
+          && request.resource.data.email == request.auth.token.email)
         || (signedIn()
           && request.auth.uid == userId
           && request.resource.data.role == resource.data.role
