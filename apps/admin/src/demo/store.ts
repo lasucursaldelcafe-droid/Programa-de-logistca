@@ -51,7 +51,7 @@ export const DEMO_ACCOUNTS: Array<{
     user: {
       uid: "demo-ceo",
       email: "ceo@eventos.test",
-      nombre: "CEO — Propietario",
+      nombre: "CEO — Dirección general",
       role: "ceo",
       perfilCompleto: true,
       habilitado: true,

@@ -185,6 +185,7 @@ const ADMIN_FULL: SpePermission[] = [
   "ver_inventario",
 ];
 
+/** Supervisor: operación en sitio — sin finanzas ni configuración global. */
 const SUPERVISOR_DEFAULT: SpePermission[] = [
   "dashboard_operativo",
   "gestionar_personal",
@@ -194,14 +195,9 @@ const SUPERVISOR_DEFAULT: SpePermission[] = [
   "ver_supervision",
   "enviar_emergencia",
   "ver_notificaciones",
-  "ver_nomina",
   "ver_reportes_trabajadores",
-  "ver_integraciones",
   "usar_comunicacion",
   "ver_informes_evento",
-  "gestionar_clientes",
-  "gestionar_facturacion",
-  "ver_inventario",
 ];
 
 const TRABAJADOR_DEFAULT: SpePermission[] = [

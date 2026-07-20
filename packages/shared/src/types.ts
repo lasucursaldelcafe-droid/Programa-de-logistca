@@ -332,12 +332,12 @@ export const SHIFT_LABEL: Record<ShiftEstado, string> = {
 };
 
 export const ROLE_LABEL: Record<UserRole, string> = {
-  ceo: "CEO — Propietario",
+  ceo: "CEO — Dirección general",
   master_app: "Master App — Plataforma",
   super_admin: "Master App — Plataforma",
-  administrador: "Administrador operativo",
+  administrador: "Administrador de operaciones",
   recursos_humanos: "Recursos Humanos",
-  contador: "Contador / Finanzas",
+  contador: "Contabilidad y finanzas",
   supervisor_sitio: "Supervisor de campo",
   trabajador: "Empleado de campo",
 };
