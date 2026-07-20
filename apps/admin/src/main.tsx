@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, HashRouter } from "react-router-dom";
-import { bootstrapRuntimeConfig, configureFirebase } from "@spe/shared";
+import { bootstrapRuntimeConfig, configureFirebase, purgeLegacyClientStorage } from "@spe/shared";
 import { AuthProvider } from "./contexts/AuthContext";
 import { App } from "./App";
 import { isElectron, isNativePlatform } from "./lib/platform";
@@ -26,6 +26,7 @@ const Router = isElectron() || isNativePlatform() ? HashRouter : BrowserRouter;
 const routerProps = isElectron() || isNativePlatform() ? {} : { basename: import.meta.env.BASE_URL };
 
 async function boot() {
+  purgeLegacyClientStorage();
   await bootstrapRuntimeConfig(import.meta.env.BASE_URL, buildEnv);
 
   createRoot(document.getElementById("root")!).render(

@@ -10,7 +10,9 @@ export function getGoogleMapsApiKey(): string {
 
   if (typeof window !== "undefined") {
     try {
-      const raw = localStorage.getItem("spe-runtime-config-v1");
+      const raw =
+        localStorage.getItem("spe-runtime-config-v2") ??
+        localStorage.getItem("spe-runtime-config-v1");
       if (raw) {
         const parsed = JSON.parse(raw) as { googleMapsApiKey?: string };
         const fromStored = parsed.googleMapsApiKey?.trim();

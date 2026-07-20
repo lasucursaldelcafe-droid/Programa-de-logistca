@@ -17,6 +17,29 @@
     />
   </head>
   <body>
+    <script>
+      (function () {
+        var BUILD = "firebase-2026-07-20";
+        var keys = [
+          "spe-runtime-config-v1",
+          "spe-demo-store-v1",
+          "spe-demo-integrations-v1",
+        ];
+        try {
+          if (localStorage.getItem("spe-build-id") !== BUILD) {
+            keys.forEach(function (k) {
+              localStorage.removeItem(k);
+            });
+            sessionStorage.removeItem("spe-sheets-session");
+            localStorage.setItem("spe-build-id", BUILD);
+            if (!sessionStorage.getItem("spe-build-reloaded")) {
+              sessionStorage.setItem("spe-build-reloaded", "1");
+              location.reload();
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

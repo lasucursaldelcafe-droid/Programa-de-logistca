@@ -15,7 +15,37 @@ export interface RuntimeBootstrapConfig {
   };
 }
 
-const STORAGE_KEY = "spe-runtime-config-v1";
+const STORAGE_KEY = "spe-runtime-config-v2";
+const LEGACY_STORAGE_KEYS = [
+  "spe-runtime-config-v1",
+  "spe-demo-store-v1",
+  "spe-demo-integrations-v1",
+  "spe-sidebar-sections-v1",
+] as const;
+
+const LEGACY_SESSION_KEYS = ["spe-sheets-session"] as const;
+
+/** Elimina config Sheets/demo guardada en navegadores con builds anteriores. */
+export function purgeLegacyClientStorage(): void {
+  if (typeof window === "undefined") return;
+  try {
+    for (const key of LEGACY_STORAGE_KEYS) {
+      localStorage.removeItem(key);
+    }
+    for (const key of LEGACY_SESSION_KEYS) {
+      sessionStorage.removeItem(key);
+    }
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as { backend?: string; demoMode?: boolean };
+      if (parsed.backend === "sheets" || parsed.backend === "demo" || parsed.demoMode === true) {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+}
 
 interface RuntimeState {
   backend: EffectiveBackend | null;
@@ -140,6 +170,7 @@ export async function bootstrapRuntimeConfig(
   } = {},
 ): Promise<void> {
   void buildEnv;
+  purgeLegacyClientStorage();
   runtime.backend = "firebase";
 
   const stored = loadStored();
