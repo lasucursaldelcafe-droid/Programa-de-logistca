@@ -52,6 +52,7 @@
     "setup:cursor-key": "node scripts/push-cursor-secret.mjs",
     "setup:firebase-token": "node scripts/push-firebase-token.mjs",
     "firestore:bootstrap": "node scripts/firestore-bootstrap.mjs",
+    "verify:prod-login": "node scripts/verify-prod-login.mjs",
     "fix:sheets-token": "node scripts/fix-sheets-token.mjs",
     "setup:fcm": "tsx scripts/update-fcm-sw.ts",
     "firebase:deploy-rules": "firebase deploy --only firestore:rules",

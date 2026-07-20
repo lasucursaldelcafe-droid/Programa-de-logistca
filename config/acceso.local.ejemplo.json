@@ -3,7 +3,8 @@
   "produccion": {
     "url": "https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/login",
     "email": "lasucursaldelcafe@gmail.com",
-    "password": "PON_AQUI_LA_CONTRASEÑA_QUE_DEFINISTE_EN_SEED",
+    "password": "SpeAdmin2026!",
+    "passwordNota": "Contraseña genérica — cámbiala en Firebase Console o en Cuentas → Mi contraseña",
     "role": "administrador"
   },
   "local_emuladores": {
