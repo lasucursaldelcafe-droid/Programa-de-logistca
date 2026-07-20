@@ -25,6 +25,7 @@ export const SPA_MIRROR_ROUTES: readonly string[] = [
   "descargas",
   "pendientes",
   "supervision",
+  "comunicacion",
   "master",
   "master/administradores",
   "master/informes",
@@ -34,6 +35,7 @@ export const SPA_MIRROR_ROUTES: readonly string[] = [
   "worker/turnos",
   "worker/entrada",
   "worker/reportar",
+  "worker/comunicacion",
   "worker/notificaciones",
   "worker/ayuda",
 ] as const;

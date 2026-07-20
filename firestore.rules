@@ -164,5 +164,17 @@ service cloud.firestore {
       allow update: if isPlatformAdmin() || isMaster();
       allow delete: if isMaster();
     }
+
+    match /chatMessages/{messageId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.senderUid == request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 2000
+        && request.resource.data.channelId is string
+        && request.resource.data.createdAt is string;
+      allow update, delete: if isAdmin();
+    }
   }
 }

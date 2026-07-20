@@ -244,6 +244,19 @@ export interface BreakSchedule {
   notificado: boolean;
 }
 
+/** Mensaje del chat interno del equipo (Firestore). */
+export interface ChatMessage {
+  id: string;
+  channelId: string;
+  channelLabel: string;
+  text: string;
+  senderUid: string;
+  senderNombre: string;
+  senderRole: UserRole | string;
+  eventId?: string | null;
+  createdAt: string;
+}
+
 export const REPORTE_TIPO_LABEL: Record<ReporteTipo, string> = {
   retraso: "Retraso / llegada tarde",
   incidente: "Incidente en sitio",
