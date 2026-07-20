@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
+  ROLE_LABEL,
   attendanceBySiteBars,
   buildDashboardKpis,
   buildSiteBreakdown,
@@ -8,7 +9,10 @@ import {
   notificationsToActivity,
   payrollStatusBars,
   puedeGestionarConfiguracion,
+  puedeGestionarPersonal,
   puedeVerDashboardOperativo,
+  puedeVerNomina,
+  resumenRol,
   shiftStatusBars,
   workerStatusBars,
 } from "@spe/shared";
@@ -130,21 +134,50 @@ export function HomePage() {
     <div className="space-y-5">
       {user && puedeGestionarConfiguracion(user.role) && <SetupBanner />}
       <div className="spe-glass overflow-hidden rounded-2xl p-5 sm:p-6">
-        <p className="text-xs font-semibold uppercase tracking-wider text-accent">Panel operativo</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-accent">
+          {ROLE_LABEL[user.role]}
+        </p>
         <h2 className="mt-1 font-display text-2xl font-bold tracking-tight">
           Hola, {user.nombre.split(" ")[0]}
         </h2>
-        <p className="mt-2 max-w-2xl text-sm text-neutral-400">
-          Sigue el flujo:{" "}
-          <Link to="/configuracion" className="text-accent hover:underline">
-            crear evento
-          </Link>
-          , registrar personal, invitar cuentas y asignar turnos. El mapa GPS vive en{" "}
-          <Link to="/operacion?tab=supervision" className="text-accent hover:underline">
-            Supervisión del evento
-          </Link>
-          .
-        </p>
+        <p className="mt-2 max-w-2xl text-sm text-neutral-400">{resumenRol(user.role)}</p>
+        {puedeGestionarConfiguracion(user.role) ? (
+          <p className="mt-2 max-w-2xl text-sm text-neutral-500">
+            Flujo:{" "}
+            <Link to="/configuracion" className="text-accent hover:underline">
+              crear evento
+            </Link>
+            , registrar personal, invitar cuentas y asignar turnos. Mapa GPS en{" "}
+            <Link to="/operacion?tab=supervision" className="text-accent hover:underline">
+              Supervisión
+            </Link>
+            .
+          </p>
+        ) : puedeGestionarPersonal(user.role) ? (
+          <p className="mt-2 max-w-2xl text-sm text-neutral-500">
+            Empieza en{" "}
+            <Link to="/personal" className="text-accent hover:underline">
+              Personal de campo
+            </Link>{" "}
+            o revisa{" "}
+            <Link to="/turnos" className="text-accent hover:underline">
+              Turnos
+            </Link>
+            .
+          </p>
+        ) : puedeVerNomina(user.role) ? (
+          <p className="mt-2 max-w-2xl text-sm text-neutral-500">
+            Ve a{" "}
+            <Link to="/nomina" className="text-accent hover:underline">
+              Nómina
+            </Link>{" "}
+            o{" "}
+            <Link to="/negocio" className="text-accent hover:underline">
+              Clientes e inventario
+            </Link>
+            .
+          </p>
+        ) : null}
       </div>
       {puedeFlujo && (
         <EventFlowGuide completedStepIds={flowCompletedIds} title="Tu flujo de trabajo" />

@@ -30,7 +30,7 @@ const USERS: SeedUser[] = [
   {
     email: "ceo@eventos.test",
     password: "Ceo123!",
-    nombre: "CEO — Propietario",
+    nombre: "CEO — Dirección general",
     role: "ceo",
   },
   {

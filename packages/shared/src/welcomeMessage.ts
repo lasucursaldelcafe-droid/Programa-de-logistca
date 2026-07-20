@@ -10,31 +10,31 @@ export interface WelcomeContent {
 
 const WELCOME_BY_ROLE: Record<UserRole, Omit<WelcomeContent, "saludo">> = {
   ceo: {
-    titulo: "Bienvenido, CEO",
+    titulo: "Bienvenido, CEO — Dirección general",
     mensaje:
-      "Lideras la visión del negocio. Desde aquí creas el equipo administrativo y defines quién opera cada área.",
+      "Eres una de las dos cuentas raíz. Desde aquí creas el equipo administrativo; cada persona verá solo lo de su rol.",
     puntos: [
-      "Crea cuentas de Administrador, Recursos Humanos y Contador desde Equipo.",
-      "Define roles y puestos para que cada persona vea solo lo que necesita.",
-      "Delega la operación diaria sin perder el control estratégico.",
+      "Ve a Equipo administrativo y crea Administrador, Recursos Humanos y Contabilidad.",
+      "Define roles y puestos para acotar lo que ve cada persona.",
+      "Delega la operación diaria al Administrador de operaciones.",
     ],
-    cierre: "Tu criterio guía la organización. Siempre esperamos lo mejor de ti.",
+    cierre: "Tu criterio guía la organización.",
   },
   master_app: {
-    titulo: "Bienvenido a Master App",
+    titulo: "Bienvenido, Master App — Plataforma",
     mensaje:
-      "Gestionas la plataforma SPE: cuentas, roles, auditoría e informes globales. Eres el punto de partida técnico del sistema.",
+      "Eres la otra cuenta raíz. Configuras la plataforma, roles e informes globales, y das de alta el primer equipo.",
     puntos: [
-      "Crea las cuentas iniciales del equipo administrativo.",
-      "Importa plantillas de puestos y permisos desde Roles.",
-      "Supervisa la salud general de la plataforma.",
+      "Crea las cuentas iniciales en Equipo administrativo.",
+      "Importa plantillas de puestos desde Roles y puestos.",
+      "Supervisa auditoría e informes globales.",
     ],
     cierre: "Confiamos en tu criterio técnico y operativo.",
   },
   super_admin: {
-    titulo: "Bienvenido a Master App",
+    titulo: "Bienvenido, Master App — Plataforma",
     mensaje:
-      "Gestionas la plataforma SPE: cuentas, roles, auditoría e informes globales.",
+      "Gestionas la plataforma: cuentas, roles, auditoría e informes globales.",
     puntos: [
       "Crea las cuentas iniciales del equipo administrativo.",
       "Importa plantillas de puestos desde Roles.",
@@ -42,42 +42,42 @@ const WELCOME_BY_ROLE: Record<UserRole, Omit<WelcomeContent, "saludo">> = {
     cierre: "Confiamos en tu criterio.",
   },
   administrador: {
-    titulo: "Bienvenido, administrador operativo",
+    titulo: "Bienvenido, Administrador de operaciones",
     mensaje:
-      "Eres el eje de la operación: configuras eventos, sitios, turnos y equipos. Tu liderazgo define la experiencia en campo.",
+      "Diriges el evento: configuración, personal, supervisión y cierre. Puedes crear cuentas de RH y Contabilidad.",
     puntos: [
       "Completa la configuración del evento antes de abrir turnos.",
-      "Registra personal y asigna supervisores con claridad.",
-      "Supervisa entradas, geocerca y reportes desde el panel en vivo.",
+      "Registra personal de campo y asigna supervisores.",
+      "Supervisa entradas, geocerca y reportes en vivo.",
     ],
     cierre: "Gracias por liderar con orden y humanidad.",
   },
   recursos_humanos: {
     titulo: "Bienvenido, Recursos Humanos",
     mensaje:
-      "Cuidas el talento: altas, cuentas, turnos e invitaciones. Tu trabajo conecta a las personas con la operación.",
+      "Gestionas altas, invitaciones y turnos del personal. No verás nómina ni configuración de eventos.",
     puntos: [
-      "Registra trabajadores y supervisores con sus credenciales.",
+      "Registra supervisores y empleados de campo con sus credenciales.",
       "Gestiona invitaciones y accesos del equipo.",
-      "Coordina con administración cualquier novedad de personal.",
+      "Coordina turnos y comunicación con la operación.",
     ],
     cierre: "Tu trabajo humano marca la diferencia en cada evento.",
   },
   contador: {
-    titulo: "Bienvenido, Contador",
+    titulo: "Bienvenido, Contabilidad y finanzas",
     mensaje:
-      "Supervisas la parte financiera: nómina, facturación, clientes e inventario. Tu precisión sostiene la operación.",
+      "Tu menú es financiero: nómina, clientes, facturación e inventario. No creas personal ni eventos.",
     puntos: [
       "Revisa y calcula nómina al cierre del evento.",
       "Consulta facturación, cartera e inventario.",
-      "Exporta informes para contabilidad y cumplimiento.",
+      "Usa los informes para contabilidad y cumplimiento.",
     ],
     cierre: "Gracias por el rigor y la claridad en los números.",
   },
   supervisor_sitio: {
-    titulo: "Bienvenido, supervisor de campo",
+    titulo: "Bienvenido, Supervisor de campo",
     mensaje:
-      "Eres los ojos y la voz en terreno. Tu presencia garantiza calidad, puntualidad y seguridad en el sitio.",
+      "Coordina el sitio en vivo: mapa, turnos, QR y reportes. Puedes dar de alta empleados de campo.",
     puntos: [
       "Verifica que el personal marque entrada con QR.",
       "Atiende alertas de geocerca y reportes con prontitud.",
@@ -86,9 +86,9 @@ const WELCOME_BY_ROLE: Record<UserRole, Omit<WelcomeContent, "saludo">> = {
     cierre: "Tu liderazgo en sitio marca la diferencia.",
   },
   trabajador: {
-    titulo: "¡Bienvenido al equipo!",
+    titulo: "¡Bienvenido, Empleado de campo!",
     mensaje:
-      "Formas parte de una operación donde cada persona cuenta. Tu puntualidad y compromiso hacen posible un evento impecable.",
+      "Tu app es de campo: turnos, escanear QR, reportar y chat. No tienes acceso a la consola administrativa.",
     puntos: [
       "Confirma tus turnos y llega a tiempo al sitio indicado.",
       "Marca entrada escaneando el QR.",

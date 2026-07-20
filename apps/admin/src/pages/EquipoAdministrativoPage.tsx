@@ -1,8 +1,11 @@
 import { useMemo, useState } from "react";
 import {
+  JERARQUIA_CUENTAS,
+  ROLE_CATALOG,
   ROLE_LABEL,
   puedeCrearCuentasPlataforma,
   rolesCuentaPlataforma,
+  resumenRol,
   type UserRole,
 } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
@@ -47,7 +50,7 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
       <PermissionDenied
         role={user?.role}
         title="Sin permiso para crear cuentas administrativas"
-        description="Solo CEO, Master App o Administrador pueden crear cuentas de equipo administrativo."
+        description="Solo CEO, Master App o Administrador de operaciones pueden crear estas cuentas."
       />
     );
   }
@@ -61,7 +64,7 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
     try {
       await createPlatformAccount(form, user);
       setMensaje(
-        `Cuenta «${form.nombre.trim()}» creada (${ROLE_LABEL[form.role]}). El usuario puede iniciar sesión con ${form.email.trim()}.`,
+        `Cuenta «${form.nombre.trim()}» creada (${ROLE_LABEL[form.role]}). Puede iniciar sesión con ${form.email.trim()}.`,
       );
       setForm({
         nombre: "",
@@ -76,39 +79,43 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
     }
   }
 
-  const titulo = variant === "master" ? "Equipo administrativo" : "Equipo administrativo";
   const descripcion =
     variant === "master"
-      ? "Como cuenta raíz (CEO o Master App), crea Administrador, Recursos Humanos y Contador. Ellos podrán crear más cuentas según su rol."
-      : "Crea cuentas para Recursos Humanos y Contador. El personal de campo se registra en Personal de campo.";
+      ? "Al inicio solo existen CEO y Master App. Desde aquí creas el equipo administrativo; cada rol verá solo su área."
+      : "Crea cuentas de Recursos Humanos y Contabilidad. El personal de campo se registra en Personal de campo.";
 
   return (
     <div className="space-y-8">
-      <PageHeader title={titulo} description={descripcion} />
+      <PageHeader title="Equipo administrativo" description={descripcion} />
 
       <Card className="border-accent/20 bg-accent/5">
-        <h2 className="font-display text-lg font-semibold">Jerarquía de cuentas</h2>
-        <ol className="mt-3 space-y-2 text-sm text-neutral-300">
-          <li>
-            <strong className="text-accent">CEO / Master App</strong> → crea Administrador, RH, Contador
-          </li>
-          <li>
-            <strong className="text-neutral-200">Administrador</strong> → crea RH, Contador y personal de
-            campo
-          </li>
-          <li>
-            <strong className="text-neutral-200">Recursos Humanos</strong> → registra supervisores y
-            empleados
-          </li>
-          <li>
-            <strong className="text-neutral-200">Contador</strong> → ve nómina, facturación e inventario
-            (sin crear cuentas)
-          </li>
-          <li>
-            <strong className="text-neutral-200">Supervisor / Empleado</strong> → app de campo
-          </li>
+        <h2 className="font-display text-lg font-semibold">Cómo se crean las cuentas</h2>
+        <ol className="mt-3 space-y-3 text-sm text-neutral-300">
+          {JERARQUIA_CUENTAS.map((paso) => (
+            <li key={paso.titulo}>
+              <strong className="text-neutral-100">{paso.titulo}</strong>
+              <p className="mt-0.5 text-neutral-400">{paso.detalle}</p>
+            </li>
+          ))}
         </ol>
       </Card>
+
+      {rolesDisponibles.length > 0 && (
+        <Card>
+          <h2 className="font-display text-lg font-semibold">Roles que puedes crear ahora</h2>
+          <ul className="mt-3 space-y-2 text-sm">
+            {rolesDisponibles.map((rol) => (
+              <li key={rol} className="rounded-lg border border-border bg-bg px-3 py-2">
+                <span className="font-medium text-accent">{ROLE_LABEL[rol]}</span>
+                <span className="mt-0.5 block text-neutral-400">{resumenRol(rol)}</span>
+                <span className="mt-1 block text-xs text-neutral-500">
+                  Ve: {ROLE_CATALOG[rol].puedeVer.slice(0, 3).join(" · ")}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {error && (
         <p className="rounded-lg bg-alert/10 px-3 py-2 text-sm text-alert">{error}</p>
@@ -163,6 +170,9 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
                 </option>
               ))}
             </select>
+            {form.role && (
+              <p className="mt-1 text-xs text-neutral-500">{resumenRol(form.role)}</p>
+            )}
           </label>
           <div className="sm:col-span-2">
             <button
@@ -194,6 +204,7 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
                 <div>
                   <div className="font-medium">{u.nombre}</div>
                   <div className="font-mono text-xs text-neutral-500">{u.email}</div>
+                  <div className="mt-1 text-xs text-neutral-500">{resumenRol(u.role)}</div>
                 </div>
                 <span className="rounded-full bg-neutral-800 px-3 py-1 text-xs">
                   {ROLE_LABEL[u.role]}

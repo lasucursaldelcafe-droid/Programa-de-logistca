@@ -9,6 +9,7 @@ export * from "./platforms";
 export * from "./business";
 export * from "./invitations";
 export * from "./accounts";
+export * from "./roleCatalog";
 export * from "./paths";
 export * from "./sheetsClient";
 export * from "./sheetsSession";

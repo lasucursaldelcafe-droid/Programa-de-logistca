@@ -35,7 +35,7 @@ export function MasterHomePage() {
     <div className="space-y-8">
       <PageHeader
         title="Resumen"
-        description="Vista global — empieza creando el equipo administrativo y los roles"
+        description="Cuentas raíz (CEO / Master App): crea el equipo administrativo; cada rol verá solo su área"
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -45,8 +45,8 @@ export function MasterHomePage() {
             <p className="mt-2 text-3xl font-bold">{equipoAdmin.length}</p>
             <p className="mt-1 text-sm text-neutral-400">
               {equipoAdmin.length === 0
-                ? "Crea Administrador, RH y Contador"
-                : "Administrador, RH, Contador…"}
+                ? "Crea Administrador, Recursos Humanos y Contabilidad"
+                : "Administrador · RR. HH. · Contabilidad"}
             </p>
             <span className="mt-3 inline-block text-sm text-accent underline">Crear cuentas →</span>
           </Card>

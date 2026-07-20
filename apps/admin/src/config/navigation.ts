@@ -1,5 +1,6 @@
 import type { UserRole } from "@spe/shared";
 import {
+  normalizeUserRole,
   puedeConfigurarIntegraciones,
   puedeCrearCuentasPlataforma,
   puedeGestionarClientes,
@@ -39,11 +40,14 @@ const can = {
   operacion: (r: UserRole) => puedeGestionarTurnos(r),
   mapa: (r: UserRole) => puedeVerMapaEnVivo(r),
   reportes: (r: UserRole) => puedeVerReportesTrabajadores(r),
+  informes: (r: UserRole) => puedeVerInformesEvento(r) || puedeVerReportesTrabajadores(r),
   nomina: (r: UserRole) => puedeVerNomina(r),
   config: (r: UserRole) => puedeGestionarConfiguracion(r),
   clientes: (r: UserRole) => puedeGestionarClientes(r),
   facturacion: (r: UserRole) => puedeGestionarFacturacion(r),
   inventario: (r: UserRole) => puedeVerInventario(r),
+  negocio: (r: UserRole) =>
+    puedeGestionarClientes(r) || puedeGestionarFacturacion(r) || puedeVerInventario(r),
   integraciones: (r: UserRole) =>
     puedeConfigurarIntegraciones(r) || puedeVerIntegraciones(r),
 };
@@ -74,10 +78,10 @@ const ADMIN_GATES: Record<string, (r: UserRole) => boolean> = {
   "/turnos": can.operacion,
   "/comunicacion": can.operacion,
   "/reportes": can.reportes,
-  "/informes": can.reportes,
+  "/informes": can.informes,
   "/qr-sitios": can.qr,
   "/nomina": can.nomina,
-  "/negocio": (r) => can.clientes(r) || can.facturacion(r) || can.inventario(r),
+  "/negocio": can.negocio,
   "/clientes": can.clientes,
   "/facturacion": can.facturacion,
   "/inventario": can.inventario,
@@ -87,12 +91,29 @@ const ADMIN_GATES: Record<string, (r: UserRole) => boolean> = {
   "/pendientes": can.config,
 };
 
-export function getAdminNavSections(role: UserRole): NavSection[] {
-  const sections: NavSection[] = [
+const SISTEMA_COMUN = (role: UserRole): NavSection => ({
+  id: "sistema",
+  title: "Sistema",
+  items: [
+    { to: "/notificaciones", label: "Notificaciones", icon: "mail" },
+    { to: "/pendientes", label: "Config. pendiente", icon: "list" },
+    {
+      to: "/integraciones",
+      label: puedeConfigurarIntegraciones(role) ? "APIs" : "Integraciones",
+      icon: "plug",
+    },
+    { to: "/descargas", label: "Descargas", icon: "download" },
+    { to: "/ayuda", label: "Ayuda", icon: "help" },
+  ],
+});
+
+/** Menú del Administrador de operaciones — flujo completo del evento. */
+function navAdministrador(role: UserRole): NavSection[] {
+  return [
     {
       id: "inicio",
       title: "Inicio",
-      items: [{ to: "/panel", label: "Resumen", icon: "grid", end: true }],
+      items: [{ to: "/panel", label: "Resumen operativo", icon: "grid", end: true }],
     },
     {
       id: "preparar",
@@ -119,31 +140,124 @@ export function getAdminNavSections(role: UserRole): NavSection[] {
     },
     {
       id: "cerrar",
-      title: "Cierre",
-      items: [{ to: "/nomina", label: "Nómina", icon: "wallet" }],
-    },
-    {
-      id: "negocio",
-      title: "Negocio",
-      items: [{ to: "/negocio", label: "Clientes e inventario", icon: "building" }],
-    },
-    {
-      id: "sistema",
-      title: "Sistema",
+      title: "Cierre y negocio",
       items: [
-        { to: "/notificaciones", label: "Notificaciones", icon: "mail" },
-        { to: "/pendientes", label: "Config. pendiente", icon: "list" },
-        {
-          to: "/integraciones",
-          label: puedeConfigurarIntegraciones(role) ? "APIs" : "Integraciones",
-          icon: "plug",
-        },
-        { to: "/descargas", label: "Descargas", icon: "download" },
-        { to: "/ayuda", label: "Ayuda", icon: "help" },
+        { to: "/nomina", label: "Nómina", icon: "wallet" },
+        { to: "/negocio", label: "Clientes e inventario", icon: "building" },
       ],
     },
+    SISTEMA_COMUN(role),
   ];
+}
 
+/** Menú de Recursos Humanos — personas, turnos e invitaciones. */
+function navRecursosHumanos(role: UserRole): NavSection[] {
+  return [
+    {
+      id: "inicio",
+      title: "Inicio",
+      items: [{ to: "/panel", label: "Resumen de personal", icon: "grid", end: true }],
+    },
+    {
+      id: "personas",
+      title: "Gestión de personal",
+      items: [
+        { to: "/personal", label: "Personal de campo", icon: "users" },
+        { to: "/cuentas", label: "Invitaciones", icon: "mail" },
+        { to: "/turnos", label: "Turnos", icon: "calendar" },
+        { to: "/comunicacion", label: "Comunicación", icon: "message" },
+      ],
+    },
+    {
+      id: "seguimiento",
+      title: "Seguimiento",
+      items: [
+        { to: "/informes", label: "Informes", icon: "chart" },
+        { to: "/reportes", label: "Reportes", icon: "flag" },
+      ],
+    },
+    SISTEMA_COMUN(role),
+  ];
+}
+
+/** Menú de Contabilidad — números, nómina y cartera. */
+function navContabilidad(role: UserRole): NavSection[] {
+  return [
+    {
+      id: "inicio",
+      title: "Inicio",
+      items: [{ to: "/panel", label: "Resumen financiero", icon: "grid", end: true }],
+    },
+    {
+      id: "finanzas",
+      title: "Finanzas",
+      items: [
+        { to: "/nomina", label: "Nómina", icon: "wallet" },
+        { to: "/negocio", label: "Clientes e inventario", icon: "building" },
+        { to: "/informes", label: "Informes", icon: "chart" },
+      ],
+    },
+    SISTEMA_COMUN(role),
+  ];
+}
+
+/** Menú del Supervisor de campo — sitio en vivo. */
+function navSupervisor(role: UserRole): NavSection[] {
+  return [
+    {
+      id: "inicio",
+      title: "Inicio",
+      items: [{ to: "/panel", label: "Resumen en sitio", icon: "grid", end: true }],
+    },
+    {
+      id: "campo",
+      title: "Operación en sitio",
+      items: [
+        { to: "/operacion?tab=supervision", label: "Supervisión y mapa", icon: "map" },
+        { to: "/turnos", label: "Turnos", icon: "calendar" },
+        { to: "/qr-sitios", label: "QR y sitios", icon: "qr" },
+        { to: "/comunicacion", label: "Comunicación", icon: "message" },
+        { to: "/personal", label: "Personal de campo", icon: "users" },
+      ],
+    },
+    {
+      id: "seguimiento",
+      title: "Seguimiento",
+      items: [
+        { to: "/informes", label: "Informes", icon: "chart" },
+        { to: "/reportes", label: "Reportes", icon: "flag" },
+      ],
+    },
+    SISTEMA_COMUN(role),
+  ];
+}
+
+/**
+ * Navegación de consola admin filtrada por rol.
+ * Cada rol ve secciones y etiquetas propias (no el mismo menú con ítems ocultos).
+ */
+export function getAdminNavSections(role: UserRole): NavSection[] {
+  const r = normalizeUserRole(role);
+  let sections: NavSection[];
+  switch (r) {
+    case "recursos_humanos":
+      sections = navRecursosHumanos(role);
+      break;
+    case "contador":
+      sections = navContabilidad(role);
+      break;
+    case "supervisor_sitio":
+      sections = navSupervisor(role);
+      break;
+    case "administrador":
+    case "ceo":
+    case "master_app":
+    case "super_admin":
+    case "trabajador":
+    default:
+      sections = navAdministrador(role);
+      break;
+  }
   return filterSections(sections, role, ADMIN_GATES);
 }
 
@@ -151,12 +265,12 @@ export function getMasterNavSections(): NavSection[] {
   return [
     {
       id: "plataforma",
-      title: "Plataforma",
+      title: "Dirección de plataforma",
       items: [
         { to: "/master", label: "Resumen", icon: "grid", end: true },
         { to: "/master/administradores", label: "Equipo administrativo", icon: "shield" },
         { to: "/master/roles", label: "Roles y puestos", icon: "users" },
-        { to: "/master/informes", label: "Informes", icon: "chart" },
+        { to: "/master/informes", label: "Informes globales", icon: "chart" },
         { to: "/master/auditoria", label: "Auditoría", icon: "audit" },
         { to: "/master/ayuda", label: "Ayuda", icon: "help" },
       ],
@@ -175,8 +289,8 @@ export function getWorkerNavItems(): NavLinkItem[] {
 export function getWorkerBottomNavItems(): NavLinkItem[] {
   return [
     { to: "/worker", label: "Inicio", icon: "grid", end: true },
-    { to: "/worker/turnos", label: "Turnos", icon: "calendar" },
-    { to: "/worker/entrada", label: "Escanear", icon: "qr" },
+    { to: "/worker/turnos", label: "Mis turnos", icon: "calendar" },
+    { to: "/worker/entrada", label: "Escanear QR", icon: "qr" },
     { to: "/worker/reportar", label: "Reportar", icon: "flag" },
     { to: "/worker/comunicacion", label: "Chat", icon: "message" },
   ];
