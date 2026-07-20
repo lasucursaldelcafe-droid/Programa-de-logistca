@@ -294,6 +294,11 @@ class DemoStore {
     this.notify();
   }
 
+  removeShift(id: string): void {
+    this.shifts = this.shifts.filter((s) => s.id !== id);
+    this.notify();
+  }
+
   getInvitation(token: string): Invitation | null {
     return this.invitations.find((i) => i.token === token) ?? null;
   }

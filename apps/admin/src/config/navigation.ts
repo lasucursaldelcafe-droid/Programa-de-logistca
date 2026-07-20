@@ -5,6 +5,7 @@ import {
   puedeGestionarCuentas,
   puedeGestionarPersonal,
   puedeGestionarQr,
+  puedeGestionarTurnos,
   puedeVerMapaEnVivo,
   puedeVerNomina,
   puedeVerReportesTrabajadores,
@@ -31,6 +32,7 @@ const can = {
   personal: (r: UserRole) => puedeGestionarPersonal(r),
   cuentas: (r: UserRole) => puedeGestionarCuentas(r),
   qr: (r: UserRole) => puedeGestionarQr(r),
+  operacion: (r: UserRole) => puedeGestionarTurnos(r),
   mapa: (r: UserRole) => puedeVerMapaEnVivo(r),
   reportes: (r: UserRole) => puedeVerReportesTrabajadores(r),
   nomina: (r: UserRole) => puedeVerNomina(r),
@@ -52,6 +54,8 @@ function filterSections(sections: NavSection[], role: UserRole, gates: Record<st
 
 const ADMIN_GATES: Record<string, (r: UserRole) => boolean> = {
   "/personal": can.personal,
+  "/operacion": can.operacion,
+  "/turnos": can.operacion,
   "/cuentas": can.cuentas,
   "/clientes": can.personal,
   "/facturacion": can.personal,
@@ -76,6 +80,7 @@ export function getAdminNavSections(role: UserRole): NavSection[] {
       id: "operacion",
       title: "Operación",
       items: [
+        { to: "/operacion", label: "Operación por evento", icon: "calendar" },
         { to: "/turnos", label: "Turnos", icon: "calendar" },
         { to: "/mapa", label: "Mapa en vivo", icon: "map" },
         { to: "/qr-sitios", label: "QR y sitios", icon: "qr" },
