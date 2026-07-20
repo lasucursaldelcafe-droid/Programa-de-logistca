@@ -1,14 +1,35 @@
 name: Configurar Firebase (SPE)
 
-# Guía + despliegue automático si FIREBASE_TOKEN o FIREBASE_SERVICE_ACCOUNT_JSON ya están en Secrets.
+# Pipeline Firebase único (reglas → bootstrap → functions → QR/cuentas).
+# Requiere secret FIREBASE_TOKEN (o FIREBASE_SERVICE_ACCOUNT_JSON) + VITE_FIREBASE_*.
+#
+# Orden del dueño (una sola vez):
+#   1. PC: npx firebase login:ci  → copiar token
+#   2. GitHub → Settings → Secrets → Actions → FIREBASE_TOKEN
+#   3. Secret SPE_PROD_PASSWORD = contraseña del CEO
+#   4. Actions → "Configurar Firebase (SPE)" → Run workflow
 on:
   workflow_dispatch:
+    inputs:
+      desplegar_functions:
+        description: "Desplegar Cloud Functions (correo invitaciones + cuentas)"
+        type: boolean
+        default: true
+      desbloquear_operacion:
+        description: "Crear QR + cuentas de equipo tras reglas OK"
+        type: boolean
+        default: true
 
 permissions:
   contents: read
 
+concurrency:
+  group: configurar-firebase
+  cancel-in-progress: false
+
 jobs:
   desplegar:
+    name: Firebase producción
     runs-on: ubuntu-latest
     env:
       FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
@@ -21,61 +42,134 @@ jobs:
       VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
       VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
     steps:
-      - name: Instrucciones si faltan credenciales
-        if: env.FIREBASE_TOKEN == '' && env.FIREBASE_SERVICE_ACCOUNT_JSON == ''
+      - name: ¿Faltan credenciales Firebase?
+        id: creds
         run: |
-          echo "## Configurar Firebase para SPE" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "### Paso 1 — Token (PC, una vez)" >> "$GITHUB_STEP_SUMMARY"
-          echo '```powershell' >> "$GITHUB_STEP_SUMMARY"
-          echo "firebase login:ci" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "### Paso 2 — GitHub Secret" >> "$GITHUB_STEP_SUMMARY"
-          echo "Settings → Secrets → Actions → **FIREBASE_TOKEN**" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "### Paso 3 — Relanzar este workflow" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "**Atajo:** \`.\scripts\windows\SPE-Produccion-Completa.ps1\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "::warning::Falta FIREBASE_TOKEN — sigue los pasos del resumen"
+          if [ -z "$FIREBASE_TOKEN" ] && [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "status=missing" >> "$GITHUB_OUTPUT"
+            {
+              echo "## Configurar Firebase — falta 1 secret"
+              echo ""
+              echo "GitHub **no rechaza** la app (Pages sigue OK)."
+              echo "Este job falla porque sin token **no se pueden publicar reglas** en Firebase."
+              echo ""
+              echo "### Orden (hazlo una vez)"
+              echo "1. En tu PC (PowerShell):"
+              echo '```powershell'
+              echo "cd C:\\Users\\LENOVO\\Projects\\Programa-de-logistca"
+              echo "npx firebase login:ci"
+              echo '```'
+              echo "2. Copia el token largo (\`1//0…\`)"
+              echo "3. GitHub → Settings → Secrets and variables → Actions → New:"
+              echo "   - **FIREBASE_TOKEN** = ese token"
+              echo "   - **SPE_PROD_PASSWORD** = contraseña de lasucursaldelcafe@gmail.com"
+              echo "4. Relanza este workflow: Actions → Configurar Firebase (SPE) → Run workflow"
+              echo ""
+              echo "Atajo Windows: \`.\scripts\windows\SPE-Produccion-Completa.ps1\`"
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::Falta FIREBASE_TOKEN — sin él GitHub no puede hablar con Firebase"
+            exit 1
+          fi
+          if [ -z "$VITE_FIREBASE_PROJECT_ID" ]; then
+            echo "::error::Falta VITE_FIREBASE_PROJECT_ID en Secrets"
+            exit 1
+          fi
+          echo "status=ready" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v4
-        if: env.FIREBASE_TOKEN != '' || env.FIREBASE_SERVICE_ACCOUNT_JSON != ''
 
       - uses: actions/setup-node@v4
-        if: env.FIREBASE_TOKEN != '' || env.FIREBASE_SERVICE_ACCOUNT_JSON != ''
         with:
           node-version: "22"
           cache: npm
 
       - name: Instalar dependencias
-        if: env.FIREBASE_TOKEN != '' || env.FIREBASE_SERVICE_ACCOUNT_JSON != ''
         run: npm ci
 
-      - name: Runtime config
-        if: env.FIREBASE_TOKEN != '' || env.FIREBASE_SERVICE_ACCOUNT_JSON != ''
+      - name: Runtime config + firebase-web-config
         run: |
           node scripts/write-runtime-config.mjs
           npm run setup:fcm
+          node <<'NODE'
+          const fs = require("fs");
+          const cfg = JSON.parse(fs.readFileSync("apps/admin/public/spe-runtime-config.json", "utf8"));
+          if (cfg.firebase?.projectId) {
+            fs.writeFileSync("firebase-web-config.json", JSON.stringify(cfg.firebase, null, 2) + "\n");
+            fs.writeFileSync(
+              ".firebaserc",
+              JSON.stringify({ projects: { default: cfg.firebase.projectId } }, null, 2) + "\n",
+            );
+          }
+          NODE
 
       - name: Desplegar reglas Firestore
-        if: env.FIREBASE_TOKEN != '' || env.FIREBASE_SERVICE_ACCOUNT_JSON != ''
-        run: node scripts/deploy-firestore.mjs
+        id: rules
+        run: |
+          npm install firebase-tools@14 --no-save
+          if node scripts/deploy-firestore-rules-api.mjs; then
+            echo "status=ok" >> "$GITHUB_OUTPUT"
+          elif node scripts/deploy-firestore.mjs; then
+            echo "status=ok" >> "$GITHUB_OUTPUT"
+          elif npx firebase-tools deploy --only firestore:rules,firestore:indexes \
+            --project "$VITE_FIREBASE_PROJECT_ID" --non-interactive; then
+            echo "status=ok" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=fail" >> "$GITHUB_OUTPUT"
+            echo "::error::No se pudieron desplegar reglas Firestore"
+            exit 1
+          fi
 
-      - name: Bootstrap Firestore
-        if: env.FIREBASE_TOKEN != '' || env.FIREBASE_SERVICE_ACCOUNT_JSON != ''
+      - name: Bootstrap CEO (users/{uid})
         continue-on-error: true
         run: |
           SPE_PROD_PASSWORD="${SPE_PROD_PASSWORD:-SpeAdmin2026!}" \
-            npm run firestore:bootstrap -- --uid 8kJ9xnbXwlNVQerimF088JXo8Ql1 --skip-auth
+            npm run firestore:bootstrap -- --uid 8kJ9xnbXwlNVQerimF088JXo8Ql1 --skip-auth || \
+          SPE_PROD_PASSWORD="${SPE_PROD_PASSWORD:-SpeAdmin2026!}" npm run firestore:bootstrap
 
-      - name: Verificar login
-        if: env.FIREBASE_TOKEN != '' || env.FIREBASE_SERVICE_ACCOUNT_JSON != ''
-        run: SPE_PROD_PASSWORD="${SPE_PROD_PASSWORD:-SpeAdmin2026!}" node scripts/verify-prod-login.mjs
-
-      - name: Resumen OK
-        if: env.FIREBASE_TOKEN != '' || env.FIREBASE_SERVICE_ACCOUNT_JSON != ''
+      - name: Verificar login + escritura
+        id: verify
         run: |
-          echo "## Firebase configurado" >> "$GITHUB_STEP_SUMMARY"
-          echo "Login: https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/login" >> "$GITHUB_STEP_SUMMARY"
-          echo "Cuenta: lasucursaldelcafe@gmail.com / SpeAdmin2026!" >> "$GITHUB_STEP_SUMMARY"
+          SPE_PROD_PASSWORD="${SPE_PROD_PASSWORD:-SpeAdmin2026!}" \
+            node scripts/verify-prod-login.mjs && echo "status=ok" >> "$GITHUB_OUTPUT"
+
+      - name: QR + cuentas de equipo
+        id: unlock
+        if: ${{ inputs.desbloquear_operacion }}
+        run: |
+          SPE_PROD_PASSWORD="${SPE_PROD_PASSWORD:-SpeAdmin2026!}" \
+            npm run desbloquear:operacion | tee /tmp/desbloquear.log
+          echo "status=ok" >> "$GITHUB_OUTPUT"
+
+      - name: Cloud Functions (correo invitaciones)
+        id: functions
+        if: ${{ inputs.desplegar_functions }}
+        continue-on-error: true
+        run: |
+          npm run build:functions
+          if npx firebase-tools deploy --only functions \
+            --project "$VITE_FIREBASE_PROJECT_ID" --non-interactive; then
+            echo "status=ok" >> "$GITHUB_OUTPUT"
+            echo "::notice::Functions OK. Para correo HTML configura en Firebase: GMAIL_USER y GMAIL_APP_PASSWORD"
+          else
+            echo "status=fail" >> "$GITHUB_OUTPUT"
+            echo "::warning::Functions no desplegadas (billing/permisos). Auth reset sigue funcionando."
+          fi
+
+      - name: Resumen
+        if: always()
+        run: |
+          {
+            echo "## Firebase producción"
+            echo ""
+            echo "| Paso | Estado |"
+            echo "|------|--------|"
+            echo "| Credenciales | \`${{ steps.creds.outputs.status }}\` |"
+            echo "| Reglas | \`${{ steps.rules.outputs.status || 'n/a' }}\` |"
+            echo "| Login/escritura | \`${{ steps.verify.outputs.status || 'n/a' }}\` |"
+            echo "| QR + cuentas | \`${{ steps.unlock.outputs.status || 'n/a' }}\` |"
+            echo "| Functions | \`${{ steps.functions.outputs.status || 'n/a' }}\` |"
+            echo ""
+            echo "App: https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/login"
+            echo ""
+            echo "**Pages (la web) es otro workflow** y no depende de este. Si este job falla, la web sigue publicada; solo falta permiso Firebase."
+          } >> "$GITHUB_STEP_SUMMARY"

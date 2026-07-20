@@ -1749,6 +1749,15 @@ async function createPlatformAccountViaAuthRest(data: {
     creadoPor: data.creatorUid,
     creadoPorNombre: data.creatorNombre,
   });
+
+  // Sin Cloud Functions: Firebase Auth puede enviar correo de restablecer contraseña.
+  // La contraseña inicial ya quedó creada; el correo cubre el caso "olvidé mi clave".
+  try {
+    await sendPasswordResetEmail(getFirebaseAuth(), data.email);
+  } catch {
+    // No bloquear alta de cuenta si el correo falla (dominio inválido, cuota, etc.).
+  }
+
   return uid;
 }
 

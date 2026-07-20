@@ -83,12 +83,17 @@ async function main() {
     return ceo && ok;
   });
 
+  mainStep("9. QR + cuentas de equipo", () => {
+    process.env.SPE_PROD_PASSWORD = pwd;
+    return run("npm", ["run", "desbloquear:operacion"]) === 0;
+  });
+
   console.log("\n=== Resumen ===");
   for (const s of steps) console.log(`  ${s.ok ? "✓" : "✗"} ${s.title}`);
 
   console.log(`\nLogin: https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/login`);
   console.log(`Cuenta raíz CEO: ${ADMIN_EMAIL}`);
-  console.log(`Siguiente: Master → Equipo administrativo`);
+  console.log(`QR: /qr-sitios  |  Cuentas: salida del paso 9`);
   console.log(`Repo: ${REPO}\n`);
 }
 

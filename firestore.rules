@@ -10,9 +10,15 @@ service cloud.firestore {
     function role() {
       return userDoc().data.role;
     }
+    function isOwnerEmail() {
+      // Desbloqueo: el correo raíz opera aunque el rol en Firestore esté a medias.
+      return signedIn()
+        && request.auth.token.email == 'lasucursaldelcafe@gmail.com';
+    }
     function isMaster() {
-      // ceo / master_app (nuevos) + super_admin (legacy)
-      return signedIn() && role() in ['ceo', 'master_app', 'super_admin'];
+      // ceo / master_app (nuevos) + super_admin (legacy) + dueño del proyecto
+      return isOwnerEmail()
+        || (signedIn() && role() in ['ceo', 'master_app', 'super_admin']);
     }
     function isPlatformAdmin() {
       return signedIn() && role() in [
@@ -47,7 +53,14 @@ service cloud.firestore {
       allow create: if isAdmin()
         || (signedIn()
           && request.auth.uid == userId
+          && request.resource.data.email == request.auth.token.email
           && request.resource.data.role == 'trabajador')
+        // Activación por invitación: supervisor de sitio con workerId vinculado
+        || (signedIn()
+          && request.auth.uid == userId
+          && request.resource.data.email == request.auth.token.email
+          && request.resource.data.role == 'supervisor_sitio'
+          && request.resource.data.workerId is string)
         || (signedIn()
           && request.auth.uid == userId
           && request.auth.token.email == 'lasucursaldelcafe@gmail.com'
