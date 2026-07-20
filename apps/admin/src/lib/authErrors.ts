@@ -8,6 +8,10 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
   "auth/too-many-requests": "Demasiados intentos. Espera unos minutos e inténtalo de nuevo.",
   "auth/user-disabled": "Esta cuenta está inhabilitada. Contacta al administrador.",
   "auth/network-request-failed": "Sin conexión a internet. Revisa tu red e inténtalo de nuevo.",
+  "auth/email-already-in-use":
+    "Este correo ya tiene cuenta en SPE. Usa «Iniciar sesión» o «Olvidé mi contraseña» en la pantalla de login. " +
+    "Si acabas de activar, puede que la cuenta ya se haya creado: prueba entrar con la contraseña que elegiste.",
+  "auth/weak-password": "La contraseña es demasiado débil. Usa al menos 8 caracteres.",
   "permission-denied":
     "Firestore sin permisos: faltan reglas desplegadas o el documento users/{tu UID}. " +
     "Ejecuta Bootstrap Firestore en GitHub Actions o pega las reglas en Firebase Console.",
