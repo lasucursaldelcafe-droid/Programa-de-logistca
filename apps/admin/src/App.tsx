@@ -25,6 +25,7 @@ import { ActivarCuentaPage } from "./pages/ActivarCuentaPage";
 import { UnirseEmpresaPage } from "./pages/UnirseEmpresaPage";
 import { CompletarPerfilPage } from "./pages/CompletarPerfilPage";
 import { ConfigurarDesdeMovilPage } from "./pages/ConfigurarDesdeMovilPage";
+import { DescargasPage } from "./pages/DescargasPage";
 import { MasterRoutes } from "./routes/MasterRoutes";
 import { WorkerRoutes } from "./routes/WorkerRoutes";
 
@@ -61,6 +62,7 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/descargas" element={<DescargasPage />} />
       <Route path="/configurar" element={<ConfigurarDesdeMovilPage />} />
       <Route path="/ayuda" element={<AyudaPage platform="admin" />} />
       <Route path="/unirse" element={<UnirseEmpresaPage />} />

@@ -103,11 +103,8 @@ export function getAdminNavSections(role: UserRole): NavSection[] {
       title: "Sistema",
       items: [
         { to: "/configuracion", label: "Configuración", icon: "settings" },
-        {
-          to: "/integraciones",
-          label: puedeConfigurarIntegraciones(role) ? "APIs" : "Integraciones",
-          icon: "plug",
-        },
+        { to: "/integraciones", label: puedeConfigurarIntegraciones(role) ? "APIs" : "Integraciones", icon: "plug" },
+        { to: "/descargas", label: "Descargas", icon: "box" },
         { to: "/ayuda", label: "Ayuda", icon: "help" },
       ],
     },
