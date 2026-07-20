@@ -13,6 +13,7 @@ export * from "./paths";
 export * from "./sheetsClient";
 export * from "./sheetsSession";
 export * from "./runtimeBootstrap";
+export * from "./platformShell";
 export * from "./setupLinks";
 export * from "./setupGuide";
 export * from "./setupStatus";

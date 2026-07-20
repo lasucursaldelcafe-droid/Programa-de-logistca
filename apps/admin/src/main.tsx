@@ -1,10 +1,9 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, HashRouter } from "react-router-dom";
-import { bootstrapRuntimeConfig, configureFirebase, purgeLegacyClientStorage } from "@spe/shared";
+import { bootstrapRuntimeConfig, configureFirebase, purgeLegacyClientStorage, needsHashRouter } from "@spe/shared";
 import { AuthProvider } from "./contexts/AuthContext";
 import { App } from "./App";
-import { isElectron, isNativePlatform } from "./lib/platform";
 import "./index.css";
 
 const buildEnv = {
@@ -22,8 +21,8 @@ configureFirebase({
   useEmulators: import.meta.env.VITE_USE_FIREBASE_EMULATORS === "true",
 });
 
-const Router = isElectron() || isNativePlatform() ? HashRouter : BrowserRouter;
-const routerProps = isElectron() || isNativePlatform() ? {} : { basename: import.meta.env.BASE_URL };
+const Router = needsHashRouter() ? HashRouter : BrowserRouter;
+const routerProps = needsHashRouter() ? {} : { basename: import.meta.env.BASE_URL };
 
 async function boot() {
   purgeLegacyClientStorage();

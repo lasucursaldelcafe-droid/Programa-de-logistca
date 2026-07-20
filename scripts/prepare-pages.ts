@@ -55,6 +55,16 @@ updateRootIndex(links);
 
 console.log("→ Build app unificada (Admin + Master + Trabajador)…");
 run("node scripts/sync-repo-config.mjs", {});
+run("node scripts/write-runtime-config.mjs", {
+  VITE_SPE_CANONICAL_URL: process.env.VITE_SPE_CANONICAL_URL ?? "",
+  VITE_FIREBASE_API_KEY: process.env.VITE_FIREBASE_API_KEY ?? "",
+  VITE_FIREBASE_AUTH_DOMAIN: process.env.VITE_FIREBASE_AUTH_DOMAIN ?? "",
+  VITE_FIREBASE_PROJECT_ID: process.env.VITE_FIREBASE_PROJECT_ID ?? "",
+  VITE_FIREBASE_STORAGE_BUCKET: process.env.VITE_FIREBASE_STORAGE_BUCKET ?? "",
+  VITE_FIREBASE_MESSAGING_SENDER_ID: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? "",
+  VITE_FIREBASE_APP_ID: process.env.VITE_FIREBASE_APP_ID ?? "",
+  VITE_GOOGLE_MAPS_API_KEY: process.env.VITE_GOOGLE_MAPS_API_KEY ?? "",
+});
 run("npm run build -w @spe/shared && npm run build -w @spe/admin", {
   GITHUB_PAGES_BASE: appBase(),
   VITE_DEMO_MODE: process.env.VITE_DEMO_MODE ?? "false",
