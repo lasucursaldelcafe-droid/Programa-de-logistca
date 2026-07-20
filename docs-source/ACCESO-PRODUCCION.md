@@ -20,6 +20,20 @@ Debe mostrar **Backend: Firebase** (sin demo ni Google Sheets).
 
 ---
 
+## Setup automático (un comando)
+
+En PC, con `firebase-web-config.json` y `service-account.json`:
+
+```bash
+SPE_PROD_PASSWORD='TuClaveSegura' npm run setup:cli -- --full
+```
+
+Windows: `.\scripts\windows\SPE-Setup-Completo.ps1`
+
+GitHub Actions: **Setup completo SPE** (con secrets ya configurados).
+
+---
+
 ## Crear la contraseña (elige una opción)
 
 ### Opción A — Desde tu PC (5 min)

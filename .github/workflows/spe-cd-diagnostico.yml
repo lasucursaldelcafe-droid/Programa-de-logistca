@@ -17,14 +17,13 @@ on:
         default: true
         type: boolean
       backend:
-        description: "Forzar backend: auto | demo | sheets"
+        description: "Forzar backend: auto | firebase"
         required: false
         default: auto
         type: choice
         options:
           - auto
-          - demo
-          - sheets
+          - firebase
   push:
     branches: [main]
   schedule:
@@ -78,15 +77,15 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Forzar backend demo (input)
-        if: github.event.inputs.backend == 'demo'
+      - name: Forzar backend Firebase (input)
+        if: github.event.inputs.backend == 'firebase'
         run: |
           node -e "
           const fs=require('fs');
           const p='config/bootstrap.json';
           const j=JSON.parse(fs.readFileSync(p,'utf8'));
-          j.backend='demo'; j.demoMode=true;
-          j.sheetsWebAppUrl=''; j.sheetsApiToken=''; j.firebase={};
+          j.backend='firebase'; j.demoMode=false;
+          j.sheetsWebAppUrl=''; j.sheetsApiToken='';
           fs.writeFileSync(p, JSON.stringify(j,null,2)+'\n');
           "
 
