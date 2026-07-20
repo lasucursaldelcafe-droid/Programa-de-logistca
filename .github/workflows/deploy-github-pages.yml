@@ -127,12 +127,7 @@ jobs:
         run: |
           test -f docs/index.html
           test -f docs/.nojekyll
-          for route in descargas pendientes notificaciones worker/notificaciones worker/ayuda master/ayuda; do
-            test -f "docs/$route/index.html" || { echo "✗ Falta docs/$route/index.html"; exit 1; }
-          done
-          test -f docs/worker/index.html
-          test -f docs/master/index.html
-          echo "✓ docs/ listo (app unificada + rutas SPA críticas)"
+          npm run verify:spa
 
       - name: Publicar en gh-pages/docs
         uses: JamesIves/github-pages-deploy-action@v4

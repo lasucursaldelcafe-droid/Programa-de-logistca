@@ -1,28 +1,49 @@
+import { useMemo } from "react";
 import { ATTENDANCE_LABEL, puedeVerMapaEnVivo } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
 import { Badge, Card } from "../components/ui";
+import { EventoOperacionSelect } from "../components/EventoOperacionSelect";
 import { LiveMap, liveMapUsesGoogle } from "../components/LiveMap";
 import { isGoogleMapsEnabled } from "../lib/googleMaps";
 import { useAttendances, useSites } from "../hooks/useDataStore";
+import { useEventoOperacion } from "../hooks/useEventoOperacion";
+
 export function MapaEnVivoPage() {
   const { user } = useAuth();
+  const { events, eventId, setEventId, evento } = useEventoOperacion();
   const sites = useSites();
   const attendances = useAttendances();
+
+  const sitiosEvento = useMemo(
+    () => (eventId ? sites.filter((s) => s.eventId === eventId) : sites),
+    [sites, eventId],
+  );
+
+  const activos = useMemo(() => {
+    const abiertas = attendances.filter((a) => a.estado !== "cerrado");
+    return eventId ? abiertas.filter((a) => a.eventId === eventId) : abiertas;
+  }, [attendances, eventId]);
+
+  const alertas = useMemo(
+    () => activos.filter((a) => a.estado === "fuera_geocerca" || a.estado === "revision_manual"),
+    [activos],
+  );
 
   if (!user || !puedeVerMapaEnVivo(user.role)) {
     return <p className="text-neutral-400">Sin permisos para ver el mapa en vivo.</p>;
   }
 
-  const activos = attendances.filter((a) => a.estado !== "cerrado");
-  const alertas = activos.filter((a) => a.estado === "fuera_geocerca" || a.estado === "revision_manual");
-
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="font-display text-3xl font-bold">Mapa en vivo</h1>
-        <p className="mt-1 text-neutral-400">
-          Personal activo por sitio, geocercas y alertas en tiempo real.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-3xl font-bold">Mapa en vivo</h1>
+          <p className="mt-1 text-neutral-400">
+            Personal activo por sitio, geocercas y alertas en tiempo real
+            {evento ? ` — ${evento.nombre}` : ""}.
+          </p>
+        </div>
+        <EventoOperacionSelect events={events} eventId={eventId} onChange={setEventId} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -35,8 +56,8 @@ export function MapaEnVivoPage() {
           <div className="text-sm text-neutral-400">Alertas geocerca</div>
         </Card>
         <Card>
-          <div className="font-mono text-3xl font-semibold text-accent">{sites.length}</div>
-          <div className="text-sm text-neutral-400">Sitios monitoreados</div>
+          <div className="font-mono text-3xl font-semibold text-accent">{sitiosEvento.length}</div>
+          <div className="text-sm text-neutral-400">Sitios del evento</div>
         </Card>
       </div>
 
@@ -56,7 +77,7 @@ export function MapaEnVivoPage() {
           </p>
         )}
         <div className="mt-4">
-          <LiveMap sites={sites} attendances={activos} />
+          <LiveMap sites={sitiosEvento} attendances={activos} />
         </div>
       </Card>
 

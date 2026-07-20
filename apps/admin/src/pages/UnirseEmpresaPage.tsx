@@ -52,21 +52,27 @@ export function UnirseEmpresaPage() {
       }
     >
       <form onSubmit={onSubmit} className="space-y-4">
-        <label className="block text-sm">
+        <label className="block text-sm" htmlFor="unirse-email">
           <span className="mb-1 block text-neutral-300">Correo electrónico</span>
           <input
+            id="unirse-email"
+            name="email"
             type="email"
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className={authInputClass}
             required
           />
         </label>
-        <label className="block text-sm">
+        <label className="block text-sm" htmlFor="unirse-codigo">
           <span className="mb-1 block text-neutral-300">Código de invitación</span>
           <input
+            id="unirse-codigo"
+            name="codigoAcceso"
             type="text"
             inputMode="numeric"
+            autoComplete="one-time-code"
             value={codigoAcceso}
             onChange={(e) => setCodigoAcceso(e.target.value.replace(/\D/g, "").slice(0, 6))}
             className={`${authInputClass} font-mono text-lg tracking-widest`}
