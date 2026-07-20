@@ -21,7 +21,7 @@ export function AppShell({ user, brand, brandSub, sections, onLogout }: AppShell
 
   return (
     <div className="min-h-screen spe-app-bg lg:flex">
-      {/* Sidebar — desktop */}
+      {/* Sidebar — desktop: siempre visible */}
       <aside className="hidden w-56 shrink-0 flex-col border-r border-border/80 bg-gradient-to-b from-surface-elevated via-surface to-bg lg:flex">
         <BrandBlock brand={brand} brandSub={brandSub} />
         <div className="flex-1 overflow-y-auto px-3 py-4">
@@ -56,11 +56,12 @@ export function AppShell({ user, brand, brandSub, sections, onLogout }: AppShell
         <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border/80 bg-bg/85 px-4 py-3 backdrop-blur-md lg:px-8">
           <button
             type="button"
-            className="rounded-lg p-2 text-neutral-400 hover:bg-neutral-800 lg:hidden"
+            className="flex items-center gap-1.5 rounded-lg px-2 py-2 text-sm text-neutral-300 hover:bg-neutral-800 lg:hidden"
             onClick={() => setMobileOpen(true)}
             aria-label="Abrir menú"
           >
             <NavIcon name="menu" />
+            <span className="font-medium">Menú</span>
           </button>
           <div className="min-w-0 flex-1 lg:hidden">
             <p className="truncate font-display text-sm font-semibold">{brand}</p>

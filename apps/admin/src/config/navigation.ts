@@ -15,6 +15,8 @@ export interface NavLinkItem {
   label: string;
   icon: string;
   end?: boolean;
+  /** Abre en pestaña nueva (p. ej. descargas públicas) */
+  external?: boolean;
 }
 
 export interface NavSection {
@@ -60,6 +62,7 @@ const ADMIN_GATES: Record<string, (r: UserRole) => boolean> = {
   "/nomina": can.nomina,
   "/configuracion": can.config,
   "/integraciones": can.apis,
+  "/pendientes": can.config,
 };
 
 export function getAdminNavSections(role: UserRole): NavSection[] {
@@ -102,9 +105,10 @@ export function getAdminNavSections(role: UserRole): NavSection[] {
       id: "sistema",
       title: "Sistema",
       items: [
+        { to: "/pendientes", label: "Config. pendiente", icon: "list" },
         { to: "/configuracion", label: "Configuración", icon: "settings" },
         { to: "/integraciones", label: puedeConfigurarIntegraciones(role) ? "APIs" : "Integraciones", icon: "plug" },
-        { to: "/descargas", label: "Descargas", icon: "box" },
+        { to: "/descargas", label: "Descargas", icon: "download" },
         { to: "/ayuda", label: "Ayuda", icon: "help" },
       ],
     },
