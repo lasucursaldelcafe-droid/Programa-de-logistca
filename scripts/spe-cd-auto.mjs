@@ -154,7 +154,7 @@ async function main() {
     console.log("  npm run acceso — ver instrucciones de login");
   }
 
-  process.exit(report.overall === "error" ? 1 : 0);
+  process.exit(process.argv.includes("--no-fail") || report.overall !== "error" ? 0 : 1);
 }
 
 main().catch((err) => {
