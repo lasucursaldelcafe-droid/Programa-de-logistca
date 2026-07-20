@@ -20,6 +20,7 @@ import {
   useSites,
   useWorkers,
 } from "../hooks/useDataStore";
+import { EventFlowGuide } from "../components/EventFlowGuide";
 import { useEventoOperacion } from "../hooks/useEventoOperacion";
 
 function toDatetimeLocal(iso: string): string {
@@ -198,17 +199,27 @@ export function OperacionEventoPage() {
 
   if (events.length === 0) {
     return (
-      <div className="space-y-4">
-        <h1 className="font-display text-3xl font-bold">Operación por evento</h1>
-        <Card>
-          <p className="text-sm text-neutral-400">
-            No hay eventos creados.{" "}
-            <Link to="/configuracion" className="text-accent hover:underline">
-              Crea un evento en Configuración
-            </Link>
-            .
+      <div className="space-y-5">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-accent">Paso 4 del flujo</p>
+          <h1 className="font-display text-3xl font-bold">Asignar al evento</h1>
+          <p className="mt-1 max-w-2xl text-neutral-400">
+            Aquí agregas empleados al evento con turnos por sitio. Primero debes crear el evento en
+            el asistente.
           </p>
+        </div>
+        <Card className="space-y-4">
+          <p className="text-sm text-neutral-300">
+            Aún no hay eventos. Empieza por el paso 1 del flujo:
+          </p>
+          <Link
+            to="/configuracion"
+            className="inline-block rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg hover:bg-accent/90"
+          >
+            Crear evento →
+          </Link>
         </Card>
+        <EventFlowGuide compact currentPath="/operacion" title="Orden recomendado" />
       </div>
     );
   }
@@ -217,10 +228,11 @@ export function OperacionEventoPage() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold">Operación por evento</h1>
+          <p className="text-xs font-semibold uppercase tracking-wider text-accent">Paso 4 · Operación</p>
+          <h1 className="font-display text-3xl font-bold">Asignar al evento</h1>
           <p className="mt-1 max-w-2xl text-neutral-400">
-            Selecciona un evento para revisar que todo funcione (sitios, QR, GPS) y agregar o
-            quitar empleados del equipo.
+            Revisa el estado del evento y agrega o quita empleados. Cuando empiece el evento, usa
+            mapa, supervisión y comunicación.
           </p>
         </div>
         <EventoOperacionSelect
@@ -278,6 +290,15 @@ export function OperacionEventoPage() {
               ))}
             </ul>
             <div className="mt-4 flex flex-wrap gap-2 text-sm">
+              <Link to="/configuracion" className="rounded-lg border border-border px-3 py-1.5 hover:border-accent/50">
+                Asistente de evento
+              </Link>
+              <Link to="/personal" className="rounded-lg border border-border px-3 py-1.5 hover:border-accent/50">
+                Personal
+              </Link>
+              <Link to="/cuentas" className="rounded-lg border border-border px-3 py-1.5 hover:border-accent/50">
+                Invitaciones
+              </Link>
               <Link to="/mapa" className="rounded-lg border border-border px-3 py-1.5 hover:border-accent/50">
                 Mapa en vivo
               </Link>
@@ -290,9 +311,6 @@ export function OperacionEventoPage() {
               <Link to="/qr-sitios" className="rounded-lg border border-border px-3 py-1.5 hover:border-accent/50">
                 QR y sitios
               </Link>
-              <Link to="/personal" className="rounded-lg border border-border px-3 py-1.5 hover:border-accent/50">
-                Registrar personal
-              </Link>
             </div>
           </Card>
 
@@ -304,11 +322,11 @@ export function OperacionEventoPage() {
             </p>
             {sitiosEvento.length === 0 ? (
               <p className="mt-4 text-sm text-accent">
-                Primero agrega sitios en{" "}
+                Primero agrega sitios en el{" "}
                 <Link to="/configuracion" className="underline">
-                  Configuración
-                </Link>
-                .
+                  asistente de evento
+                </Link>{" "}
+                (paso 2).
               </p>
             ) : (
               <form onSubmit={agregarEmpleado} className="mt-4 grid gap-3 sm:grid-cols-2">
