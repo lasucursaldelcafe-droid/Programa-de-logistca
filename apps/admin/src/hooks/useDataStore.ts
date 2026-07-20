@@ -710,7 +710,9 @@ export async function activateAccountWithInvitation(
     }
   }
 
-  const perfilCompleto = (invitation.role ?? "trabajador") === "supervisor_sitio";
+  const desiredRole = invitation.role ?? "trabajador";
+  let assignedRole = desiredRole;
+  let perfilCompleto = desiredRole === "supervisor_sitio";
 
   const userRef = doc(getFirestoreDb(), "users", cred.user.uid);
   const existingUser = await getDoc(userRef);
@@ -723,34 +725,58 @@ export async function activateAccountWithInvitation(
     }
   }
 
-  await setDoc(
-    userRef,
-    {
-      email: invitation.email,
-      nombre: invitation.workerNombre,
-      role: invitation.role ?? "trabajador",
-      workerId: invitation.workerId,
-      customRoleId: invitation.customRoleId,
-      perfilCompleto,
-    },
-    { merge: true },
-  );
-
-  await updateDoc(doc(getFirestoreDb(), "workers", invitation.workerId), {
-    cuentaCreada: true,
+  const profilePayload = (role: string, completo: boolean) => ({
+    email: invitation.email,
+    nombre: invitation.workerNombre,
+    role,
+    workerId: invitation.workerId,
+    customRoleId: invitation.customRoleId,
+    perfilCompleto: completo,
+    habilitado: true,
   });
 
-  await updateDoc(doc(getFirestoreDb(), "invitations", token), {
-    estado: "usada",
-    usadaEn: new Date().toISOString(),
-    uid: cred.user.uid,
-  });
+  try {
+    await setDoc(userRef, profilePayload(desiredRole, perfilCompleto), { merge: true });
+  } catch (err) {
+    // Reglas LIVE solo permiten self-create como trabajador — evita Auth huérfano.
+    if (desiredRole !== "trabajador") {
+      assignedRole = "trabajador";
+      perfilCompleto = false;
+      await setDoc(userRef, profilePayload("trabajador", false), { merge: true });
+      console.warn(
+        "[SPE] Perfil creado como trabajador (reglas aún no permiten",
+        desiredRole,
+        "). Publica firestore.rules y actualiza el rol.",
+        err,
+      );
+    } else {
+      throw err;
+    }
+  }
+
+  try {
+    await updateDoc(doc(getFirestoreDb(), "workers", invitation.workerId), {
+      cuentaCreada: true,
+    });
+  } catch {
+    // Supervisor/admin puede fallar si el perfil quedó como trabajador sin permisos de escritura.
+  }
+
+  try {
+    await updateDoc(doc(getFirestoreDb(), "invitations", token), {
+      estado: "usada",
+      usadaEn: new Date().toISOString(),
+      uid: cred.user.uid,
+    });
+  } catch {
+    // Invitación queda pendiente; el login puede reutilizarla para completar el perfil.
+  }
 
   return {
     uid: cred.user.uid,
     email: invitation.email,
     nombre: invitation.workerNombre,
-    role: invitation.role ?? "trabajador",
+    role: assignedRole,
     workerId: invitation.workerId,
     customRoleId: invitation.customRoleId,
     perfilCompleto,

@@ -13,7 +13,15 @@ import {
   signOut,
   type User,
 } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  setDoc,
+  where,
+} from "firebase/firestore";
 import { FirebaseError } from "firebase/app";
 import {
   getFirebaseAuth,
@@ -48,6 +56,14 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+type PendingInvitation = {
+  email: string;
+  role: UserRole;
+  workerId?: string;
+  workerNombre: string;
+  customRoleId?: string;
+};
+
 function isFirestorePermissionDenied(error: unknown): boolean {
   if (error instanceof FirebaseError && error.code === "permission-denied") return true;
   if (error instanceof Error) {
@@ -66,39 +82,162 @@ function provisionalPlatformAdmin(firebaseUser: User): AppUser | null {
   return {
     uid: firebaseUser.uid,
     email: firebaseUser.email ?? PLATFORM_ADMIN_EMAIL,
-    role: "administrador",
-    nombre: "La Sucursal del Café",
+    role: "ceo",
+    nombre: "CEO — Dirección general",
     perfilCompleto: true,
   };
 }
 
-async function ensurePlatformAdminProfile(firebaseUser: User): Promise<boolean> {
-  const email = firebaseUser.email?.trim().toLowerCase();
-  if (email !== PLATFORM_ADMIN_EMAIL.toLowerCase()) return false;
+async function findPendingInvitation(email: string): Promise<PendingInvitation | null> {
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) return null;
   try {
-    await setDoc(doc(getFirestoreDb(), "users", firebaseUser.uid), {
-      email: firebaseUser.email ?? PLATFORM_ADMIN_EMAIL,
-      nombre: "La Sucursal del Café",
-      role: "administrador",
-      workerId: null,
-      perfilCompleto: true,
-    });
+    const snap = await getDocs(
+      query(
+        collection(getFirestoreDb(), "invitations"),
+        where("email", "==", normalized),
+        where("estado", "==", "pendiente"),
+      ),
+    );
+    if (snap.empty) return null;
+    const data = snap.docs[0]?.data();
+    if (!data) return null;
+    return {
+      email: normalized,
+      role: normalizeUserRole(String(data.role ?? "trabajador")),
+      workerId: typeof data.workerId === "string" ? data.workerId : undefined,
+      workerNombre: String(data.workerNombre ?? normalized),
+      customRoleId: typeof data.customRoleId === "string" ? data.customRoleId : undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function writeUserProfile(
+  firebaseUser: User,
+  profile: {
+    email: string;
+    nombre: string;
+    role: UserRole;
+    workerId?: string | null;
+    customRoleId?: string;
+    perfilCompleto?: boolean;
+  },
+): Promise<boolean> {
+  try {
+    await setDoc(
+      doc(getFirestoreDb(), "users", firebaseUser.uid),
+      {
+        email: profile.email,
+        nombre: profile.nombre,
+        role: profile.role,
+        workerId: profile.workerId ?? null,
+        ...(profile.customRoleId ? { customRoleId: profile.customRoleId } : {}),
+        perfilCompleto: profile.perfilCompleto ?? true,
+        habilitado: true,
+      },
+      { merge: true },
+    );
     return true;
   } catch {
     return false;
   }
 }
 
+async function ensurePlatformAdminProfile(firebaseUser: User): Promise<boolean> {
+  const email = firebaseUser.email?.trim().toLowerCase();
+  if (email !== PLATFORM_ADMIN_EMAIL.toLowerCase()) return false;
+  // Intentar ceo (reglas nuevas); si falla, administrador (reglas intermedias).
+  if (
+    await writeUserProfile(firebaseUser, {
+      email: firebaseUser.email ?? PLATFORM_ADMIN_EMAIL,
+      nombre: "CEO — Dirección general",
+      role: "ceo",
+      workerId: null,
+      perfilCompleto: true,
+    })
+  ) {
+    return true;
+  }
+  return writeUserProfile(firebaseUser, {
+    email: firebaseUser.email ?? PLATFORM_ADMIN_EMAIL,
+    nombre: "CEO — Dirección general",
+    role: "administrador",
+    workerId: null,
+    perfilCompleto: true,
+  });
+}
+
+/**
+ * Auth huérfano (cuenta Auth sin users/{uid}): crea el doc.
+ * En reglas LIVE actuales solo self-create como trabajador está permitido;
+ * si hay invitación de supervisor, intenta ese rol y hace fallback a trabajador.
+ */
+async function ensureMissingUserProfile(firebaseUser: User): Promise<boolean> {
+  const email = firebaseUser.email?.trim().toLowerCase();
+  if (!email) return false;
+
+  if (email === PLATFORM_ADMIN_EMAIL.toLowerCase()) {
+    return ensurePlatformAdminProfile(firebaseUser);
+  }
+
+  const invitation = await findPendingInvitation(email);
+  const nombre =
+    invitation?.workerNombre ||
+    firebaseUser.displayName?.trim() ||
+    email.split("@")[0] ||
+    "Usuario";
+
+  if (invitation) {
+    const desiredRole = invitation.role;
+    if (
+      await writeUserProfile(firebaseUser, {
+        email,
+        nombre,
+        role: desiredRole,
+        workerId: invitation.workerId,
+        customRoleId: invitation.customRoleId,
+        perfilCompleto: desiredRole === "supervisor_sitio",
+      })
+    ) {
+      return true;
+    }
+    // Reglas viejas: solo permiten self-create como trabajador
+    if (desiredRole !== "trabajador") {
+      return writeUserProfile(firebaseUser, {
+        email,
+        nombre,
+        role: "trabajador",
+        workerId: invitation.workerId,
+        customRoleId: invitation.customRoleId,
+        perfilCompleto: false,
+      });
+    }
+    return false;
+  }
+
+  // Sin invitación: perfil mínimo para no dejar Auth huérfano
+  return writeUserProfile(firebaseUser, {
+    email,
+    nombre,
+    role: "trabajador",
+    workerId: null,
+    perfilCompleto: false,
+  });
+}
+
 async function resolveAppUser(firebaseUser: User): Promise<AppUser | null> {
   let appUser = await loadAppUser(firebaseUser);
   if (appUser) return appUser;
 
+  const created = await ensureMissingUserProfile(firebaseUser);
+  if (created) {
+    appUser = await loadAppUser(firebaseUser);
+    if (appUser) return appUser;
+  }
+
   if (firebaseUser.email?.trim().toLowerCase() === PLATFORM_ADMIN_EMAIL.toLowerCase()) {
-    const created = await ensurePlatformAdminProfile(firebaseUser);
-    if (created) {
-      appUser = await loadAppUser(firebaseUser);
-      if (appUser) return appUser;
-    }
     return provisionalPlatformAdmin(firebaseUser);
   }
 
@@ -240,7 +379,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(
         "Usuario autenticado pero sin perfil en Firestore (users/" +
           fbUser.uid +
-          "). Ejecuta Bootstrap Firestore o crea el documento en Firebase Console.",
+          "). En Firebase Console → Firestore → users → Add document con ID " +
+          fbUser.uid +
+          " (email, nombre, role, habilitado=true). O publica firestore.rules y vuelve a entrar.",
       );
     }
     setUser(appUser);
