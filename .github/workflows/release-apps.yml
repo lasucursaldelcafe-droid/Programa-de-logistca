@@ -75,7 +75,9 @@ jobs:
         run: npm ci
 
       - name: Runtime config compartido (Firebase)
-        run: node scripts/write-runtime-config.mjs
+        run: |
+          node scripts/write-runtime-config.mjs
+          npm run setup:fcm
 
       - name: Validar entorno
         run: npx tsx scripts/ensure-production-env.ts --native
@@ -125,7 +127,9 @@ jobs:
         run: npm ci
 
       - name: Runtime config compartido (Firebase)
-        run: node scripts/write-runtime-config.mjs
+        run: |
+          node scripts/write-runtime-config.mjs
+          npm run setup:fcm
 
       - name: Validar entorno
         run: npx tsx scripts/ensure-production-env.ts --native
@@ -175,7 +179,9 @@ jobs:
         run: npm ci
 
       - name: Runtime config compartido (Firebase)
-        run: node scripts/write-runtime-config.mjs
+        run: |
+          node scripts/write-runtime-config.mjs
+          npm run setup:fcm
 
       - name: Validar entorno
         run: npx tsx scripts/ensure-production-env.ts --native

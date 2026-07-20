@@ -54,7 +54,9 @@ jobs:
 
       - name: Runtime config
         if: env.FIREBASE_TOKEN != '' || env.FIREBASE_SERVICE_ACCOUNT_JSON != ''
-        run: node scripts/write-runtime-config.mjs
+        run: |
+          node scripts/write-runtime-config.mjs
+          npm run setup:fcm
 
       - name: Desplegar reglas Firestore
         if: env.FIREBASE_TOKEN != '' || env.FIREBASE_SERVICE_ACCOUNT_JSON != ''

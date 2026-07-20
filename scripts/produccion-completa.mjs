@@ -4,7 +4,18 @@
  *
  *   npm run produccion:completa
  */
-import { run, ghAvailable, pushFirebaseTokenSecret, pushFirebaseSecrets, loadFirebaseWebConfig, isFirebaseConfigComplete, getProdPassword, pushGhSecret, REPO, ADMIN_EMAIL } from "./lib/firebase-setup.mjs";
+import { run, ghAvailable, pushFirebaseTokenSecret, pushFirebaseSecrets, loadFirebaseWebConfig, isFirebaseConfigComplete, getProdPassword, pushGhSecret, readJson, REPO, ADMIN_EMAIL } from "./lib/firebase-setup.mjs";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+function getVapidKey() {
+  const fromEnv = process.env.VITE_FIREBASE_VAPID_KEY?.trim();
+  if (fromEnv) return fromEnv;
+  const bootstrap = readJson(resolve(ROOT, "config/bootstrap.json"));
+  return bootstrap?.vapidKey?.trim() ?? "";
+}
 
 const steps = [];
 
@@ -21,20 +32,26 @@ async function main() {
   console.log("╚════════════════════════════════════════╝\n");
 
   mainStep("1. Sync config", () => run("node", ["scripts/sync-repo-config.mjs"]) === 0);
-  mainStep("2. Runtime config", () => run("node", ["scripts/write-runtime-config.mjs"]) === 0);
+  mainStep("2. Runtime config + FCM", () => {
+    const ok = run("node", ["scripts/write-runtime-config.mjs"]) === 0;
+    run("npm", ["run", "setup:fcm"]);
+    return ok;
+  });
 
   const fb = loadFirebaseWebConfig();
+  const vapidKey = getVapidKey();
   if (fb && isFirebaseConfigComplete(fb)) {
     mainStep("3. GitHub Secrets Firebase", () => {
       if (!ghAvailable()) {
         console.log("  ! gh no autenticado — omite secrets");
         return true;
       }
-      const { fail } = pushFirebaseSecrets(fb);
+      const extras = vapidKey ? { VITE_FIREBASE_VAPID_KEY: vapidKey } : {};
+      const { fail } = pushFirebaseSecrets(fb, extras);
       return fail === 0;
     });
   } else {
-    console.log("\n=== 3. Firebase SDK ===\n  ! Completa firebase-web-config.json");
+    console.log("\n=== 3. Firebase SDK ===\n  ! Completa firebase-web-config.json o config/bootstrap.json");
   }
 
   mainStep("4. FIREBASE_TOKEN → GitHub", () => {

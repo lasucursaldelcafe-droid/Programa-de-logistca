@@ -350,6 +350,20 @@ export async function runDiagnostic(opts = {}) {
     fix: "node scripts/write-runtime-config.mjs con VITE_FIREBASE_* en env",
   });
 
+  const runtimeVapid =
+    runtime?.vapidKey?.trim() ||
+    bootstrap?.vapidKey?.trim() ||
+    process.env.VITE_FIREBASE_VAPID_KEY?.trim() ||
+    "";
+  checks.push({
+    id: "fcm.vapid",
+    status: runtimeVapid ? "ok" : "warn",
+    message: runtimeVapid
+      ? "Clave VAPID Web Push configurada (FCM)"
+      : "Falta VITE_FIREBASE_VAPID_KEY — notificaciones push web desactivadas",
+    fix: "Firebase Console → Cloud Messaging → Certificados Web Push → config/bootstrap.json → vapidKey",
+  });
+
   const hasDeployCreds =
     !!(process.env.FIREBASE_TOKEN ?? "").trim() ||
     !!(process.env.FIREBASE_SERVICE_ACCOUNT_JSON ?? "").trim();

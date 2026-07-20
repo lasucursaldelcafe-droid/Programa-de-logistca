@@ -58,7 +58,7 @@ export function normalizeFirebaseConfig(raw) {
   };
 }
 
-export function firebaseToViteEnv(fb) {
+export function firebaseToViteEnv(fb, extras = {}) {
   return {
     VITE_DATA_BACKEND: "firebase",
     VITE_DEMO_MODE: "false",
@@ -68,6 +68,7 @@ export function firebaseToViteEnv(fb) {
     VITE_FIREBASE_STORAGE_BUCKET: fb.storageBucket,
     VITE_FIREBASE_MESSAGING_SENDER_ID: fb.messagingSenderId,
     VITE_FIREBASE_APP_ID: fb.appId,
+    ...extras,
   };
 }
 

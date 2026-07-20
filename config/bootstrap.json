@@ -16,10 +16,11 @@
     "messagingSenderId": "617377686574",
     "appId": "1:617377686574:web:f783b32f31d29e6f1e6bbf"
   },
+  "vapidKey": "BCpsZZ_vw1YfE_ZWb81RVqLDxIpRVGFe5wYE7FgEV--V6Hwyak-iUf875ujUwCLsj0nYpJGBqO90sw8xdsi9h4o",
   "setupCompletado": {
     "firebaseSecrets": true,
     "googleMaps": true,
     "cuentasPlataforma": true,
-    "fcm": false
+    "fcm": true
   }
 }

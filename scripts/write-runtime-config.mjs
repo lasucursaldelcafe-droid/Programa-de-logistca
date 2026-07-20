@@ -68,6 +68,12 @@ function main() {
       "",
   };
 
+  const vapidKey =
+    process.env.VITE_FIREBASE_VAPID_KEY?.trim() ||
+    bootstrap.vapidKey?.trim() ||
+    docsRuntime?.vapidKey?.trim() ||
+    "";
+
   const hasFirebase =
     !!firebase.apiKey && !!firebase.projectId && !!firebase.appId && firebase.apiKey !== "demo-api-key";
 
@@ -85,10 +91,11 @@ function main() {
       firebaseSecrets: hasFirebase,
       googleMaps: !!googleMapsApiKey,
       cuentasPlataforma: existing.setupCompletado?.cuentasPlataforma ?? true,
-      fcm: existing.setupCompletado?.fcm ?? false,
+      fcm: !!vapidKey,
     },
     ...(googleMapsApiKey ? { googleMapsApiKey } : {}),
     ...(hasFirebase ? { firebase } : {}),
+    ...(vapidKey ? { vapidKey } : {}),
   };
 
   mkdirSync(dirname(RUNTIME_PATH), { recursive: true });
@@ -96,6 +103,7 @@ function main() {
 
   console.log(`✓ ${RUNTIME_PATH}`);
   console.log(`  Firebase: ${hasFirebase ? firebase.projectId : "pendiente"}`);
+  console.log(`  FCM VAPID: ${vapidKey ? "configurado" : "pendiente"}`);
   console.log(`  Canonical: ${config.canonicalAppUrl}`);
 }
 

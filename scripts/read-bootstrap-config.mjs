@@ -54,6 +54,7 @@ function main() {
     VITE_FIREBASE_STORAGE_BUCKET: useFirebase ? (fb.storageBucket ?? "") : "",
     VITE_FIREBASE_MESSAGING_SENDER_ID: useFirebase ? (fb.messagingSenderId ?? "") : "",
     VITE_FIREBASE_APP_ID: useFirebase ? (fb.appId ?? "") : "",
+    VITE_FIREBASE_VAPID_KEY: isSet(cfg?.vapidKey) ? cfg.vapidKey.trim() : "",
     VITE_USE_FIREBASE_EMULATORS: "false",
     VITE_BLOQUEAR_INTEGRACIONES: "true",
     VITE_INTEGRACIONES_CLAVE: "spe-desbloquear",

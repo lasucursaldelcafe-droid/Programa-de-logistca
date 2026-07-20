@@ -50,6 +50,7 @@ jobs:
       - name: Runtime config + firebase-web-config
         run: |
           node scripts/write-runtime-config.mjs
+          npm run setup:fcm
           node <<'NODE'
           const fs = require("fs");
           const cfg = JSON.parse(fs.readFileSync("apps/admin/public/spe-runtime-config.json", "utf8"));

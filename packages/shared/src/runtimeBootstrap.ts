@@ -11,6 +11,7 @@ export interface RuntimeBootstrapConfig {
   demoMode?: boolean;
   googleMapsApiKey?: string;
   canonicalAppUrl?: string;
+  vapidKey?: string;
   firebase?: Partial<FirebaseClientConfig>;
   setupCompletado?: {
     firebaseSecrets?: boolean;
@@ -61,6 +62,7 @@ const runtime: RuntimeState = {
 };
 
 let runtimeGoogleMapsApiKey: string | null = null;
+let runtimeVapidKey: string | null = null;
 
 interface SetupCompletadoRuntime {
   firebaseSecrets?: boolean;
@@ -84,11 +86,21 @@ export function getRuntimeGoogleMapsApiKey(): string {
   return runtimeGoogleMapsApiKey ?? "";
 }
 
+export function getRuntimeVapidKey(): string {
+  return runtimeVapidKey ?? "";
+}
+
+function setVapidKey(value: string | undefined): void {
+  const trimmed = value?.trim() ?? "";
+  runtimeVapidKey = trimmed.length > 0 ? trimmed : null;
+}
+
 function applyConfig(config: RuntimeBootstrapConfig): void {
   if (config.setupCompletado) {
     runtimeSetupCompletado = { ...runtimeSetupCompletado, ...config.setupCompletado };
   }
   if (config.googleMapsApiKey) setGoogleMapsApiKey(config.googleMapsApiKey);
+  if (config.vapidKey) setVapidKey(config.vapidKey);
 
   const hasFirebase =
     !!config.firebase &&
