@@ -1,6 +1,7 @@
 name: Producción completa (SPE)
 
 # Pipeline único: Pages → Firestore → verificación → instaladores
+# Trigger: 2026-07-20 deploy post #77 #78
 on:
   workflow_dispatch:
   push:
