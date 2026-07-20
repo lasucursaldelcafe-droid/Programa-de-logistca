@@ -76,6 +76,7 @@ CREDENCIALES-PRODUCCION.txt
 config/pendientes-setup.json
 apps-script/spe-backend/.clasp.json
 config/credenciales.local.json
+config/acceso.local.json
 config/diagnostico-report.json
 __pycache__/
 *.pyc

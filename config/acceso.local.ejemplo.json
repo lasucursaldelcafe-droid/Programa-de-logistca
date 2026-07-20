@@ -1,0 +1,14 @@
+{
+  "_comentario": "Copia a acceso.local.json y completa. NO commitear acceso.local.json.",
+  "produccion": {
+    "url": "https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/login",
+    "email": "lasucursaldelcafe@gmail.com",
+    "password": "PON_AQUI_LA_CONTRASEÑA_QUE_DEFINISTE_EN_SEED",
+    "role": "administrador"
+  },
+  "local_emuladores": {
+    "email": "admin@eventos.test",
+    "password": "Admin123!",
+    "nota": "Solo con npm run dev:full — no funciona en producción web"
+  }
+}

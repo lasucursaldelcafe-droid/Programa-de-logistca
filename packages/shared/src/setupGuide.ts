@@ -99,8 +99,37 @@ function buildAllSetupGuideSteps(base?: Partial<DeploymentBase>): SetupGuideStep
       doneWhen: "CI en verde, login con lasucursaldelcafe@gmail.com y Backend dice Firebase.",
     },
     {
+      id: "firestore-deploy",
+      title: "2. Desplegar Firestore (reglas + chat)",
+      priority: "p0",
+      summary: "Necesario para chat interno, comunicación y datos en producción.",
+      steps: [
+        "En PC: firebase login",
+        "firebase use TU_PROJECT_ID (mismo que VITE_FIREBASE_PROJECT_ID)",
+        "npm run firebase:deploy-firestore",
+        "O usa Firebase MCP en Cursor (.cursor/mcp.json)",
+        "Crea cuenta admin si aún no existe: npm run acceso (instrucciones)",
+      ],
+      credentials: [
+        {
+          label: "Comando",
+          value: "npm run firebase:deploy-firestore",
+        },
+        {
+          label: "Admin seed",
+          value: "SPE_PROD_PASSWORD='…' npm run seed:production",
+          note: "Requiere service-account.json o FIREBASE_SERVICE_ACCOUNT_JSON",
+        },
+      ],
+      links: [
+        { label: "Guía acceso", href: `${REPO}/blob/main/docs-source/ACCESO-PRODUCCION.md` },
+        { label: "Firebase Console", href: "https://console.firebase.google.com/" },
+      ],
+      doneWhen: "Chat en /comunicacion funciona sin errores de permisos Firestore.",
+    },
+    {
       id: "firebase-login",
-      title: "2. Probar login en producción",
+      title: "3. Probar login en producción",
       priority: "p0",
       summary: "Verifica que entras al panel con tu cuenta Firebase.",
       steps: [
