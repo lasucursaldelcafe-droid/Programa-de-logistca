@@ -1,0 +1,59 @@
+name: Configurar CURSOR_API_KEY
+
+# Sube CURSOR_API_KEY a GitHub Secrets sin usar la PC.
+# Requiere UN secret previo (solo la primera vez, manual en GitHub UI):
+#   REPO_SETUP_TOKEN = Personal Access Token con scope admin:repo
+#
+# Luego: Actions → este workflow → Run → pega la key crsr_...
+on:
+  workflow_dispatch:
+    inputs:
+      cursor_api_key:
+        description: "Cursor API Key (crsr_... desde cursor.com/settings)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  configurar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verificar token de setup
+        run: |
+          if [ -z "${{ secrets.REPO_SETUP_TOKEN }}" ]; then
+            echo "::error::Falta REPO_SETUP_TOKEN en GitHub Secrets"
+            echo ""
+            echo "Una sola vez (manual):"
+            echo "  1. GitHub → Settings → Developer settings → Personal access tokens"
+            echo "  2. Token clásico con scope admin:repo (o fine-grained secrets:write en este repo)"
+            echo "  3. Repo → Settings → Secrets → REPO_SETUP_TOKEN"
+            echo ""
+            echo "Después vuelve a ejecutar este workflow con tu cursor_api_key."
+            exit 1
+          fi
+
+      - name: Subir CURSOR_API_KEY
+        env:
+          GH_TOKEN: ${{ secrets.REPO_SETUP_TOKEN }}
+          KEY: ${{ inputs.cursor_api_key }}
+        run: |
+          if [ -z "$KEY" ] || [ "${KEY#crsr_}" = "$KEY" ]; then
+            echo "::error::La key debe empezar con crsr_"
+            exit 1
+          fi
+          printf '%s' "$KEY" | gh secret set CURSOR_API_KEY --repo "${{ github.repository }}"
+          echo "✓ CURSOR_API_KEY configurada en ${{ github.repository }}"
+
+      - name: Verificar
+        env:
+          GH_TOKEN: ${{ secrets.REPO_SETUP_TOKEN }}
+        run: |
+          gh secret list --repo "${{ github.repository }}" | grep -q CURSOR_API_KEY && echo "✓ Secret visible en listado"
+
+      - name: Resumen
+        run: |
+          echo "## CURSOR_API_KEY configurada" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Ejecuta **Cursor Agent (SPE)** con task \`diagnostico\`." >> "$GITHUB_STEP_SUMMARY"
