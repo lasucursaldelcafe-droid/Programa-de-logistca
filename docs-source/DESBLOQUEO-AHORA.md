@@ -9,8 +9,10 @@ GitHub Pages solo **sirve la web**; no sustituye a Firebase.
 |----------|----------|-------------------|
 | **Publicar app (GitHub Pages)** | Sube la UI a github.io | OK (verde) |
 | **CI** | Build + smoke | OK |
-| **Desplegar reglas / Producción completa** | Habla con Firebase | Rojo o vacío **sin** `FIREBASE_TOKEN` |
-| **Auto-merge** | Mergea PRs `cursor/*` | Fallaba si el PR estaba en borrador (ya corregido) |
+| **Desplegar reglas / Producción completa** | Habla con Firebase | Rojo **sin** `FIREBASE_TOKEN` |
+| **Auto-merge** | Mergea PRs `cursor/*` | Ya no se atasca en borrador |
+
+Detalle importante: si el merge lo hace Actions con el token por defecto, **GitHub no encadena** Pages/Firebase (parece un “rechazo”). Por eso hace falta el secret `GH_PAT` (abajo).
 
 Si ves rojo en Firebase y verde en Pages: **es correcto**. Falta el puente GitHub → Firebase.
 
@@ -29,11 +31,12 @@ Inicia sesión con `lasucursaldelcafe@gmail.com`. Copia el token (`1//0…`).
 
 https://github.com/lasucursaldelcafe-droid/Programa-de-logistca/settings/secrets/actions
 
-| Secret | Valor |
-|--------|--------|
-| `FIREBASE_TOKEN` | Token del paso 1 |
-| `SPE_PROD_PASSWORD` | Contraseña del CEO (ej. la que usas en login) |
-| `VITE_FIREBASE_*` | Ya deberían estar (SDK web) |
+| Secret | Valor | Para qué |
+|--------|--------|----------|
+| `FIREBASE_TOKEN` | Token del paso 1 | Publicar reglas/functions en Firebase |
+| `SPE_PROD_PASSWORD` | Contraseña del CEO | Bootstrap + QR + cuentas |
+| `GH_PAT` | PAT classic (`repo` + `workflow`) | Que el auto-merge **sí dispare** Pages/Firebase |
+| `VITE_FIREBASE_*` | SDK web | Ya deberían estar |
 
 Atajo si tienes `gh` en el PC:
 

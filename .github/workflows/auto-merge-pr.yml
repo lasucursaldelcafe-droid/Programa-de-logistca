@@ -9,6 +9,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  actions: write
 
 jobs:
   auto-merge:
@@ -21,6 +22,9 @@ jobs:
         id: pr
         uses: actions/github-script@v7
         with:
+          # GH_PAT (classic, repo+workflow) hace que el merge dispare Pages/Firebase.
+          # Con solo GITHUB_TOKEN GitHub NO encadena otros workflows (parece “rechazo”).
+          github-token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           script: |
             const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -154,6 +158,39 @@ jobs:
             } catch (e) {
               core.warning(`No se pudo borrar rama ${branch}: ${e.message}`);
             }
+
+      - name: Disparar deploys tras merge
+        if: steps.pr.outputs.merged == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          echo "Disparando workflows de deploy en main…"
+          gh workflow run "Publicar app (GitHub Pages)" --ref main
+          PAGES=$?
+          gh workflow run "Desplegar reglas Firestore" --ref main
+          RULES=$?
+          gh workflow run "Producción completa (SPE)" --ref main
+          PROD=$?
+          gh workflow run "Configurar Firebase (SPE)" --ref main
+          FIRE=$?
+          {
+            echo "## Deploys tras auto-merge"
+            echo ""
+            echo "| Workflow | Exit |"
+            echo "|----------|------|"
+            echo "| Pages | $PAGES |"
+            echo "| Reglas Firestore | $RULES |"
+            echo "| Producción completa | $PROD |"
+            echo "| Configurar Firebase | $FIRE |"
+            echo ""
+            if [ -z "${{ secrets.GH_PAT }}" ]; then
+              echo "**Nota:** sin secret \`GH_PAT\`, el dispatch puede fallar (403)."
+              echo "Crea un PAT classic con scopes \`repo\` + \`workflow\` → Secret \`GH_PAT\`."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          # No tumbar el job: el merge ya ocurrió. Pages/Firebase son best-effort aquí.
+          exit 0
 
       - name: Resumen
         if: always()
