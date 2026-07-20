@@ -95,6 +95,36 @@ export async function sendNotification(data: {
   await addDoc(collection(getFirestoreDb(), "notifications"), payload);
 }
 
+export async function sendAdminNotification(data: {
+  titulo: string;
+  mensaje: string;
+  scope: "todos" | "admins" | "workers" | "event" | "site";
+  workerIds?: string[];
+  eventId?: string;
+  siteId?: string;
+  urgente?: boolean;
+  actorUid: string;
+  actorNombre: string;
+}): Promise<void> {
+  let destinatarios: string[] = ["_todos"];
+  if (data.scope === "admins") destinatarios = ["_admins"];
+  if (data.scope === "workers" && data.workerIds?.length) destinatarios = data.workerIds;
+  if (data.scope === "event" && data.eventId) destinatarios = [`event:${data.eventId}`];
+  if (data.scope === "site" && data.siteId) destinatarios = [`site:${data.siteId}`];
+
+  await sendNotification({
+    tipo: "sistema",
+    titulo: data.titulo.trim(),
+    mensaje: data.mensaje.trim(),
+    urgente: data.urgente ?? false,
+    destinatarios,
+    eventId: data.eventId,
+    siteId: data.siteId,
+    actorUid: data.actorUid,
+    actorNombre: data.actorNombre,
+  });
+}
+
 export async function markNotificationRead(
   notificationId: string,
   uid: string,
