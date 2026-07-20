@@ -104,16 +104,20 @@ function buildAllSetupGuideSteps(base?: Partial<DeploymentBase>): SetupGuideStep
       priority: "p0",
       summary: "Necesario para chat interno, comunicación y datos en producción.",
       steps: [
-        "En PC: firebase login",
-        "firebase use TU_PROJECT_ID (mismo que VITE_FIREBASE_PROJECT_ID)",
-        "npm run firebase:deploy-firestore",
-        "O usa Firebase MCP en Cursor (.cursor/mcp.json)",
-        "Crea cuenta admin si aún no existe: npm run acceso (instrucciones)",
+        "En PC (recomendado): .\\scripts\\windows\\SPE-Deploy-Firestore.ps1",
+        "O manual: firebase login → firebase use programalog-ccc12 → npm run deploy:firestore",
+        "Sube token a GitHub: npm run setup:firebase-token (para CI automático)",
+        "Crea cuenta admin si falta: npm run firestore:bootstrap",
       ],
       credentials: [
         {
-          label: "Comando",
-          value: "npm run firebase:deploy-firestore",
+          label: "Script Windows (todo en uno)",
+          value: ".\\scripts\\windows\\SPE-Deploy-Firestore.ps1",
+        },
+        {
+          label: "Comando npm",
+          value: "npm run deploy:firestore",
+          note: "Reglas vía API + índices chat (requiere FIREBASE_TOKEN o service-account.json)",
         },
         {
           label: "Admin seed",
