@@ -360,6 +360,38 @@ class DemoStore {
     this.notify();
   }
 
+  provisionWorkerAccount(workerId: string, actorNombre?: string): void {
+    const worker = this.workers.find((w) => w.id === workerId);
+    if (!worker) throw new Error("Trabajador no encontrado");
+    if (worker.cuentaCreada) return;
+
+    const email = worker.email.trim().toLowerCase();
+    if (this.accounts.some((a) => a.email === email)) {
+      throw new Error("Ya existe una cuenta con ese correo.");
+    }
+
+    const password = worker.documento.replace(/[\s.\-]/g, "").trim();
+    if (password.length < 6) {
+      throw new Error("El documento debe tener al menos 6 caracteres para usarlo como contraseña.");
+    }
+
+    const assignedRole = worker.rolPlataforma ?? "trabajador";
+    const uid = `demo-${workerId}`;
+    const appUser: AppUser = {
+      uid,
+      email,
+      nombre: worker.nombre,
+      role: assignedRole,
+      workerId,
+      customRoleId: worker.customRoleId,
+      perfilCompleto: assignedRole === "supervisor_sitio",
+      habilitado: worker.habilitado !== false,
+    };
+
+    this.accounts = [...this.accounts, { email, password, user: appUser }];
+    this.updateWorker(workerId, { cuentaCreada: true }, actorNombre);
+  }
+
   activateAccount(token: string, password: string, codigoAcceso: string): void {
     const invitation = this.getInvitation(token);
     if (!invitation) throw new Error("Invitación no encontrada");

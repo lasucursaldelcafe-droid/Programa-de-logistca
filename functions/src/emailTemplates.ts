@@ -134,6 +134,48 @@ export function buildShiftAssignedEmail(
   return { subject, text, html };
 }
 
+export function buildWorkerCredentialsEmail(
+  data: { workerNombre: string; email: string },
+  appUrl: string,
+): { subject: string; text: string; html: string } {
+  const base = normalizeBaseUrl(appUrl);
+  const loginUrl = `${base}login`;
+  const subject = "Acceso SPE — Tus credenciales de trabajador";
+  const text = [
+    `Hola ${data.workerNombre},`,
+    "",
+    "Tu cuenta en el Sistema de Personal para Eventos (SPE) ya está activa.",
+    "",
+    "Credenciales de acceso:",
+    `• Usuario (correo): ${data.email}`,
+    "• Contraseña: tu número de documento / cédula (sin puntos ni espacios)",
+    "",
+    "Inicia sesión:",
+    loginUrl,
+    "",
+    "En la app Trabajador usa el mismo correo y tu documento como contraseña.",
+    "",
+    "Por seguridad, cambia tu contraseña en Configuración cuando puedas.",
+    "",
+    "— SPE Negocio",
+  ].join("\n");
+
+  const html = `
+    <div style="font-family:Inter,Arial,sans-serif;max-width:560px;color:#1a1a1a">
+      <h2 style="color:#f09040">Tu cuenta SPE está lista</h2>
+      <p>Hola <strong>${escapeHtml(data.workerNombre)}</strong>,</p>
+      <p>Ya puedes entrar al sistema con estas credenciales:</p>
+      <table style="width:100%;border-collapse:collapse;margin:16px 0">
+        <tr><td style="padding:8px 0;color:#666">Usuario</td><td><strong>${escapeHtml(data.email)}</strong></td></tr>
+        <tr><td style="padding:8px 0;color:#666">Contraseña</td><td><strong>Tu documento / cédula</strong> (sin puntos ni espacios)</td></tr>
+      </table>
+      <p><a href="${loginUrl}" style="display:inline-block;background:#f09040;color:#000;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">Iniciar sesión</a></p>
+    </div>
+  `.trim();
+
+  return { subject, text, html };
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")

@@ -58,7 +58,12 @@ import {
   roleTemplateDisplayName,
   parseCustomRolePermisos,
   serializeCustomRolePermisos,
+  getFirebaseApp,
+  workerDocumentPassword,
+  type WorkerBulkImportResult,
+  type WorkerImportRow,
 } from "@spe/shared";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import type { GeoPosition } from "../lib/geolocation";
 import { isDemoMode } from "../lib/mode";
 import { isSheetsBackend } from "../lib/backend";
@@ -196,12 +201,17 @@ export async function createWorker(
     actorNombre?: string;
     creadaPor?: string;
     creadaPorNombre?: string;
-    /** Envía invitación por correo automáticamente (Firebase producción). Default true. */
+    /** Crea cuenta con correo + documento como clave. Default true. */
+    crearCuenta?: boolean;
+    /** Envía invitación clásica (solo si crearCuenta es false). Default false. */
     enviarInvitacion?: boolean;
+    /** Envía correo con instrucciones de acceso (Firebase). Default true. */
+    enviarCredenciales?: boolean;
   },
 ): Promise<string> {
   const rolPlataforma = data.rolPlataforma ?? "trabajador";
   const actorNombre = options?.actorNombre;
+  const shouldCreateAccount = options?.crearCuenta !== false;
   if (isDemoMode()) {
     const id = demoStore.addWorker(
       {
@@ -223,6 +233,9 @@ export async function createWorker(
       },
       actorNombre,
     );
+    if (shouldCreateAccount) {
+      demoStore.provisionWorkerAccount(id, actorNombre);
+    }
     return id;
   }
   const id = `worker-${Date.now().toString(36)}`;
@@ -246,6 +259,9 @@ export async function createWorker(
   };
   if (isSheetsBackend()) {
     await sheetsUpsertRecord("workers", worker);
+    if (shouldCreateAccount) {
+      await provisionWorkerAccount(id, { actorNombre });
+    }
     return id;
   }
   const ref = await addDoc(collection(getFirestoreDb(), "workers"), {
@@ -267,7 +283,10 @@ export async function createWorker(
 
   const creadaPor = options?.creadaPor;
   const shouldInvite =
-    options?.enviarInvitacion !== false && data.email.trim().length > 0 && Boolean(creadaPor);
+    !shouldCreateAccount &&
+    options?.enviarInvitacion === true &&
+    data.email.trim().length > 0 &&
+    Boolean(creadaPor);
 
   if (shouldInvite && creadaPor) {
     await createInvitation({
@@ -277,6 +296,11 @@ export async function createWorker(
       role: rolPlataforma,
       creadaPor,
       creadaPorNombre: options?.creadaPorNombre ?? actorNombre ?? "Administrador",
+    });
+  } else if (shouldCreateAccount) {
+    await provisionWorkerAccount(ref.id, {
+      actorNombre,
+      sendEmail: options?.enviarCredenciales !== false,
     });
   }
 
@@ -806,6 +830,144 @@ export async function changeOwnPassword(
   const cred = EmailAuthProvider.credential(fbUser.email, currentPassword);
   await reauthenticateWithCredential(fbUser, cred);
   await updatePassword(fbUser, newPassword);
+}
+
+/** Crea cuenta de acceso: usuario = correo, contraseña = documento (sin puntos ni espacios). */
+export async function provisionWorkerAccount(
+  workerId: string,
+  options?: { actorNombre?: string; sendEmail?: boolean },
+): Promise<void> {
+  if (isDemoMode()) {
+    demoStore.provisionWorkerAccount(workerId, options?.actorNombre);
+    return;
+  }
+
+  const worker = await getWorkerById(workerId);
+  if (!worker) throw new Error("Trabajador no encontrado");
+  if (worker.cuentaCreada) return;
+
+  const password = workerDocumentPassword(worker.documento);
+  const email = worker.email.trim().toLowerCase();
+  const rolPlataforma = worker.rolPlataforma ?? "trabajador";
+  const perfilCompleto = rolPlataforma === "supervisor_sitio";
+
+  if (isSheetsBackend()) {
+    const uid = `sheets-${workerId}-${Date.now().toString(36)}`;
+    await sheetsUpsertRecord(
+      "users",
+      {
+        uid,
+        email,
+        password,
+        nombre: worker.nombre,
+        role: rolPlataforma,
+        workerId,
+        customRoleId: worker.customRoleId ?? "",
+        perfilCompleto: String(perfilCompleto),
+        telefono: worker.telefono ?? "",
+        habilitado: "true",
+      },
+      "uid",
+    );
+    await sheetsUpsertRecord("workers", { ...worker, cuentaCreada: true });
+    return;
+  }
+
+  const fn = httpsCallable<
+    { workerId: string; sendEmail?: boolean },
+    { uid: string }
+  >(getFunctions(getFirebaseApp(), "us-central1"), "provisionWorkerAccount");
+  await fn({ workerId, sendEmail: options?.sendEmail });
+}
+
+export async function importWorkersBulk(
+  rows: WorkerImportRow[],
+  options?: { actorNombre?: string; creadaPor?: string; sendEmail?: boolean },
+): Promise<WorkerBulkImportResult> {
+  const results: WorkerBulkImportResult["results"] = [];
+
+  if (isDemoMode() || isSheetsBackend()) {
+    for (const row of rows) {
+      try {
+        const workerId = await createWorker(
+          {
+            nombre: row.nombre,
+            documento: row.documento,
+            telefono: row.telefono,
+            email: row.email,
+            perfiles: row.perfiles,
+            rolPlataforma: row.rolPlataforma,
+          },
+          {
+            actorNombre: options?.actorNombre,
+            creadaPor: options?.creadaPor,
+            crearCuenta: true,
+            enviarInvitacion: false,
+            enviarCredenciales: false,
+          },
+        );
+        results.push({
+          line: row.line,
+          email: row.email,
+          nombre: row.nombre,
+          ok: true,
+          workerId,
+        });
+      } catch (err) {
+        results.push({
+          line: row.line,
+          email: row.email,
+          nombre: row.nombre,
+          ok: false,
+          error: err instanceof Error ? err.message : "Error al importar fila",
+        });
+      }
+    }
+    const created = results.filter((r) => r.ok).length;
+    return { created, failed: results.length - created, results };
+  }
+
+  const fn = httpsCallable<
+    {
+      rows: Array<{
+        nombre: string;
+        documento: string;
+        email: string;
+        telefono?: string;
+        perfiles?: string[];
+        rolPlataforma?: string;
+      }>;
+      sendEmail?: boolean;
+    },
+    { created: number; failed: number; results: Array<{ email: string; nombre: string; ok: boolean; workerId?: string; error?: string }> }
+  >(getFunctions(getFirebaseApp(), "us-central1"), "importWorkersBulk");
+
+  const response = await fn({
+    rows: rows.map((row) => ({
+      nombre: row.nombre,
+      documento: row.documento,
+      email: row.email,
+      telefono: row.telefono,
+      perfiles: row.perfiles,
+      rolPlataforma: row.rolPlataforma,
+    })),
+    sendEmail: options?.sendEmail !== false,
+  });
+
+  const mapped = response.data.results.map((r, index) => ({
+    line: rows[index]?.line ?? index + 2,
+    email: r.email,
+    nombre: r.nombre,
+    ok: r.ok,
+    workerId: r.workerId,
+    error: r.error,
+  }));
+
+  return {
+    created: response.data.created,
+    failed: response.data.failed,
+    results: mapped,
+  };
 }
 
 export async function getWorkerById(workerId: string): Promise<Worker | null> {

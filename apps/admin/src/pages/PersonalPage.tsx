@@ -5,10 +5,14 @@ import {
   ROLE_ACCESS_MODE_LABEL,
   ROLE_LABEL,
   ROLES_ASIGNABLES_ADMIN,
+  buildWorkerImportTemplateCsv,
+  downloadTextFile,
+  parseWorkerImportCsv,
   puedeAsignarRoles,
   puedeGestionarPersonal,
   type PerfilTrabajo,
   type RolAsignablePorAdmin,
+  type WorkerBulkImportResult,
   type WorkerEstado,
 } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
@@ -16,6 +20,7 @@ import { Badge, Card, PerfilTag } from "../components/ui";
 import {
   createWorker,
   deleteWorker,
+  importWorkersBulk,
   setWorkerHabilitado,
   updateWorkerEstado,
   useWorkersState,
@@ -23,8 +28,6 @@ import {
 import { getCustomRolesForBase, useCustomRoles } from "../hooks/useCustomRoles";
 import { PageHeader } from "../components/nav/PageHeader";
 import { PermissionDenied, DataLoadingSkeleton } from "../components/FeedbackStates";
-import { isDemoMode } from "../lib/mode";
-import { isSheetsBackend } from "../lib/backend";
 
 const PERFILES: PerfilTrabajo[] = [
   "logistica",
@@ -53,6 +56,10 @@ export function PersonalPage() {
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [csvContent, setCsvContent] = useState<string | null>(null);
+  const [csvFileName, setCsvFileName] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<WorkerBulkImportResult | null>(null);
 
   const adminAsignaRoles = user ? puedeAsignarRoles(user.role) : false;
 
@@ -70,6 +77,11 @@ export function PersonalPage() {
     () => new Map(customRoles.map((r) => [r.id, r.modoAcceso])),
     [customRoles],
   );
+
+  const parsedImport = useMemo(() => {
+    if (!csvContent) return null;
+    return parseWorkerImportCsv(csvContent);
+  }, [csvContent]);
 
   if (!user || !puedeGestionarPersonal(user.role)) {
     return (
@@ -98,6 +110,7 @@ export function PersonalPage() {
     setMensaje(null);
     try {
       const nombreGuardado = form.nombre;
+      const emailGuardado = form.email.trim().toLowerCase();
       await createWorker(
         {
           ...form,
@@ -108,7 +121,8 @@ export function PersonalPage() {
           actorNombre: currentUser.nombre,
           creadaPor: currentUser.uid,
           creadaPorNombre: currentUser.nombre,
-          enviarInvitacion: !isDemoMode() && !isSheetsBackend(),
+          crearCuenta: true,
+          enviarInvitacion: false,
         },
       );
       setForm({
@@ -120,11 +134,9 @@ export function PersonalPage() {
         rolPlataforma: "trabajador",
         customRoleId: "",
       });
-      if (!isDemoMode() && !isSheetsBackend()) {
-        setMensaje(
-          `${nombreGuardado} registrado/a. Se envió invitación automática al correo con código y enlace de activación.`,
-        );
-      }
+      setMensaje(
+        `${nombreGuardado} registrado/a. Usuario: ${emailGuardado} · Contraseña inicial: documento (sin puntos ni espacios).`,
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo registrar la persona.");
     }
@@ -151,11 +163,54 @@ export function PersonalPage() {
     await setWorkerHabilitado(id, habilitado, currentUser.nombre);
   }
 
+  function descargarPlantilla() {
+    downloadTextFile("plantilla-personal-spe.csv", buildWorkerImportTemplateCsv());
+  }
+
+  async function onCsvSelected(file: File | null) {
+    setImportResult(null);
+    if (!file) {
+      setCsvContent(null);
+      setCsvFileName(null);
+      return;
+    }
+    const text = await file.text();
+    setCsvContent(text);
+    setCsvFileName(file.name);
+  }
+
+  async function importarCsv() {
+    if (!parsedImport || parsedImport.rows.length === 0) return;
+    if (parsedImport.issues.length > 0) {
+      setError("Corrige los errores del archivo antes de importar.");
+      return;
+    }
+    setImporting(true);
+    setError(null);
+    setMensaje(null);
+    try {
+      const result = await importWorkersBulk(parsedImport.rows, {
+        actorNombre: currentUser.nombre,
+        creadaPor: currentUser.uid,
+      });
+      setImportResult(result);
+      setMensaje(
+        `Importación completada: ${result.created} creado(s), ${result.failed} con error.`,
+      );
+      setCsvContent(null);
+      setCsvFileName(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo importar el archivo.");
+    } finally {
+      setImporting(false);
+    }
+  }
+
   return (
     <div className="space-y-5">
       <PageHeader
         title="Personal"
-        description="Registra personas y asigna roles. En producción se envía invitación automática al correo."
+        description="Registra trabajadores con correo como usuario y documento como contraseña inicial. También puedes cargar una plantilla CSV."
       />
 
       {error && (
@@ -169,10 +224,15 @@ export function PersonalPage() {
 
       <Card>
         <h2 className="font-display text-lg font-semibold">Nueva persona</h2>
+        <p className="mt-1 text-sm text-neutral-400">
+          El correo será el usuario de acceso. La contraseña inicial es el número de documento (sin puntos ni espacios).
+        </p>
         <form onSubmit={crearTrabajador} className="mt-4 grid gap-3 sm:grid-cols-2">
           {(["nombre", "documento", "telefono", "email"] as const).map((field) => (
             <label key={field} className="text-sm capitalize">
-              <span className="mb-1 block text-neutral-300">{field}</span>
+              <span className="mb-1 block text-neutral-300">
+                {field === "documento" ? "Documento / cédula (clave inicial)" : field}
+              </span>
               <input
                 value={form[field]}
                 onChange={(e) => setForm((f) => ({ ...f, [field]: e.target.value }))}
@@ -249,6 +309,101 @@ export function PersonalPage() {
             </button>
           </div>
         </form>
+      </Card>
+
+      <Card>
+        <h2 className="font-display text-lg font-semibold">Carga masiva (CSV)</h2>
+        <p className="mt-1 text-sm text-neutral-400">
+          Descarga la plantilla, complétala en Excel o Google Sheets y súbela para crear cuentas en lote.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={descargarPlantilla}
+            className="rounded-lg border border-border px-4 py-2 text-sm hover:border-accent/50"
+          >
+            Descargar plantilla CSV
+          </button>
+          <label className="cursor-pointer rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black">
+            Seleccionar archivo
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={(e) => void onCsvSelected(e.target.files?.[0] ?? null)}
+            />
+          </label>
+        </div>
+        {csvFileName && (
+          <p className="mt-2 text-xs text-neutral-500">
+            Archivo: {csvFileName}
+            {parsedImport ? ` · ${parsedImport.rows.length} fila(s) válida(s)` : ""}
+          </p>
+        )}
+        {parsedImport && parsedImport.issues.length > 0 && (
+          <ul className="mt-3 space-y-1 text-sm text-alert">
+            {parsedImport.issues.map((issue, i) => (
+              <li key={`${issue.line}-${i}`}>
+                Línea {issue.line}
+                {issue.field ? ` (${issue.field})` : ""}: {issue.message}
+              </li>
+            ))}
+          </ul>
+        )}
+        {parsedImport && parsedImport.rows.length > 0 && (
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead className="text-xs uppercase text-neutral-500">
+                <tr>
+                  <th className="py-2 pr-3">Nombre</th>
+                  <th className="py-2 pr-3">Documento</th>
+                  <th className="py-2 pr-3">Correo</th>
+                  <th className="py-2 pr-3">Perfiles</th>
+                  <th className="py-2">Rol</th>
+                </tr>
+              </thead>
+              <tbody>
+                {parsedImport.rows.slice(0, 8).map((row) => (
+                  <tr key={row.line} className="border-t border-border/50">
+                    <td className="py-2 pr-3">{row.nombre}</td>
+                    <td className="py-2 pr-3 font-mono text-xs">{row.documento}</td>
+                    <td className="py-2 pr-3">{row.email}</td>
+                    <td className="py-2 pr-3">{row.perfiles.join(" | ")}</td>
+                    <td className="py-2">{row.rolPlataforma}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {parsedImport.rows.length > 8 && (
+              <p className="mt-2 text-xs text-neutral-500">
+                … y {parsedImport.rows.length - 8} fila(s) más
+              </p>
+            )}
+          </div>
+        )}
+        {parsedImport && parsedImport.rows.length > 0 && parsedImport.issues.length === 0 && (
+          <button
+            type="button"
+            disabled={importing}
+            onClick={() => void importarCsv()}
+            className="mt-4 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
+          >
+            {importing
+              ? "Importando…"
+              : `Importar ${parsedImport.rows.length} trabajador(es)`}
+          </button>
+        )}
+        {importResult && importResult.failed > 0 && (
+          <ul className="mt-3 space-y-1 text-sm text-alert">
+            {importResult.results
+              .filter((r) => !r.ok)
+              .map((r) => (
+                <li key={`${r.line}-${r.email}`}>
+                  Línea {r.line} ({r.email}): {r.error}
+                </li>
+              ))}
+          </ul>
+        )}
       </Card>
 
       <div className="grid gap-4">

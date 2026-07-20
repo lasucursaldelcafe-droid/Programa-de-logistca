@@ -36,13 +36,12 @@ export function LoginPage() {
           Escanea QR, marca entrada y reporta al supervisor
         </p>
         <div className="mt-3 rounded-lg border border-border bg-bg p-3 text-xs text-neutral-400">
-          <p className="font-semibold text-neutral-200">¿Primera vez en la empresa?</p>
-          <Link to="/unirse" className="mt-1 inline-block text-accent hover:underline">
-            Unirme con código de invitación →
-          </Link>
-          <span className="mx-2 text-neutral-600">·</span>
-          <Link to="/ayuda" className="text-accent hover:underline">
-            Instrucciones de operación
+          <p className="font-semibold text-neutral-200">Acceso de trabajador</p>
+          <p className="mt-1">
+            Usuario: tu correo · Contraseña inicial: tu documento / cédula (sin puntos ni espacios)
+          </p>
+          <Link to="/unirse" className="mt-2 inline-block text-accent hover:underline">
+            ¿Invitación con código? Unirme aquí →
           </Link>
         </div>
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
@@ -57,7 +56,7 @@ export function LoginPage() {
             />
           </label>
           <label className="block text-sm">
-            <span className="mb-1 block text-neutral-300">Contraseña</span>
+            <span className="mb-1 block text-neutral-300">Documento / cédula (contraseña inicial)</span>
             <input
               type="password"
               value={password}

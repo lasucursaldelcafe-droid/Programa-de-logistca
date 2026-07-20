@@ -24,3 +24,5 @@ export * from "./setupGuide";
 export * from "./setupStatus";
 export * from "./eventFlow";
 export * from "./qrCodeBuilder";
+export * from "./workerCredentials";
+export * from "./workerImport";
