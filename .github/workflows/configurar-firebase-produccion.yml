@@ -60,7 +60,7 @@ jobs:
 
       - name: Desplegar reglas Firestore
         if: env.FIREBASE_TOKEN != '' || env.FIREBASE_SERVICE_ACCOUNT_JSON != ''
-        run: node scripts/deploy-firestore-rules-api.mjs
+        run: node scripts/deploy-firestore.mjs
 
       - name: Bootstrap Firestore
         if: env.FIREBASE_TOKEN != '' || env.FIREBASE_SERVICE_ACCOUNT_JSON != ''
