@@ -502,7 +502,10 @@ export function ConfiguracionPage() {
           <ul className="mt-4 space-y-2 text-sm">
             {sitiosEvento.map((s) => {
               const tieneQr = qrCodes.some(
-                (q) => q.siteId === s.id && q.activo,
+                (q) =>
+                  q.siteId === s.id &&
+                  q.eventId === eventoActivo?.id &&
+                  q.activo,
               );
               return (
                 <li

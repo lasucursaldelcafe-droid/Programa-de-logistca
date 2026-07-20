@@ -28,6 +28,10 @@ import {
   isInsideGeofence,
   isWithinTimeWindow,
   parseQrPayload,
+  buildQrCodeDocument,
+  buildQrCodeId,
+  buildQrCodeToken,
+  type CreateQrCodeInput,
   type Attendance,
   type AttendanceEstado,
   type Evento,
@@ -644,45 +648,12 @@ function resolveToken(qr: QrCode, token: string): boolean {
   return token === qr.token;
 }
 
-export async function createQrCode(data: {
-  eventId: string;
-  eventNombre: string;
-  siteId: string;
-  siteNombre: string;
-  modo: QrModo;
-  ventanaInicio: string;
-  ventanaFin: string;
-  radioGeocerca: number;
-  descripcionDatos: string;
-  intervaloRotacionSegundos?: number;
-  creadoPor: string;
-}): Promise<string> {
-  const id = `qr-${data.siteId}-${Date.now().toString(36)}`;
-  const token = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+export async function createQrCode(data: CreateQrCodeInput): Promise<string> {
+  const id = buildQrCodeId(data.siteId);
+  const token = buildQrCodeToken(crypto.randomUUID());
+  const secret = data.modo === "rotativo" ? crypto.randomUUID().slice(0, 8) : undefined;
 
-  const qr: Omit<QrCode, "id"> = {
-    eventId: data.eventId,
-    eventNombre: data.eventNombre,
-    siteId: data.siteId,
-    siteNombre: data.siteNombre,
-    token,
-    modo: data.modo,
-    ventanaInicio: data.ventanaInicio,
-    ventanaFin: data.ventanaFin,
-    radioGeocerca: data.radioGeocerca,
-    descripcionDatos: data.descripcionDatos,
-    activo: true,
-    creadoEn: new Date().toISOString(),
-    creadoPor: data.creadoPor,
-    ...(data.modo === "rotativo"
-      ? {
-          secret: crypto.randomUUID().slice(0, 8),
-          ...(data.intervaloRotacionSegundos != null
-            ? { intervaloRotacionSegundos: data.intervaloRotacionSegundos }
-            : {}),
-        }
-      : {}),
-  };
+  const qr = buildQrCodeDocument(data, { token, secret });
 
   if (isDemoMode()) {
     demoStore.addQrCode({ ...qr, id });

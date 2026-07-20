@@ -67,6 +67,7 @@
     "test:smoke": "firebase emulators:exec --only auth,firestore --project demo-personal-eventos \"npm run seed && tsx scripts/ci-smoke.ts\"",
     "check:nav": "tsx scripts/check-nav-routes.ts",
     "verify:flows": "tsx scripts/verify-demo-flows.ts",
+    "verify:qr": "tsx scripts/verify-qr-generation.ts",
     "toolkit": "node scripts/run-toolkit.mjs",
     "toolkit:cli": "node scripts/run-toolkit-cli.mjs",
     "toolkit:health": "node scripts/run-toolkit-cli.mjs health",
