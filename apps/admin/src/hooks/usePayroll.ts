@@ -19,7 +19,10 @@ import {
   type Worker,
 } from "@spe/shared";
 import { DEMO_MODE } from "../lib/mode";
+import { isSheetsBackend } from "../lib/backend";
 import { demoStore } from "../demo/store";
+import { sheetsUpsertRecord } from "../data/sheetsOps";
+import { useSheetsPoll } from "./useSheetsPoll";
 
 function useDemoSnapshot<T>(selector: () => T): T {
   return useSyncExternalStore(demoStore.subscribe.bind(demoStore), selector, selector);
@@ -27,9 +30,10 @@ function useDemoSnapshot<T>(selector: () => T): T {
 
 export function usePayrollRates(): PayrollRate[] {
   const [rates, setRates] = useState<PayrollRate[]>([]);
+  const sheetsRates = useSheetsPoll<PayrollRate>("payrollRates");
 
   useEffect(() => {
-    if (DEMO_MODE) return;
+    if (DEMO_MODE || isSheetsBackend()) return;
     const unsub = onSnapshot(
       query(collection(getFirestoreDb(), "payrollRates"), orderBy("perfil")),
       (snap) => setRates(snap.docs.map((d) => ({ id: d.id, ...d.data() } as PayrollRate))),
@@ -38,7 +42,9 @@ export function usePayrollRates(): PayrollRate[] {
   }, []);
 
   const demoRates = useDemoSnapshot(() => demoStore.payrollRates);
-  return DEMO_MODE ? demoRates : rates;
+  if (DEMO_MODE) return demoRates;
+  if (isSheetsBackend()) return sheetsRates;
+  return rates;
 }
 
 export function usePayrollEntries(): PayrollEntry[] {
@@ -80,6 +86,10 @@ export async function upsertPayrollRate(rate: Omit<PayrollRate, "id"> & { id?: s
 
   if (DEMO_MODE) {
     demoStore.upsertPayrollRate({ ...data, id });
+    return;
+  }
+  if (isSheetsBackend()) {
+    await sheetsUpsertRecord("payrollRates", { ...data, id });
     return;
   }
   await setDoc(doc(getFirestoreDb(), "payrollRates", id), data);

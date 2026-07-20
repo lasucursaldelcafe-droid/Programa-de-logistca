@@ -1,4 +1,4 @@
-import { sheetsList, sheetsUpsert, isSheetsBackendConfigured } from "@spe/shared";
+import { sheetsList, sheetsUpsert, sheetsDelete, isSheetsBackendConfigured } from "@spe/shared";
 
 async function ensureSheets(): Promise<void> {
   if (!isSheetsBackendConfigured()) {
@@ -25,6 +25,15 @@ export async function sheetsUpsertRecord(
 ): Promise<void> {
   await ensureSheets();
   await sheetsUpsert(collection, record, idField);
+}
+
+export async function sheetsDeleteRecord(
+  collection: string,
+  id: string,
+  idField = "id",
+): Promise<void> {
+  await ensureSheets();
+  await sheetsDelete(collection, id, idField);
 }
 
 export async function sheetsListAll<T>(collection: string): Promise<T[]> {

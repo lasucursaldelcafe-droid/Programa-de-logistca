@@ -1,7 +1,7 @@
 name: Crear usuarios Firebase (producción)
 
-# Recrea master@eventos.test y admin@eventos.test en Firebase Auth + Firestore.
-# Requiere secreto FIREBASE_SERVICE_ACCOUNT_JSON (contenido del JSON de cuenta de servicio).
+# Crea o actualiza lasucursaldelcafe@gmail.com en Firebase Auth + Firestore.
+# Requiere secretos FIREBASE_SERVICE_ACCOUNT_JSON y SPE_PROD_PASSWORD.
 on:
   workflow_dispatch:
 
@@ -19,16 +19,19 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Recrear usuarios de inicio de sesión
+      - name: Crear cuenta de administración
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          SPE_PROD_PASSWORD: ${{ secrets.SPE_PROD_PASSWORD }}
         run: |
           if [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
             echo "✗ Falta el secreto FIREBASE_SERVICE_ACCOUNT_JSON"
             echo "  Firebase → Configuración → Cuentas de servicio → Generar clave privada"
-            echo "  GitHub → Configuración → Secretos → Nuevo secreto:"
-            echo "    Nombre: FIREBASE_SERVICE_ACCOUNT_JSON"
-            echo "    Valor: pega TODO el contenido del archivo .json"
+            echo "  GitHub → Settings → Secrets → FIREBASE_SERVICE_ACCOUNT_JSON"
+            exit 1
+          fi
+          if [ -z "$SPE_PROD_PASSWORD" ]; then
+            echo "✗ Falta el secreto SPE_PROD_PASSWORD (contraseña de lasucursaldelcafe@gmail.com)"
             exit 1
           fi
           npm run seed:production

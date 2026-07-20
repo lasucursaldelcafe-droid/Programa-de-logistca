@@ -5,6 +5,7 @@ import {
   puedeGestionarCuentas,
   puedeGestionarPersonal,
   puedeGestionarQr,
+  puedeGestionarTurnos,
   puedeVerMapaEnVivo,
   puedeVerNomina,
   puedeVerReportesTrabajadores,
@@ -15,6 +16,8 @@ export interface NavLinkItem {
   label: string;
   icon: string;
   end?: boolean;
+  /** Abre en pestaña nueva (p. ej. descargas públicas) */
+  external?: boolean;
 }
 
 export interface NavSection {
@@ -29,6 +32,7 @@ const can = {
   personal: (r: UserRole) => puedeGestionarPersonal(r),
   cuentas: (r: UserRole) => puedeGestionarCuentas(r),
   qr: (r: UserRole) => puedeGestionarQr(r),
+  operacion: (r: UserRole) => puedeGestionarTurnos(r),
   mapa: (r: UserRole) => puedeVerMapaEnVivo(r),
   reportes: (r: UserRole) => puedeVerReportesTrabajadores(r),
   nomina: (r: UserRole) => puedeVerNomina(r),
@@ -41,7 +45,8 @@ function filterSections(sections: NavSection[], role: UserRole, gates: Record<st
     .map((section) => ({
       ...section,
       items: section.items.filter((item) => {
-        const gate = gates[item.to];
+        const path = item.to.split("?")[0] ?? item.to;
+        const gate = gates[path];
         return gate ? gate(role) : true;
       }),
     }))
@@ -49,17 +54,23 @@ function filterSections(sections: NavSection[], role: UserRole, gates: Record<st
 }
 
 const ADMIN_GATES: Record<string, (r: UserRole) => boolean> = {
+  "/configuracion": can.config,
   "/personal": can.personal,
   "/cuentas": can.cuentas,
+  "/operacion": can.operacion,
+  "/turnos": can.operacion,
+  "/comunicacion": can.operacion,
+  "/reportes": can.reportes,
+  "/informes": can.reportes,
+  "/qr-sitios": can.qr,
+  "/nomina": can.nomina,
   "/clientes": can.personal,
   "/facturacion": can.personal,
   "/inventario": can.personal,
-  "/qr-sitios": can.qr,
   "/mapa": can.mapa,
-  "/reportes": can.reportes,
-  "/nomina": can.nomina,
-  "/configuracion": can.config,
+  "/supervision": can.mapa,
   "/integraciones": can.apis,
+  "/pendientes": can.config,
 };
 
 export function getAdminNavSections(role: UserRole): NavSection[] {
@@ -70,24 +81,33 @@ export function getAdminNavSections(role: UserRole): NavSection[] {
       items: [{ to: "/panel", label: "Resumen", icon: "grid", end: true }],
     },
     {
-      id: "operacion",
-      title: "Operación",
+      id: "preparar",
+      title: "Preparar evento",
       items: [
-        { to: "/turnos", label: "Turnos", icon: "calendar" },
-        { to: "/mapa", label: "Mapa en vivo", icon: "map" },
-        { to: "/qr-sitios", label: "QR y sitios", icon: "qr" },
-        { to: "/supervision", label: "Supervisión", icon: "eye" },
-        { to: "/reportes", label: "Reportes", icon: "flag" },
+        { to: "/configuracion", label: "1. Crear evento", icon: "calendar" },
+        { to: "/personal", label: "2. Personal", icon: "users" },
+        { to: "/cuentas", label: "3. Invitaciones", icon: "mail" },
+        { to: "/operacion", label: "4. Dashboard del evento", icon: "calendar" },
       ],
     },
     {
-      id: "equipo",
-      title: "Equipo",
+      id: "operar",
+      title: "Durante el evento",
       items: [
-        { to: "/personal", label: "Personal", icon: "users" },
-        { to: "/cuentas", label: "Cuentas", icon: "mail" },
-        { to: "/nomina", label: "Nómina", icon: "wallet" },
+        { to: "/operacion?tab=supervision", label: "Mapa y supervisión", icon: "map" },
+        { to: "/supervision", label: "Supervisión", icon: "eye" },
+        { to: "/mapa", label: "Mapa en vivo", icon: "map" },
+        { to: "/turnos", label: "Turnos", icon: "calendar" },
+        { to: "/comunicacion", label: "Comunicación", icon: "message" },
+        { to: "/informes", label: "Informes", icon: "chart" },
+        { to: "/reportes", label: "Reportes", icon: "flag" },
+        { to: "/qr-sitios", label: "QR y sitios", icon: "qr" },
       ],
+    },
+    {
+      id: "cerrar",
+      title: "Cierre",
+      items: [{ to: "/nomina", label: "Nómina", icon: "wallet" }],
     },
     {
       id: "negocio",
@@ -102,12 +122,9 @@ export function getAdminNavSections(role: UserRole): NavSection[] {
       id: "sistema",
       title: "Sistema",
       items: [
-        { to: "/configuracion", label: "Configuración", icon: "settings" },
-        {
-          to: "/integraciones",
-          label: puedeConfigurarIntegraciones(role) ? "APIs" : "Integraciones",
-          icon: "plug",
-        },
+        { to: "/pendientes", label: "Config. pendiente", icon: "list" },
+        { to: "/integraciones", label: puedeConfigurarIntegraciones(role) ? "APIs" : "Integraciones", icon: "plug" },
+        { to: "/descargas", label: "Descargas", icon: "download" },
         { to: "/ayuda", label: "Ayuda", icon: "help" },
       ],
     },
@@ -124,6 +141,7 @@ export function getMasterNavSections(): NavSection[] {
       items: [
         { to: "/master", label: "Resumen", icon: "grid", end: true },
         { to: "/master/administradores", label: "Administradores", icon: "shield" },
+        { to: "/master/roles", label: "Roles", icon: "users" },
         { to: "/master/informes", label: "Informes", icon: "chart" },
         { to: "/master/auditoria", label: "Auditoría", icon: "audit" },
         { to: "/master/ayuda", label: "Ayuda", icon: "help" },
@@ -138,6 +156,7 @@ export function getWorkerNavItems(): NavLinkItem[] {
     { to: "/worker/turnos", label: "Turnos", icon: "calendar" },
     { to: "/worker/entrada", label: "Escanear", icon: "qr" },
     { to: "/worker/reportar", label: "Reportar", icon: "flag" },
+    { to: "/worker/comunicacion", label: "Chat / Video", icon: "message" },
     { to: "/worker/notificaciones", label: "Alertas", icon: "mail" },
     { to: "/worker/ayuda", label: "Ayuda", icon: "help" },
   ];

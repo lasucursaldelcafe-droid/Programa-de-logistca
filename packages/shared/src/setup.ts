@@ -1,4 +1,5 @@
 import type { Evento, PayrollRate, QrCode, SetupConfig, SetupPaso, Sitio } from "./types";
+import { SETUP_PASOS_ORDEN } from "./types";
 
 export const WIZARD_STEPS: Array<{ id: SetupPaso; titulo: string; descripcion: string }> = [
   {
@@ -9,7 +10,7 @@ export const WIZARD_STEPS: Array<{ id: SetupPaso; titulo: string; descripcion: s
   {
     id: "sitios",
     titulo: "Sitios",
-    descripcion: "Ubicaciones con geocerca GPS",
+    descripcion: "Dirección, ubicación en mapa y área de trabajo",
   },
   {
     id: "tarifas",
@@ -20,6 +21,11 @@ export const WIZARD_STEPS: Array<{ id: SetupPaso; titulo: string; descripcion: s
     id: "qr",
     titulo: "Códigos QR",
     descripcion: "Activación de entrada por sitio",
+  },
+  {
+    id: "operaciones",
+    titulo: "Operaciones",
+    descripcion: "Temática laboral, supervisión y personal",
   },
   {
     id: "resumen",
@@ -63,17 +69,31 @@ export function validateEventoStep(data: {
 
 export function validateSitioStep(data: {
   nombre: string;
+  direccion: string;
   lat: string;
   lng: string;
   radioGeocerca: string;
 }): string | null {
   if (!data.nombre.trim()) return "El nombre del sitio es obligatorio";
+  if (!data.direccion.trim()) return "Indica la dirección del sitio";
   const lat = Number(data.lat);
   const lng = Number(data.lng);
   const radio = Number(data.radioGeocerca);
   if (Number.isNaN(lat) || lat < -90 || lat > 90) return "Latitud inválida";
   if (Number.isNaN(lng) || lng < -180 || lng > 180) return "Longitud inválida";
-  if (Number.isNaN(radio) || radio < 10) return "El radio de geocerca debe ser ≥ 10 m";
+  if (Number.isNaN(radio) || radio < 10) return "El área de trabajo debe ser ≥ 10 m de radio";
+  return null;
+}
+
+export function validateOperacionesStep(data: {
+  temaLaboral: string;
+  reglasOperativas: string;
+  tiempoMinimoEstadiaMinutos: string;
+}): string | null {
+  if (!data.temaLaboral.trim()) return "Describe la temática laboral del evento";
+  if (!data.reglasOperativas.trim()) return "Indica las reglas operativas y de supervisión";
+  const minutos = Number(data.tiempoMinimoEstadiaMinutos);
+  if (Number.isNaN(minutos) || minutos < 0) return "Tiempo mínimo de estadía inválido";
   return null;
 }
 
@@ -111,6 +131,13 @@ export function buildSetupSummary(data: {
       label: "Códigos QR activos",
       ok: eventQr.length >= eventSites.length && eventSites.length > 0,
       detalle: `${eventQr.length} QR para ${eventSites.length} sitio(s)`,
+    },
+    {
+      label: "Operaciones y supervisión",
+      ok: Boolean(data.evento?.temaLaboral?.trim() && data.evento?.supervisionActiva !== false),
+      detalle: data.evento?.temaLaboral?.trim()
+        ? "Temática y reglas definidas"
+        : "Pendiente",
     },
     {
       label: "Configuración finalizada",

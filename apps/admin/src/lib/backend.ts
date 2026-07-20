@@ -1,33 +1,30 @@
-/** Backend de datos: demo local, Firebase o Google Sheets (Apps Script). */
+/** Backend de datos: Firebase (producción). */
 
-import {
-  getEffectiveBackend,
-  isEffectiveSheetsBackend,
-} from "@spe/shared";
+import { getEffectiveBackend } from "@spe/shared";
 
-export type DataBackend = "demo" | "firebase" | "sheets";
+export type DataBackend = "firebase";
 
 function buildEnv() {
   return {
-    demoMode: import.meta.env.VITE_DEMO_MODE === "true",
-    dataBackend: import.meta.env.VITE_DATA_BACKEND,
+    demoMode: false,
+    dataBackend: import.meta.env.VITE_DATA_BACKEND ?? "firebase",
   };
 }
 
 export function getDataBackend(): DataBackend {
-  return getEffectiveBackend(buildEnv()) as DataBackend;
+  return getEffectiveBackend(buildEnv());
 }
 
 export function isSheetsBackend(): boolean {
-  return isEffectiveSheetsBackend(buildEnv());
+  return false;
 }
 
 export function isDemoBackend(): boolean {
-  return getDataBackend() === "demo";
+  return false;
 }
 
 export function isFirebaseBackend(): boolean {
-  return getDataBackend() === "firebase";
+  return true;
 }
 
 /** Integraciones externas bloqueadas por defecto (ahorro tokens API). */

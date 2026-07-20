@@ -23,5 +23,8 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Build Cloud Functions
+        run: npm run build:functions
+
       - name: Smoke test con emuladores
         run: npm run test:smoke

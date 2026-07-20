@@ -48,13 +48,17 @@ export function PerfilTag({ label }: { label: string }) {
 export function Card({
   children,
   className = "",
+  glow = false,
 }: {
   children: React.ReactNode;
   className?: string;
+  glow?: boolean;
 }) {
   return (
     <div
-      className={`rounded-xl border border-border bg-surface p-5 transition hover:border-accent/40 ${className}`}
+      className={`spe-glass spe-hover-lift rounded-2xl p-4 ${
+        glow ? "ring-1 ring-accent/20" : ""
+      } ${className}`}
     >
       {children}
     </div>

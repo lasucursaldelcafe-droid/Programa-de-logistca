@@ -105,6 +105,8 @@ export interface AppUser {
   perfilCompleto?: boolean;
   /** Cuenta activa; el administrador puede inhabilitar acceso. */
   habilitado?: boolean;
+  /** Rol personalizado creado por super admin (permisos granulares). */
+  customRoleId?: string;
 }
 
 export interface Invitation {
@@ -122,8 +124,14 @@ export interface Invitation {
   creadaPorNombre?: string;
   /** Rol de acceso asignado por el administrador al invitar. */
   role: "trabajador" | "supervisor_sitio";
+  /** Rol personalizado opcional (permisos definidos por super admin). */
+  customRoleId?: string;
   usadaEn?: string;
   uid?: string;
+  /** ISO timestamp cuando Cloud Functions envió el correo de invitación. */
+  emailEnviadoEn?: string;
+  /** Error al enviar correo automático (SMTP no configurado, etc.). */
+  emailError?: string;
 }
 
 export interface Worker {
@@ -141,6 +149,8 @@ export interface Worker {
   cuentaCreada: boolean;
   /** Rol en la plataforma; lo asigna el administrador al registrar. */
   rolPlataforma: "trabajador" | "supervisor_sitio";
+  /** Rol personalizado (permisos granulares) asignado al crear cuenta. */
+  customRoleId?: string;
   /** Si false, no puede iniciar sesión (admin puede inhabilitar). */
   habilitado?: boolean;
   certificaciones: string[];
@@ -153,14 +163,25 @@ export interface Evento {
   fechaInicio: string;
   fechaFin: string;
   sitioIds: string[];
+  /** Temática y lineamientos laborales del evento (visible para trabajadores). */
+  temaLaboral?: string;
+  /** Reglas de supervisión: funciones, horarios, conducta en sitio. */
+  reglasOperativas?: string;
+  /** Tiempo mínimo de estadía en sitio (minutos) antes de marcar salida válida. */
+  tiempoMinimoEstadiaMinutos?: number;
+  /** Activa monitoreo GPS y alertas de geocerca para este evento. */
+  supervisionActiva?: boolean;
 }
 
 export interface Sitio {
   id: string;
   eventId: string;
   nombre: string;
+  /** Dirección legible del punto de trabajo (geocodificada o ingresada manualmente). */
+  direccion?: string;
   lat: number;
   lng: number;
+  /** Radio en metros del área de trabajo (geocerca GPS). */
   radioGeocerca: number;
 }
 
@@ -175,6 +196,8 @@ export interface Turno {
   inicio: string;
   fin: string;
   estado: ShiftEstado;
+  /** ISO timestamp cuando se envió correo automático de turno asignado. */
+  emailTurnoEnviadoEn?: string;
 }
 
 export type NotificationTipo =
@@ -182,7 +205,11 @@ export type NotificationTipo =
   | "turno_respuesta"
   | "entrada"
   | "salida"
+  | "llegada_sitio"
   | "geocerca_alerta"
+  | "reentrada_geocerca"
+  | "reporte_trabajador"
+  | "videollamada_iniciada"
   | "emergencia"
   | "break_recordatorio"
   | "sistema";
@@ -231,6 +258,10 @@ export interface AppNotification {
   actorNombre?: string;
   leidaPor: string[];
   accionTurno?: boolean;
+  /** Rellenado por Cloud Function al enviar FCM */
+  pushEnviadoEn?: string;
+  pushTokensEnviados?: number;
+  pushError?: string;
 }
 
 export interface BreakSchedule {
@@ -242,6 +273,19 @@ export interface BreakSchedule {
   inicio: string;
   fin: string;
   notificado: boolean;
+}
+
+/** Mensaje del chat interno del equipo (Firestore). */
+export interface ChatMessage {
+  id: string;
+  channelId: string;
+  channelLabel: string;
+  text: string;
+  senderUid: string;
+  senderNombre: string;
+  senderRole: UserRole | string;
+  eventId?: string | null;
+  createdAt: string;
 }
 
 export const REPORTE_TIPO_LABEL: Record<ReporteTipo, string> = {
@@ -289,33 +333,43 @@ export const ROLE_LABEL: Record<UserRole, string> = {
   trabajador: "Trabajador",
 };
 
-export function puedeGestionarPersonal(role: UserRole): boolean {
-  return role === "administrador" || role === "supervisor_sitio";
-}
+import {
+  puedeGestionarPersonal,
+  puedeGestionarTurnos,
+  puedeConfigurarIntegraciones,
+  puedeGestionarCuentas,
+  puedeGestionarQr,
+  puedeVerMapaEnVivo,
+  puedeEnviarEmergencia,
+  puedeGestionarNomina,
+  puedeVerNomina,
+  puedeGestionarConfiguracion,
+  puedeVerReportesTrabajadores,
+  puedeUsarComunicacion,
+  puedeVerInformesEvento,
+  puedeGestionarRolesCustom,
+} from "./permissions";
 
-export function puedeGestionarTurnos(role: UserRole): boolean {
-  return role === "administrador" || role === "supervisor_sitio";
-}
+export {
+  puedeGestionarPersonal,
+  puedeGestionarTurnos,
+  puedeConfigurarIntegraciones,
+  puedeGestionarCuentas,
+  puedeGestionarQr,
+  puedeVerMapaEnVivo,
+  puedeEnviarEmergencia,
+  puedeGestionarNomina,
+  puedeVerNomina,
+  puedeGestionarConfiguracion,
+  puedeVerReportesTrabajadores,
+  puedeUsarComunicacion,
+  puedeVerInformesEvento,
+  puedeGestionarRolesCustom,
+};
 
-/** Solo administradores pueden subir y editar credenciales de APIs. */
-export function puedeConfigurarIntegraciones(role: UserRole): boolean {
-  return role === "super_admin" || role === "administrador";
-}
-
-export function puedeGestionarCuentas(role: UserRole): boolean {
-  return role === "administrador";
-}
-
-export function puedeGestionarQr(role: UserRole): boolean {
-  return role === "administrador" || role === "supervisor_sitio";
-}
-
-export function puedeVerMapaEnVivo(role: UserRole): boolean {
-  return role === "administrador" || role === "supervisor_sitio";
-}
-
-export function puedeEnviarEmergencia(role: UserRole): boolean {
-  return role === "administrador" || role === "supervisor_sitio";
+/** Admin/supervisor puede enviar notificaciones manuales y push. */
+export function puedeEnviarNotificacion(role: UserRole): boolean {
+  return puedeEnviarEmergencia(role);
 }
 
 export const NOTIFICATION_TIPO_LABEL: Record<NotificationTipo, string> = {
@@ -323,7 +377,11 @@ export const NOTIFICATION_TIPO_LABEL: Record<NotificationTipo, string> = {
   turno_respuesta: "Respuesta de turno",
   entrada: "Entrada",
   salida: "Salida",
+  llegada_sitio: "Llegada al sitio",
   geocerca_alerta: "Alerta geocerca",
+  reentrada_geocerca: "Re-entrada al sitio",
+  reporte_trabajador: "Reporte de trabajador",
+  videollamada_iniciada: "Videollamada",
   emergencia: "Emergencia",
   break_recordatorio: "Recordatorio break",
   sistema: "Sistema",
@@ -421,19 +479,22 @@ export const REFRIGERIO_TIPO_LABEL: Record<RefrigerioTipo, string> = {
   snack: "Snack",
 };
 
-export function puedeGestionarNomina(role: UserRole): boolean {
-  return role === "administrador";
-}
+export type SetupPaso =
+  | "evento"
+  | "sitios"
+  | "tarifas"
+  | "qr"
+  | "operaciones"
+  | "resumen";
 
-export function puedeVerNomina(role: UserRole): boolean {
-  return (
-    role === "administrador" ||
-    role === "supervisor_sitio" ||
-    role === "trabajador"
-  );
-}
-
-export type SetupPaso = "evento" | "sitios" | "tarifas" | "qr" | "resumen";
+export const SETUP_PASOS_ORDEN: SetupPaso[] = [
+  "evento",
+  "sitios",
+  "tarifas",
+  "qr",
+  "operaciones",
+  "resumen",
+];
 
 export interface SetupConfig {
   id: string;
@@ -446,10 +507,46 @@ export interface SetupConfig {
   actualizadoPorNombre?: string;
 }
 
-export function puedeGestionarConfiguracion(role: UserRole): boolean {
-  return role === "administrador";
+export type ChatConversationTipo = "evento" | "sitio" | "directo";
+
+export interface ChatConversation {
+  id: string;
+  eventId: string;
+  eventNombre?: string;
+  siteId?: string;
+  siteNombre?: string;
+  tipo: ChatConversationTipo;
+  titulo: string;
+  participantIds: string[];
+  lastMessageAt: string;
+  lastMessagePreview?: string;
+  creadoEn: string;
+  creadoPor: string;
 }
 
-export function puedeVerReportesTrabajadores(role: UserRole): boolean {
-  return role === "administrador" || role === "supervisor_sitio";
+export interface ConversationMessage {
+  id: string;
+  conversationId: string;
+  senderUid: string;
+  senderNombre: string;
+  texto: string;
+  creadoEn: string;
+  leidoPor: string[];
+}
+
+export interface VideoRoom {
+  id: string;
+  conversationId: string;
+  eventId: string;
+  eventNombre?: string;
+  roomName: string;
+  creadoPor: string;
+  creadoPorNombre: string;
+  creadoEn: string;
+  activo: boolean;
+}
+
+export function buildJitsiRoomName(eventId: string, conversationId: string): string {
+  const slug = `${eventId}-${conversationId}`.replace(/[^a-zA-Z0-9-]/g, "").slice(0, 48);
+  return `SPE-${slug}`;
 }

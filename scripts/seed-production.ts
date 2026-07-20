@@ -5,7 +5,7 @@
  * Uso:
  *   npm run seed:production -- --service-account ./service-account.json
  *   SPE_PROD_PASSWORD='…' npm run seed:production -- --service-account ./sa.json
- *   FIREBASE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}' npm run seed:production
+ *   FIREBASE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}' SPE_PROD_PASSWORD='…' npm run seed:production
  *   npm run seed:production -- --service-account ./sa.json --email admin@empresa.com --password "MiPass123!"
  */
 import { existsSync, readFileSync } from "node:fs";
@@ -101,8 +101,8 @@ function loadServiceAccount(serviceAccountPath: string): {
     console.error("    Firebase Console → Cuentas de servicio → Generar clave privada");
     console.error("    npm run seed:production -- --service-account ./service-account.json");
     console.error("  Opción B — variable de entorno (CI / sin guardar archivo):");
-    console.error("    FIREBASE_SERVICE_ACCOUNT_JSON='{...}' npm run seed:production");
-    console.error("  GitHub Actions: secreto FIREBASE_SERVICE_ACCOUNT_JSON + workflow seed-production");
+    console.error("    FIREBASE_SERVICE_ACCOUNT_JSON='{...}' SPE_PROD_PASSWORD='…' npm run seed:production");
+    console.error("  GitHub Actions: secretos FIREBASE_SERVICE_ACCOUNT_JSON + SPE_PROD_PASSWORD");
     process.exit(1);
   }
 

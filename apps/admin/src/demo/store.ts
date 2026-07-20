@@ -4,7 +4,10 @@ import type {
   Attendance,
   AttendanceEstado,
   BreakSchedule,
+  ChatConversation,
+  ConversationMessage,
   CredencialesIntegracion,
+  CustomRole,
   Evento,
   GeoRegistro,
   Invitation,
@@ -17,6 +20,7 @@ import type {
   Sitio,
   TipoIntegracion,
   Turno,
+  VideoRoom,
   Worker,
 } from "@spe/shared";
 import type { GeoPosition } from "../lib/geolocation";
@@ -32,23 +36,13 @@ import {
 } from "./integrations";
 import { loadDemoPersistedState, saveDemoPersistedState } from "./persist";
 import { appendChangeLog, type DemoChangeAction, type DemoChangeEntry } from "./changeLog";
-import { PLATFORM_SEED_ACCOUNTS } from "@spe/shared";
+import { isDemoEntityId, isDemoEvent } from "./demoPurge";
 
 export const DEMO_ACCOUNTS: Array<{
   email: string;
   password: string;
   user: AppUser;
-}> = PLATFORM_SEED_ACCOUNTS.map((a) => ({
-  email: a.email,
-  password: a.password,
-  user: {
-    uid: a.role === "super_admin" ? "demo-master" : "demo-admin",
-    email: a.email,
-    nombre: a.nombre,
-    role: a.role,
-    perfilCompleto: true,
-  },
-}));
+}> = [];
 
 export const INITIAL_WORKERS: Worker[] = [];
 
@@ -104,6 +98,10 @@ class DemoStore {
   payrollAudit = [...INITIAL_PAYROLL_AUDIT];
   setupConfig: SetupConfig | null = { ...INITIAL_SETUP_CONFIG };
   reportes = [...INITIAL_REPORTES];
+  conversations: ChatConversation[] = [];
+  messages: ConversationMessage[] = [];
+  videoRooms: VideoRoom[] = [];
+  customRoles: CustomRole[] = [];
   clientes = [...INITIAL_CLIENTES];
   productos = [...INITIAL_PRODUCTOS];
   facturas = [...INITIAL_FACTURAS];
@@ -136,6 +134,10 @@ class DemoStore {
       payrollAudit: this.payrollAudit,
       setupConfig: this.setupConfig,
       reportes: this.reportes,
+      conversations: this.conversations,
+      messages: this.messages,
+      videoRooms: this.videoRooms,
+      customRoles: this.customRoles,
       clientes: this.clientes,
       productos: this.productos,
       facturas: this.facturas,
@@ -165,6 +167,10 @@ class DemoStore {
     if (saved.payrollAudit) this.payrollAudit = saved.payrollAudit;
     if (saved.setupConfig !== undefined) this.setupConfig = saved.setupConfig;
     if (saved.reportes) this.reportes = saved.reportes;
+    if (saved.conversations) this.conversations = saved.conversations;
+    if (saved.messages) this.messages = saved.messages;
+    if (saved.videoRooms) this.videoRooms = saved.videoRooms;
+    if (saved.customRoles) this.customRoles = saved.customRoles;
     if (saved.clientes) this.clientes = saved.clientes;
     if (saved.productos) this.productos = saved.productos;
     if (saved.facturas) this.facturas = saved.facturas;
@@ -178,6 +184,50 @@ class DemoStore {
     this.accounts = [...DEMO_ACCOUNTS, ...workerAccounts];
     this.platformUsers = this.accounts.map((a) => a.user);
     if (saved.changeLog) this.changeLog = saved.changeLog;
+  }
+
+  /** Elimina eventos de prueba y datos relacionados persistidos en localStorage. */
+  purgeDemoEvents(): void {
+    const demoEventIds = new Set(
+      this.events.filter(isDemoEvent).map((event) => event.id),
+    );
+    if (demoEventIds.size === 0 && !this.hasDemoEntityData()) return;
+
+    this.events = this.events.filter((event) => !isDemoEvent(event));
+
+    this.sites = this.sites.filter(
+      (site) =>
+        !demoEventIds.has(site.eventId) && !isDemoEntityId(site.id),
+    );
+
+    this.shifts = this.shifts.filter(
+      (shift) =>
+        !demoEventIds.has(shift.eventId) && !isDemoEntityId(shift.id),
+    );
+
+    this.attendances = this.attendances.filter(
+      (attendance) =>
+        !demoEventIds.has(attendance.eventId) && !isDemoEntityId(attendance.id),
+    );
+
+    this.qrCodes = this.qrCodes.filter(
+      (qr) => !demoEventIds.has(qr.eventId) && !isDemoEntityId(qr.id),
+    );
+
+    this.workers = this.workers.filter((worker) => !isDemoEntityId(worker.id));
+
+    this.notify();
+  }
+
+  private hasDemoEntityData(): boolean {
+    return (
+      this.events.some(isDemoEvent) ||
+      this.sites.some((site) => isDemoEntityId(site.id)) ||
+      this.shifts.some((shift) => isDemoEntityId(shift.id)) ||
+      this.attendances.some((attendance) => isDemoEntityId(attendance.id)) ||
+      this.qrCodes.some((qr) => isDemoEntityId(qr.id)) ||
+      this.workers.some((worker) => isDemoEntityId(worker.id))
+    );
   }
 
   private recordChange(
@@ -194,7 +244,7 @@ class DemoStore {
     });
   }
 
-  addWorker(worker: Omit<Worker, "id">, actorNombre?: string): void {
+  addWorker(worker: Omit<Worker, "id">, actorNombre?: string): string {
     const id = `worker-${Date.now()}`;
     this.workers = [...this.workers, { ...worker, id }].sort((a, b) =>
       a.nombre.localeCompare(b.nombre),
@@ -204,6 +254,7 @@ class DemoStore {
       actorNombre,
     });
     this.notify();
+    return id;
   }
 
   updateWorker(id: string, patch: Partial<Worker>, actorNombre?: string): void {
@@ -260,6 +311,11 @@ class DemoStore {
     this.notify();
   }
 
+  removeShift(id: string): void {
+    this.shifts = this.shifts.filter((s) => s.id !== id);
+    this.notify();
+  }
+
   getInvitation(token: string): Invitation | null {
     return this.invitations.find((i) => i.token === token) ?? null;
   }
@@ -289,6 +345,21 @@ class DemoStore {
     this.notify();
   }
 
+  addCustomRole(role: CustomRole): void {
+    this.customRoles = [role, ...this.customRoles];
+    this.notify();
+  }
+
+  updateCustomRole(id: string, patch: Partial<CustomRole>): void {
+    this.customRoles = this.customRoles.map((r) => (r.id === id ? { ...r, ...patch } : r));
+    this.notify();
+  }
+
+  deleteCustomRole(id: string): void {
+    this.customRoles = this.customRoles.filter((r) => r.id !== id);
+    this.notify();
+  }
+
   activateAccount(token: string, password: string, codigoAcceso: string): void {
     const invitation = this.getInvitation(token);
     if (!invitation) throw new Error("Invitación no encontrada");
@@ -310,6 +381,7 @@ class DemoStore {
       nombre: invitation.workerNombre,
       role: assignedRole,
       workerId: invitation.workerId,
+      customRoleId: invitation.customRoleId,
       perfilCompleto: assignedRole === "supervisor_sitio",
       habilitado: true,
     };
@@ -519,6 +591,45 @@ class DemoStore {
     this.notify();
   }
 
+  updateEvent(eventId: string, patch: Partial<Evento>): void {
+    this.events = this.events.map((e) => (e.id === eventId ? { ...e, ...patch } : e));
+    this.notify();
+  }
+
+  addConversation(conv: ChatConversation): void {
+    const exists = this.conversations.some((c) => c.id === conv.id);
+    this.conversations = exists
+      ? this.conversations.map((c) => (c.id === conv.id ? conv : c))
+      : [conv, ...this.conversations];
+    this.notify();
+  }
+
+  addMessage(msg: Omit<ConversationMessage, "id">): void {
+    const id = `msg-${Date.now()}`;
+    this.messages = [...this.messages, { ...msg, id }];
+    this.conversations = this.conversations.map((c) =>
+      c.id === msg.conversationId
+        ? {
+            ...c,
+            lastMessageAt: msg.creadoEn,
+            lastMessagePreview: msg.texto.slice(0, 80),
+          }
+        : c,
+    );
+    this.notify();
+  }
+
+  getMessages(conversationId: string): ConversationMessage[] {
+    return this.messages
+      .filter((m) => m.conversationId === conversationId)
+      .sort((a, b) => a.creadoEn.localeCompare(b.creadoEn));
+  }
+
+  addVideoRoom(room: VideoRoom): void {
+    this.videoRooms = [room, ...this.videoRooms];
+    this.notify();
+  }
+
   addSite(site: Sitio): void {
     this.sites = [...this.sites, site];
     this.events = this.events.map((e) =>
@@ -605,6 +716,7 @@ class DemoStore {
 
 export const demoStore = new DemoStore();
 demoStore.hydrateFromStorage();
+demoStore.purgeDemoEvents();
 
 const SESSION_KEY = "spe-demo-user";
 
@@ -645,6 +757,7 @@ export function demoLogin(email: string, password: string): AppUser {
   }
 
   saveDemoSession(email);
+  demoStore.purgeDemoEvents();
   return account.user;
 }
 

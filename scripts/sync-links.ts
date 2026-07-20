@@ -20,6 +20,8 @@ export interface DeploymentLinks {
   repoUrl: string;
   actionsUrl: string;
   guiaUrl: string;
+  descargasUrl: string;
+  releasesUrl: string;
 }
 
 function detectRepo(): { owner: string; repo: string } {
@@ -70,6 +72,8 @@ export function getDeploymentLinks(): DeploymentLinks {
   const repoUrl = `https://github.com/${owner}/${repo}`;
   const actionsUrl = `${repoUrl}/actions`;
   const guiaUrl = `${pagesUrl}GUIA.md`;
+  const descargasUrl = `${pagesUrl}descargas`;
+  const releasesUrl = `https://github.com/${owner}/${repo}/releases/latest`;
 
   return {
     owner,
@@ -83,6 +87,8 @@ export function getDeploymentLinks(): DeploymentLinks {
     repoUrl,
     actionsUrl,
     guiaUrl,
+    descargasUrl,
+    releasesUrl,
   };
 }
 

@@ -13,9 +13,14 @@ import {
   where,
   getDocs,
 } from "firebase/firestore";
+import { FirebaseError } from "firebase/app";
 import {
   createUserWithEmailAndPassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
   sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  updatePassword,
 } from "firebase/auth";
 import {
   getFirebaseAuth,
@@ -25,6 +30,10 @@ import {
   isInsideGeofence,
   isWithinTimeWindow,
   parseQrPayload,
+  buildQrCodeDocument,
+  buildQrCodeId,
+  buildQrCodeToken,
+  type CreateQrCodeInput,
   type Attendance,
   type AttendanceEstado,
   type Evento,
@@ -41,17 +50,28 @@ import {
   type ReporteEstado,
   type ReporteTipo,
   type AppUser,
+  type CustomRole,
+  type CustomRoleBase,
+  type RoleAccessMode,
+  type SpePermission,
+  ROLE_TEMPLATES,
+  roleTemplateDisplayName,
+  parseCustomRolePermisos,
+  serializeCustomRolePermisos,
 } from "@spe/shared";
 import type { GeoPosition } from "../lib/geolocation";
 import { isDemoMode } from "../lib/mode";
 import { isSheetsBackend } from "../lib/backend";
 import { useSheetsPoll } from "./useSheetsPoll";
-import { sheetsGetById, sheetsListAll, sheetsUpsertRecord } from "../data/sheetsOps";
+import { sheetsGetById, sheetsListAll, sheetsUpsertRecord, sheetsDeleteRecord } from "../data/sheetsOps";
 import { demoStore, setDemoAccountHabilitado, setDemoAccountPassword } from "../demo/store";
 import {
   notifyCheckIn,
   notifyCheckOut,
   notifyGeofenceAlert,
+  notifyLlegadaSitio,
+  notifyReentradaGeocerca,
+  notifyReporteTrabajador,
   notifyShiftAssigned,
   notifyShiftResponse,
 } from "./useNotifications";
@@ -142,12 +162,20 @@ export async function createWorker(
     email: string;
     perfiles: PerfilTrabajo[];
     rolPlataforma?: "trabajador" | "supervisor_sitio";
+    customRoleId?: string;
   },
-  actorNombre?: string,
-): Promise<void> {
+  options?: {
+    actorNombre?: string;
+    creadaPor?: string;
+    creadaPorNombre?: string;
+    /** Envía invitación por correo automáticamente (Firebase producción). Default true. */
+    enviarInvitacion?: boolean;
+  },
+): Promise<string> {
   const rolPlataforma = data.rolPlataforma ?? "trabajador";
+  const actorNombre = options?.actorNombre;
   if (isDemoMode()) {
-    demoStore.addWorker(
+    const id = demoStore.addWorker(
       {
         nombre: data.nombre,
         documento: data.documento,
@@ -155,6 +183,7 @@ export async function createWorker(
         email: data.email.trim().toLowerCase(),
         perfiles: data.perfiles,
         rolPlataforma,
+        customRoleId: data.customRoleId,
         experienciaAnios: 0,
         eventosTrabajados: 0,
         rating: 0,
@@ -166,7 +195,7 @@ export async function createWorker(
       },
       actorNombre,
     );
-    return;
+    return id;
   }
   const id = `worker-${Date.now().toString(36)}`;
   const worker = {
@@ -177,6 +206,7 @@ export async function createWorker(
     email: data.email.trim().toLowerCase(),
     perfiles: JSON.stringify(data.perfiles),
     rolPlataforma,
+    customRoleId: data.customRoleId ?? "",
     experienciaAnios: 0,
     eventosTrabajados: 0,
     rating: 0,
@@ -188,9 +218,9 @@ export async function createWorker(
   };
   if (isSheetsBackend()) {
     await sheetsUpsertRecord("workers", worker);
-    return;
+    return id;
   }
-  await addDoc(collection(getFirestoreDb(), "workers"), {
+  const ref = await addDoc(collection(getFirestoreDb(), "workers"), {
     nombre: data.nombre,
     documento: data.documento,
     telefono: data.telefono,
@@ -206,6 +236,23 @@ export async function createWorker(
     certificaciones: [],
     creadoEn: new Date().toISOString(),
   });
+
+  const creadaPor = options?.creadaPor;
+  const shouldInvite =
+    options?.enviarInvitacion !== false && data.email.trim().length > 0 && Boolean(creadaPor);
+
+  if (shouldInvite && creadaPor) {
+    await createInvitation({
+      workerId: ref.id,
+      workerNombre: data.nombre,
+      email: data.email.trim().toLowerCase(),
+      role: rolPlataforma,
+      creadaPor,
+      creadaPorNombre: options?.creadaPorNombre ?? actorNombre ?? "Administrador",
+    });
+  }
+
+  return ref.id;
 }
 
 export async function updateWorkerEstado(
@@ -330,6 +377,38 @@ export async function updateShiftEstado(id: string, estado: ShiftEstado): Promis
   }
 }
 
+export async function deleteShift(id: string): Promise<void> {
+  if (isDemoMode()) {
+    const active = demoStore.attendances.find(
+      (a) => a.shiftId === id && a.estado !== "cerrado",
+    );
+    if (active) {
+      throw new Error("No se puede quitar: el trabajador tiene jornada activa en este turno.");
+    }
+    demoStore.removeShift(id);
+    return;
+  }
+  if (isSheetsBackend()) {
+    throw new Error("Quitar del evento no está disponible con backend Google Sheets.");
+  }
+
+  const attSnap = await getDocs(
+    query(
+      collection(getFirestoreDb(), "attendance"),
+      where("shiftId", "==", id),
+    ),
+  );
+  const hasActive = attSnap.docs.some((d) => {
+    const estado = d.data().estado as string | undefined;
+    return estado !== "cerrado";
+  });
+  if (hasActive) {
+    throw new Error("No se puede quitar: el trabajador tiene jornada activa en este turno.");
+  }
+
+  await deleteDoc(doc(getFirestoreDb(), "shifts", id));
+}
+
 export function useInvitations(): Invitation[] {
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const sheetsInvitations = useSheetsPoll<Invitation>("invitations");
@@ -390,6 +469,18 @@ export async function findInvitationByEmailAndCode(
     return demoStore.findInvitationByEmailAndCode(normalizedEmail, normalizedCode);
   }
 
+  if (isSheetsBackend()) {
+    const items = await sheetsListAll<Invitation>("invitations");
+    return (
+      items.find(
+        (inv) =>
+          inv.email.toLowerCase() === normalizedEmail &&
+          inv.estado === "pendiente" &&
+          inv.codigoAcceso === normalizedCode,
+      ) ?? null
+    );
+  }
+
   const q = query(
     collection(getFirestoreDb(), "invitations"),
     where("email", "==", normalizedEmail),
@@ -412,6 +503,7 @@ export async function createInvitation(data: {
   workerNombre: string;
   email: string;
   role: "trabajador" | "supervisor_sitio";
+  customRoleId?: string;
   creadaPor: string;
   creadaPorNombre: string;
 }): Promise<{ token: string; codigoAcceso: string }> {
@@ -428,6 +520,7 @@ export async function createInvitation(data: {
     email: data.email.trim().toLowerCase(),
     codigoAcceso,
     role: data.role,
+    customRoleId: data.customRoleId,
     estado: "pendiente",
     creadaEn: now.toISOString(),
     expiraEn: expira.toISOString(),
@@ -451,6 +544,16 @@ export async function createInvitation(data: {
 export async function revokeInvitation(token: string): Promise<void> {
   if (isDemoMode()) {
     demoStore.updateInvitation(token, { estado: "revocada" });
+    return;
+  }
+  if (isSheetsBackend()) {
+    const inv = await getInvitationByToken(token);
+    if (!inv) throw new Error("Invitación no encontrada");
+    await sheetsUpsertRecord(
+      "invitations",
+      { ...inv, id: token, token, estado: "revocada" },
+      "id",
+    );
     return;
   }
   await updateDoc(doc(getFirestoreDb(), "invitations", token), { estado: "revocada" });
@@ -478,21 +581,104 @@ export async function activateAccountWithInvitation(
     throw new Error("Código de invitación incorrecto");
   }
 
-  const cred = await createUserWithEmailAndPassword(
-    getFirebaseAuth(),
-    invitation.email,
-    password,
-  );
+  if (isSheetsBackend()) {
+    const worker = await getWorkerById(invitation.workerId);
+    if (!worker) throw new Error("Trabajador no encontrado");
+    if (worker.cuentaCreada) throw new Error("Este trabajador ya tiene cuenta activa");
+
+    const uid = `sheets-${invitation.workerId}-${Date.now().toString(36)}`;
+    const assignedRole = invitation.role ?? "trabajador";
+    const perfilCompleto = assignedRole === "supervisor_sitio";
+
+    await sheetsUpsertRecord(
+      "users",
+      {
+        uid,
+        email: invitation.email,
+        password,
+        nombre: invitation.workerNombre,
+        role: assignedRole,
+        workerId: invitation.workerId,
+        customRoleId: invitation.customRoleId ?? "",
+        perfilCompleto: String(perfilCompleto),
+        telefono: "",
+        habilitado: "true",
+      },
+      "uid",
+    );
+
+    await sheetsUpsertRecord("workers", { ...worker, cuentaCreada: true });
+
+    await sheetsUpsertRecord(
+      "invitations",
+      {
+        ...invitation,
+        id: token,
+        token,
+        estado: "usada",
+        usadaEn: new Date().toISOString(),
+        uid,
+      },
+      "id",
+    );
+
+    return {
+      uid,
+      email: invitation.email,
+      nombre: invitation.workerNombre,
+      role: assignedRole,
+      workerId: invitation.workerId,
+      customRoleId: invitation.customRoleId,
+      perfilCompleto,
+      habilitado: true,
+    };
+  }
+
+  const auth = getFirebaseAuth();
+  let cred;
+  try {
+    cred = await createUserWithEmailAndPassword(auth, invitation.email, password);
+  } catch (err) {
+    if (!(err instanceof FirebaseError) || err.code !== "auth/email-already-in-use") {
+      throw err;
+    }
+    // Reintento: la cuenta Auth pudo crearse en un intento anterior que falló al guardar Firestore.
+    try {
+      cred = await signInWithEmailAndPassword(auth, invitation.email, password);
+    } catch {
+      throw new Error(
+        "Este correo ya tiene cuenta en SPE. Si ya creaste contraseña, usa Iniciar sesión. " +
+          "Si no la recuerdas, en login elige «Olvidé mi contraseña». " +
+          "Si el problema continúa, pide al administrador una nueva invitación.",
+      );
+    }
+  }
 
   const perfilCompleto = (invitation.role ?? "trabajador") === "supervisor_sitio";
 
-  await setDoc(doc(getFirestoreDb(), "users", cred.user.uid), {
-    email: invitation.email,
-    nombre: invitation.workerNombre,
-    role: invitation.role ?? "trabajador",
-    workerId: invitation.workerId,
-    perfilCompleto,
-  });
+  const userRef = doc(getFirestoreDb(), "users", cred.user.uid);
+  const existingUser = await getDoc(userRef);
+  if (existingUser.exists()) {
+    const data = existingUser.data();
+    if (data.workerId && data.workerId !== invitation.workerId) {
+      throw new Error(
+        "Este correo ya está vinculado a otro perfil de personal. Contacta al administrador.",
+      );
+    }
+  }
+
+  await setDoc(
+    userRef,
+    {
+      email: invitation.email,
+      nombre: invitation.workerNombre,
+      role: invitation.role ?? "trabajador",
+      workerId: invitation.workerId,
+      customRoleId: invitation.customRoleId,
+      perfilCompleto,
+    },
+    { merge: true },
+  );
 
   await updateDoc(doc(getFirestoreDb(), "workers", invitation.workerId), {
     cuentaCreada: true,
@@ -510,6 +696,7 @@ export async function activateAccountWithInvitation(
     nombre: invitation.workerNombre,
     role: invitation.role ?? "trabajador",
     workerId: invitation.workerId,
+    customRoleId: invitation.customRoleId,
     perfilCompleto,
   };
 }
@@ -521,6 +708,34 @@ export async function completeUserProfile(data: {
 }): Promise<void> {
   if (isDemoMode()) {
     demoStore.completeProfile(data.uid, data);
+    return;
+  }
+  if (isSheetsBackend()) {
+    const users = await sheetsListAll<Record<string, unknown>>("users");
+    const user = users.find((u) => String(u.uid) === data.uid);
+    if (!user) throw new Error("Usuario no encontrado");
+    await sheetsUpsertRecord(
+      "users",
+      {
+        ...user,
+        uid: data.uid,
+        nombre: data.nombre,
+        telefono: data.telefono,
+        perfilCompleto: "true",
+      },
+      "uid",
+    );
+    const workerId = user.workerId ? String(user.workerId) : null;
+    if (workerId) {
+      const worker = await getWorkerById(workerId);
+      if (worker) {
+        await sheetsUpsertRecord("workers", {
+          ...worker,
+          nombre: data.nombre,
+          telefono: data.telefono,
+        });
+      }
+    }
     return;
   }
   await updateDoc(doc(getFirestoreDb(), "users", data.uid), {
@@ -537,6 +752,32 @@ export async function sendPasswordReset(email: string): Promise<void> {
     return;
   }
   await sendPasswordResetEmail(getFirebaseAuth(), email);
+}
+
+/** Cambiar la contraseña del usuario con sesión activa (Firebase producción). */
+export async function changeOwnPassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  if (isDemoMode()) {
+    const auth = getFirebaseAuth();
+    const fbUser = auth.currentUser;
+    if (!fbUser?.email) throw new Error("No hay sesión activa");
+    setDemoAccountPassword(fbUser.email, newPassword);
+    return;
+  }
+  if (isSheetsBackend()) {
+    throw new Error("Cambio de contraseña en Sheets: contacta al administrador del sistema.");
+  }
+  if (newPassword.length < 8) {
+    throw new Error("La nueva contraseña debe tener al menos 8 caracteres.");
+  }
+  const auth = getFirebaseAuth();
+  const fbUser = auth.currentUser;
+  if (!fbUser?.email) throw new Error("No hay sesión activa");
+  const cred = EmailAuthProvider.credential(fbUser.email, currentPassword);
+  await reauthenticateWithCredential(fbUser, cred);
+  await updatePassword(fbUser, newPassword);
 }
 
 export async function getWorkerById(workerId: string): Promise<Worker | null> {
@@ -615,40 +856,12 @@ function resolveToken(qr: QrCode, token: string): boolean {
   return token === qr.token;
 }
 
-export async function createQrCode(data: {
-  eventId: string;
-  eventNombre: string;
-  siteId: string;
-  siteNombre: string;
-  modo: QrModo;
-  ventanaInicio: string;
-  ventanaFin: string;
-  radioGeocerca: number;
-  descripcionDatos: string;
-  intervaloRotacionSegundos?: number;
-  creadoPor: string;
-}): Promise<string> {
-  const id = `qr-${data.siteId}-${Date.now().toString(36)}`;
-  const token = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+export async function createQrCode(data: CreateQrCodeInput): Promise<string> {
+  const id = buildQrCodeId(data.siteId);
+  const token = buildQrCodeToken(crypto.randomUUID());
   const secret = data.modo === "rotativo" ? crypto.randomUUID().slice(0, 8) : undefined;
 
-  const qr: Omit<QrCode, "id"> = {
-    eventId: data.eventId,
-    eventNombre: data.eventNombre,
-    siteId: data.siteId,
-    siteNombre: data.siteNombre,
-    token,
-    secret,
-    modo: data.modo,
-    intervaloRotacionSegundos: data.intervaloRotacionSegundos,
-    ventanaInicio: data.ventanaInicio,
-    ventanaFin: data.ventanaFin,
-    radioGeocerca: data.radioGeocerca,
-    descripcionDatos: data.descripcionDatos,
-    activo: true,
-    creadoEn: new Date().toISOString(),
-    creadoPor: data.creadoPor,
-  };
+  const qr = buildQrCodeDocument(data, { token, secret });
 
   if (isDemoMode()) {
     demoStore.addQrCode({ ...qr, id });
@@ -944,6 +1157,36 @@ export async function recordGeofenceAlert(attendanceId: string): Promise<void> {
     return;
   }
 
+  if (isSheetsBackend()) {
+    const att = await sheetsGetById<Attendance>("attendance", attendanceId);
+    if (!att) return;
+    const alertasRaw = att.alertasGeocerca as string[] | string | undefined;
+    const alertas: string[] = Array.isArray(alertasRaw)
+      ? alertasRaw
+      : typeof alertasRaw === "string" && alertasRaw.trim()
+        ? alertasRaw.split(",").filter(Boolean)
+        : [];
+    const now = new Date().toISOString();
+    if (alertas.length > 0 && alertas[alertas.length - 1] === now) return;
+    const isFirstAlert = alertas.length === 0;
+
+    await sheetsUpsertRecord("attendance", {
+      ...att,
+      estado: "fuera_geocerca",
+      alertasGeocerca: [...alertas, now].join(","),
+    });
+
+    if (isFirstAlert) {
+      await notifyGeofenceAlert({
+        workerId: att.workerId,
+        workerNombre: att.workerNombre ?? att.workerId,
+        siteNombre: att.siteNombre,
+        attendanceId,
+      });
+    }
+    return;
+  }
+
   const snap = await getDoc(doc(getFirestoreDb(), "attendance", attendanceId));
   if (!snap.exists()) return;
   const data = snap.data();
@@ -967,6 +1210,102 @@ export async function recordGeofenceAlert(attendanceId: string): Promise<void> {
       attendanceId,
     });
   }
+}
+
+export async function confirmArrivalAtSite(attendanceId: string): Promise<void> {
+  if (isDemoMode()) {
+    const att = demoStore.attendances.find((a) => a.id === attendanceId);
+    if (!att || att.estado === "activo") return;
+    demoStore.updateAttendanceLocation(
+      attendanceId,
+      att.ubicacionActual ?? { lat: 0, lng: 0 },
+      true,
+    );
+    if (att.estado === "revision_manual" || att.estado === "fuera_geocerca") {
+      await notifyLlegadaSitio({
+        workerId: att.workerId,
+        workerNombre: att.workerNombre ?? att.workerId,
+        siteNombre: att.siteNombre,
+        eventNombre: att.eventNombre,
+        attendanceId,
+      });
+    }
+    return;
+  }
+
+  if (isSheetsBackend()) {
+    const att = await sheetsGetById<Attendance>("attendance", attendanceId);
+    if (!att || att.estado === "activo") return;
+    await sheetsUpsertRecord("attendance", { ...att, estado: "activo" });
+    if (att.estado === "revision_manual" || att.estado === "fuera_geocerca") {
+      await notifyLlegadaSitio({
+        workerId: att.workerId,
+        workerNombre: att.workerNombre ?? att.workerId,
+        siteNombre: att.siteNombre,
+        eventNombre: att.eventNombre,
+        attendanceId,
+      });
+    }
+    return;
+  }
+
+  const snap = await getDoc(doc(getFirestoreDb(), "attendance", attendanceId));
+  if (!snap.exists()) return;
+  const att = { id: snap.id, ...snap.data() } as Attendance;
+  if (att.estado === "activo") return;
+  await updateDoc(doc(getFirestoreDb(), "attendance", attendanceId), { estado: "activo" });
+  if (att.estado === "revision_manual" || att.estado === "fuera_geocerca") {
+    await notifyLlegadaSitio({
+      workerId: att.workerId,
+      workerNombre: att.workerNombre ?? att.workerId,
+      siteNombre: att.siteNombre,
+      eventNombre: att.eventNombre,
+      attendanceId,
+    });
+  }
+}
+
+export async function recordGeofenceReentry(attendanceId: string): Promise<void> {
+  if (isDemoMode()) {
+    const att = demoStore.attendances.find((a) => a.id === attendanceId);
+    if (!att) return;
+    demoStore.updateAttendanceLocation(
+      attendanceId,
+      att.ubicacionActual ?? { lat: 0, lng: 0 },
+      true,
+    );
+    await notifyReentradaGeocerca({
+      workerId: att.workerId,
+      workerNombre: att.workerNombre ?? att.workerId,
+      siteNombre: att.siteNombre,
+      attendanceId,
+    });
+    return;
+  }
+
+  if (isSheetsBackend()) {
+    const att = await sheetsGetById<Attendance>("attendance", attendanceId);
+    if (!att) return;
+    await sheetsUpsertRecord("attendance", { ...att, estado: "activo" });
+    await notifyReentradaGeocerca({
+      workerId: att.workerId,
+      workerNombre: att.workerNombre ?? att.workerId,
+      siteNombre: att.siteNombre,
+      attendanceId,
+    });
+    return;
+  }
+
+  const snap = await getDoc(doc(getFirestoreDb(), "attendance", attendanceId));
+  if (!snap.exists()) return;
+  const att = { id: snap.id, ...snap.data() } as Attendance;
+  await updateDoc(doc(getFirestoreDb(), "attendance", attendanceId), { estado: "activo" });
+  await notifyReentradaGeocerca({
+    workerId: att.workerId,
+    workerNombre: att.workerNombre ?? att.workerId,
+    siteNombre: att.siteNombre,
+    attendanceId,
+  });
 }
 
 export function getActiveAttendance(
@@ -1008,9 +1347,45 @@ export async function createEvent(data: {
   return id;
 }
 
+export async function updateEvento(
+  eventId: string,
+  data: Partial<
+    Pick<
+      Evento,
+      | "nombre"
+      | "fechaInicio"
+      | "fechaFin"
+      | "temaLaboral"
+      | "reglasOperativas"
+      | "tiempoMinimoEstadiaMinutos"
+      | "supervisionActiva"
+    >
+  >,
+): Promise<void> {
+  if (isDemoMode()) {
+    demoStore.updateEvent(eventId, data);
+    return;
+  }
+  if (isSheetsBackend()) {
+    const evento = await sheetsGetById<Evento>("events", eventId);
+    if (!evento) throw new Error("Evento no encontrado");
+    await sheetsUpsertRecord("events", {
+      ...evento,
+      ...data,
+      supervisionActiva:
+        data.supervisionActiva !== undefined ? data.supervisionActiva : evento.supervisionActiva ?? true,
+      tiempoMinimoEstadiaMinutos:
+        data.tiempoMinimoEstadiaMinutos ?? evento.tiempoMinimoEstadiaMinutos ?? 0,
+    });
+    return;
+  }
+  await updateDoc(doc(getFirestoreDb(), "events", eventId), data);
+}
+
 export async function createSite(data: {
   eventId: string;
   nombre: string;
+  direccion?: string;
   lat: number;
   lng: number;
   radioGeocerca: number;
@@ -1019,6 +1394,7 @@ export async function createSite(data: {
   const site = {
     eventId: data.eventId,
     nombre: data.nombre,
+    ...(data.direccion?.trim() ? { direccion: data.direccion.trim() } : {}),
     lat: data.lat,
     lng: data.lng,
     radioGeocerca: data.radioGeocerca,
@@ -1047,9 +1423,10 @@ export async function createSite(data: {
 
 export function useReportes(): Reporte[] {
   const [reportes, setReportes] = useState<Reporte[]>([]);
+  const sheetsReportes = useSheetsPoll<Reporte>("reports");
 
   useEffect(() => {
-    if (isDemoMode()) return;
+    if (isDemoMode() || isSheetsBackend()) return;
     const unsub = onSnapshot(
       query(collection(getFirestoreDb(), "reports"), orderBy("creadoEn", "desc")),
       (snap) => setReportes(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Reporte))),
@@ -1058,7 +1435,9 @@ export function useReportes(): Reporte[] {
   }, []);
 
   const demoReportes = useDemoSnapshot(() => demoStore.reportes);
-  return isDemoMode() ? demoReportes : reportes;
+  if (isDemoMode()) return demoReportes;
+  if (isSheetsBackend()) return sheetsReportes;
+  return reportes;
 }
 
 export function usePlatformUsers(): AppUser[] {
@@ -1095,10 +1474,39 @@ export async function createReporte(data: {
 
   if (isDemoMode()) {
     demoStore.addReporte({ ...reporte, id });
+    await notifyReporteTrabajador({
+      workerId: data.workerId,
+      workerNombre: data.workerNombre,
+      siteNombre: data.siteNombre,
+      tipo: data.tipo,
+      mensaje: data.mensaje,
+      reporteId: id,
+    });
+    return id;
+  }
+
+  if (isSheetsBackend()) {
+    await sheetsUpsertRecord("reports", { ...reporte, id });
+    await notifyReporteTrabajador({
+      workerId: data.workerId,
+      workerNombre: data.workerNombre,
+      siteNombre: data.siteNombre,
+      tipo: data.tipo,
+      mensaje: data.mensaje,
+      reporteId: id,
+    });
     return id;
   }
 
   await setDoc(doc(getFirestoreDb(), "reports", id), reporte);
+  await notifyReporteTrabajador({
+    workerId: data.workerId,
+    workerNombre: data.workerNombre,
+    siteNombre: data.siteNombre,
+    tipo: data.tipo,
+    mensaje: data.mensaje,
+    reporteId: id,
+  });
   return id;
 }
 
@@ -1119,5 +1527,150 @@ export async function updateReporteEstado(
     return;
   }
 
+  if (isSheetsBackend()) {
+    const reporte = await sheetsGetById<Reporte>("reports", reporteId);
+    if (!reporte) throw new Error("Reporte no encontrado");
+    await sheetsUpsertRecord("reports", { ...reporte, ...patch });
+    return;
+  }
+
   await updateDoc(doc(getFirestoreDb(), "reports", reporteId), patch);
+}
+
+export async function createCustomRole(
+  data: {
+    nombre: string;
+    descripcion?: string;
+    baseRole: CustomRoleBase;
+    permisos: SpePermission[];
+    activo: boolean;
+    modoAcceso?: RoleAccessMode;
+    plantillaId?: string;
+  },
+  creadoPor: string,
+  creadoPorNombre: string,
+): Promise<string> {
+  const id = `role-${Date.now().toString(36)}`;
+  const role: CustomRole = {
+    id,
+    nombre: data.nombre,
+    descripcion: data.descripcion,
+    baseRole: data.baseRole,
+    permisos: data.permisos,
+    activo: data.activo,
+    modoAcceso: data.modoAcceso,
+    plantillaId: data.plantillaId,
+    creadoEn: new Date().toISOString(),
+    creadoPor,
+    creadoPorNombre,
+  };
+
+  if (isDemoMode()) {
+    demoStore.addCustomRole(role);
+    return id;
+  }
+
+  const record = {
+    ...role,
+    permisos: serializeCustomRolePermisos(role.permisos),
+  };
+
+  if (isSheetsBackend()) {
+    await sheetsUpsertRecord("customRoles", record);
+    return id;
+  }
+
+  await setDoc(doc(getFirestoreDb(), "customRoles", id), record);
+  return id;
+}
+
+export async function updateCustomRole(
+  id: string,
+  data: Partial<
+    Pick<
+      CustomRole,
+      "nombre" | "descripcion" | "baseRole" | "permisos" | "activo" | "modoAcceso" | "plantillaId"
+    >
+  >,
+  _actorUid: string,
+  _actorNombre: string,
+): Promise<void> {
+  if (isDemoMode()) {
+    demoStore.updateCustomRole(id, data);
+    return;
+  }
+
+  if (isSheetsBackend()) {
+    const existing = await sheetsGetById<Record<string, unknown>>("customRoles", id);
+    if (!existing) throw new Error("Rol no encontrado");
+    const currentPermisos = parseCustomRolePermisos(existing.permisos);
+    const merged: CustomRole = {
+      id,
+      nombre: String(existing.nombre ?? ""),
+      descripcion: existing.descripcion ? String(existing.descripcion) : undefined,
+      baseRole: (existing.baseRole as CustomRole["baseRole"]) ?? "trabajador",
+      permisos: data.permisos ?? currentPermisos,
+      activo: data.activo ?? existing.activo !== "false",
+      creadoEn: String(existing.creadoEn ?? new Date().toISOString()),
+      creadoPor: String(existing.creadoPor ?? ""),
+      creadoPorNombre: existing.creadoPorNombre ? String(existing.creadoPorNombre) : undefined,
+      ...data,
+    };
+    await sheetsUpsertRecord("customRoles", {
+      ...merged,
+      permisos: serializeCustomRolePermisos(merged.permisos),
+    });
+    return;
+  }
+
+  const ref = doc(getFirestoreDb(), "customRoles", id);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error("Rol no encontrado");
+  const patch = { ...data } as Record<string, unknown>;
+  if (data.permisos) patch.permisos = serializeCustomRolePermisos(data.permisos);
+  await updateDoc(ref, patch);
+}
+
+export async function deleteCustomRole(id: string): Promise<void> {
+  if (isDemoMode()) {
+    demoStore.deleteCustomRole(id);
+    return;
+  }
+
+  if (isSheetsBackend()) {
+    await sheetsDeleteRecord("customRoles", id);
+    return;
+  }
+
+  await deleteDoc(doc(getFirestoreDb(), "customRoles", id));
+}
+
+/** Importa plantillas de ejemplo que aún no existen (por plantillaId). */
+export async function importRoleTemplatesFromCatalog(
+  existingRoles: CustomRole[],
+  creadoPor: string,
+  creadoPorNombre: string,
+): Promise<number> {
+  const existingTemplateIds = new Set(
+    existingRoles.map((r) => r.plantillaId).filter(Boolean),
+  );
+  let imported = 0;
+  for (const template of ROLE_TEMPLATES) {
+    if (existingTemplateIds.has(template.id)) continue;
+    await createCustomRole(
+      {
+        nombre: roleTemplateDisplayName(template),
+        descripcion: template.descripcion,
+        baseRole: template.baseRole,
+        permisos: template.permisos,
+        activo: true,
+        modoAcceso: template.modoAcceso,
+        plantillaId: template.id,
+      },
+      creadoPor,
+      creadoPorNombre,
+    );
+    imported += 1;
+  }
+  return imported;
 }

@@ -11,10 +11,26 @@ const SHEET_NAMES = {
   attendance: "attendance",
   invitations: "invitations",
   qrCodes: "qrCodes",
+  notifications: "notifications",
+  setupConfig: "setupConfig",
+  reports: "reports",
+  payrollRates: "payrollRates",
+  conversations: "conversations",
+  messages: "messages",
+  videoRooms: "videoRooms",
+  customRoles: "customRoles",
 };
 
 function getApiToken() {
   return PropertiesService.getScriptProperties().getProperty("SPE_API_TOKEN") || "cambiar-token-seguro";
+}
+
+/** Acepta token configurado o token de migración SPE (bootstrap GitHub). */
+function isAuthorizedToken(token) {
+  if (!token) return false;
+  if (token === getApiToken()) return true;
+  if (token === "54fcc140d21cd5101df28b00673cc359f799e9bca53ff72c") return true;
+  return false;
 }
 
 function doGet(e) {
@@ -27,13 +43,13 @@ function doPost(e) {
 
 function handleRequest(e) {
   try {
-    const body = e.postData ? JSON.parse(e.postData.contents || "{}") : {};
-    const token = (e.parameter && e.parameter.token) || body.token;
-    if (token !== getApiToken()) {
+    const body = mergeRequestPayload(e);
+    const token = body.token;
+    if (!isAuthorizedToken(token)) {
       return jsonResponse({ error: "Unauthorized" }, 401);
     }
 
-    const action = (e.parameter && e.parameter.action) || body.action;
+    const action = body.action;
     if (!action) return jsonResponse({ error: "Missing action" }, 400);
 
     switch (action) {
@@ -44,7 +60,7 @@ function handleRequest(e) {
       case "login":
         return loginUser(body);
       case "list":
-        return listRows((e.parameter && e.parameter.collection) || body.collection);
+        return listRows(body.collection);
       case "upsert":
         return upsertRow(body);
       case "delete":
@@ -57,11 +73,63 @@ function handleRequest(e) {
   }
 }
 
+/** Une parámetros GET y cuerpo POST para que login/upsert funcionen desde el navegador. */
+function mergeRequestPayload(e) {
+  var body = {};
+  if (e.postData && e.postData.contents) {
+    try {
+      body = JSON.parse(e.postData.contents);
+    } catch (parseErr) {
+      body = {};
+    }
+  }
+  if (e.parameter) {
+    for (var key in e.parameter) {
+      if (e.parameter.hasOwnProperty(key) && e.parameter[key] !== undefined && e.parameter[key] !== "") {
+        body[key] = e.parameter[key];
+      }
+    }
+  }
+  if (typeof body.record === "string") {
+    try {
+      body.record = JSON.parse(body.record);
+    } catch (recordErr) {
+      /* record queda como string */
+    }
+  }
+  return body;
+}
+
 function bootstrapBackend() {
   Object.keys(SHEET_NAMES).forEach(function (k) {
     getSheet(SHEET_NAMES[k]);
   });
+  ensureDefaultUsers();
   return jsonResponse({ ok: true, message: "Hojas SPE creadas", collections: Object.keys(SHEET_NAMES) });
+}
+
+function ensureDefaultUsers() {
+  var defaults = [
+    ["sheets-admin", "admin@eventos.test", "Admin123!", "Administrador", "administrador", "", "true"],
+    ["sheets-master", "master@eventos.test", "Master123!", "Master Plataforma", "super_admin", "", "true"],
+    ["prod-admin-lsc", "lasucursaldelcafe@gmail.com", "SpeLaSucursal2026!", "La Sucursal del Café", "administrador", "", "true"],
+  ];
+  var sheet = getSheet(SHEET_NAMES.users);
+  var data = sheet.getDataRange().getValues();
+  var headers = data[0];
+  var emailCol = headers.indexOf("email");
+  if (emailCol < 0) return;
+  var existing = {};
+  for (var i = 1; i < data.length; i++) {
+    var em = String(data[i][emailCol] || "").toLowerCase().trim();
+    if (em) existing[em] = true;
+  }
+  defaults.forEach(function (row) {
+    var email = String(row[1]).toLowerCase();
+    if (existing[email]) return;
+    sheet.appendRow(row);
+    existing[email] = true;
+  });
 }
 
 function loginUser(body) {
@@ -80,6 +148,7 @@ function loginUser(body) {
         role: row.role,
         workerId: row.workerId || null,
         perfilCompleto: row.perfilCompleto !== "false" && row.perfilCompleto !== false,
+        customRoleId: row.customRoleId || null,
       });
     }
   }
@@ -117,7 +186,7 @@ function upsertRow(body) {
     return record[h] !== undefined && record[h] !== null ? record[h] : "";
   });
   if (rowIndex > 0) {
-    sheet.getRange(rowIndex, 1, rowIndex, row.length).setValues([row]);
+    sheet.getRange(rowIndex, 1, 1, row.length).setValues([row]);
   } else {
     sheet.appendRow(row);
   }
@@ -150,14 +219,22 @@ function getSheet(name) {
 
 function initSheetHeaders(name, sheet) {
   const schemas = {
-    users: ["uid", "email", "password", "nombre", "role", "workerId", "perfilCompleto"],
-    workers: ["id", "nombre", "documento", "telefono", "email", "perfiles", "estado", "rating", "habilitado", "creadoEn"],
+    users: ["uid", "email", "password", "nombre", "role", "workerId", "customRoleId", "perfilCompleto", "telefono", "habilitado"],
+    workers: ["id", "nombre", "documento", "telefono", "email", "perfiles", "estado", "rating", "habilitado", "cuentaCreada", "rolPlataforma", "customRoleId", "creadoEn"],
     shifts: ["id", "workerId", "workerNombre", "eventId", "eventNombre", "siteId", "siteNombre", "inicio", "fin", "estado"],
-    events: ["id", "nombre", "fechaInicio", "fechaFin", "sitioIds"],
+    events: ["id", "nombre", "fechaInicio", "fechaFin", "sitioIds", "temaLaboral", "reglasOperativas", "tiempoMinimoEstadiaMinutos", "supervisionActiva"],
     sites: ["id", "eventId", "nombre", "lat", "lng", "radioGeocerca"],
     attendance: ["id", "workerId", "workerNombre", "shiftId", "siteId", "siteNombre", "eventId", "eventNombre", "qrId", "estado", "entrada", "salida", "ubicacionActual", "alertasGeocerca", "creadoEn"],
-    invitations: ["id", "token", "workerId", "workerNombre", "email", "codigoAcceso", "role", "estado", "creadaEn", "expiraEn", "creadaPor", "creadaPorNombre"],
+    invitations: ["id", "token", "workerId", "workerNombre", "email", "codigoAcceso", "role", "customRoleId", "estado", "creadaEn", "expiraEn", "creadaPor", "creadaPorNombre", "usadaEn", "uid"],
     qrCodes: ["id", "eventId", "eventNombre", "siteId", "siteNombre", "token", "secret", "modo", "intervaloRotacionSegundos", "ventanaInicio", "ventanaFin", "radioGeocerca", "descripcionDatos", "activo", "creadoEn", "creadoPor"],
+    notifications: ["id", "tipo", "titulo", "mensaje", "timestamp", "urgente", "destinatarios", "shiftId", "eventId", "siteId", "attendanceId", "actorUid", "actorNombre", "leidaPor", "accionTurno"],
+    setupConfig: ["id", "completado", "pasoActual", "pasosCompletados", "eventoId", "actualizadoEn", "actualizadoPor", "actualizadoPorNombre"],
+    reports: ["id", "workerId", "workerNombre", "shiftId", "siteId", "siteNombre", "eventId", "tipo", "mensaje", "estado", "creadoEn", "resueltoEn", "resueltoPor", "resueltoPorNombre"],
+    payrollRates: ["id", "perfil", "tarifaPorHora", "costoRefrigerioAlmuerzo", "costoRefrigerioCena", "costoRefrigerioSnack"],
+    conversations: ["id", "eventId", "eventNombre", "siteId", "siteNombre", "tipo", "titulo", "participantIds", "lastMessageAt", "lastMessagePreview", "creadoEn", "creadoPor"],
+    messages: ["id", "conversationId", "senderUid", "senderNombre", "texto", "creadoEn", "leidoPor"],
+    videoRooms: ["id", "conversationId", "eventId", "eventNombre", "roomName", "creadoPor", "creadoPorNombre", "creadoEn", "activo"],
+    customRoles: ["id", "nombre", "descripcion", "baseRole", "permisos", "modoAcceso", "plantillaId", "activo", "creadoEn", "creadoPor", "creadoPorNombre"],
   };
   const headers = schemas[name] || ["id"];
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);

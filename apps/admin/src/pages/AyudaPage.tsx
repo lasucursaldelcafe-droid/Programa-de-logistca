@@ -15,12 +15,14 @@ const PLATFORM_STEPS: Record<Platform, string[]> = {
     "Registra personal y envía invitaciones desde Cuentas.",
     "Crea turnos con trabajador, sitio y horario.",
     "Monitorea el mapa en vivo y atiende reportes de incidencias.",
+    "Usa Comunicación para chat interno y videollamadas con el equipo.",
     "Cierra nómina al final del evento.",
   ],
   worker: [
     "Activa tu cuenta con el enlace de invitación.",
     "Completa tu perfil y acepta los turnos asignados.",
     "Al llegar al sitio, escanea el QR y valida tu ubicación GPS.",
+    "Usa Chat / Video para hablar con supervisión en tiempo real.",
     "Si hay un problema, usa Reportar para avisar al supervisor.",
   ],
   master: [
@@ -37,7 +39,7 @@ interface AyudaPageProps {
 
 export function AyudaPage({ platform }: AyudaPageProps) {
   return (
-    <div className="mx-auto max-w-2xl space-y-8 py-4">
+    <div className="mx-auto max-w-2xl space-y-5 py-4">
       <div>
         <h1 className="font-display text-2xl font-semibold">Guía de uso</h1>
         <p className="mt-2 text-neutral-400">

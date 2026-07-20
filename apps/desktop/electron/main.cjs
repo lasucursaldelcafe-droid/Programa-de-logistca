@@ -3,13 +3,14 @@ const path = require("node:path");
 
 const isDev = process.env.ELECTRON_DEV === "1";
 
-/** Misma URL que Android/Web para compartir datos (localStorage) entre plataformas. */
+/** Misma base de datos Firebase que la web — sincronización en tiempo real vía Firestore. */
 const REMOTE_APP_URL =
   process.env.SPE_REMOTE_URL ||
   "https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/";
 
-/** Usar bundle local empaquetado (sin sincronizar con la web). */
-const USE_OFFLINE_BUNDLE = process.env.SPE_OFFLINE === "1";
+/** Por defecto: bundle embebido (offline UI) + Firebase sync. SPE_REMOTE=1 fuerza WebView remoto. */
+const USE_REMOTE_WEB = process.env.SPE_REMOTE === "1";
+const USE_OFFLINE_BUNDLE = !USE_REMOTE_WEB;
 
 function resolveIndexHtml() {
   if (app.isPackaged) {
@@ -37,7 +38,7 @@ function createWindow() {
   if (isDev && process.env.VITE_DEV_SERVER_URL) {
     win.loadURL(process.env.VITE_DEV_SERVER_URL);
     win.webContents.openDevTools({ mode: "detach" });
-  } else if (!USE_OFFLINE_BUNDLE) {
+  } else if (USE_REMOTE_WEB) {
     win.loadURL(REMOTE_APP_URL);
   } else {
     win.loadFile(resolveIndexHtml());

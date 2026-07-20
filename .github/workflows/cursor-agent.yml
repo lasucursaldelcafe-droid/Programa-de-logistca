@@ -1,0 +1,115 @@
+name: Cursor Agent (SPE)
+
+# Ejecuta Cursor CLI en CI para diagnóstico o tareas automatizadas.
+# Requiere secret: CURSOR_API_KEY (https://cursor.com/docs/cli/github-actions)
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Tarea predefinida"
+        required: true
+        default: diagnostico
+        type: choice
+        options:
+          - diagnostico
+          - pendientes-firebase
+          - firestore-bootstrap
+          - custom
+      prompt:
+        description: "Prompt personalizado (solo si task=custom)"
+        required: false
+        type: string
+      model:
+        description: "Modelo del agente"
+        required: false
+        default: gpt-5
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cursor-agent-spe
+  cancel-in-progress: true
+
+jobs:
+  agent:
+    runs-on: ubuntu-latest
+    env:
+      CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+      VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+      VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Install Cursor CLI
+        run: |
+          curl https://cursor.com/install -fsS | bash
+          echo "$HOME/.cursor/bin" >> $GITHUB_PATH
+
+      - name: Verificar CURSOR_API_KEY
+        run: |
+          if [ -z "$CURSOR_API_KEY" ]; then
+            echo "::error::Falta el secret CURSOR_API_KEY"
+            echo "  Cursor Dashboard → API Keys → GitHub Secrets → CURSOR_API_KEY"
+            echo "  https://cursor.com/docs/cli/github-actions"
+            exit 1
+          fi
+          agent --version || true
+
+      - name: Run Cursor Agent
+        run: |
+          TASK="${{ github.event.inputs.task }}"
+          MODEL="${{ github.event.inputs.model }}"
+          case "$TASK" in
+            diagnostico)
+              PROMPT="Repo: Sistema de Personal para Eventos (SPE). Backend producción: Firebase Auth + Firestore (sin demo, sin Google Sheets). Ejecuta: npm run acceso, npm run build, npm run check:nav, node scripts/spe-diagnostico.mjs --ci. Resume en español: estado del build, pendientes (Firestore rules, seed admin lasucursaldelcafe@gmail.com, secrets). NO modifiques archivos ni hagas commit; solo reporta."
+              ;;
+            pendientes-firebase)
+              PROMPT="Repo SPE — Firebase only. Lista pasos concretos pendientes para producción: (1) secrets VITE_FIREBASE_*, (2) FIREBASE_TOKEN + SPE_PROD_PASSWORD (sin JSON SA), (3) npm run firestore:bootstrap, (4) verificar login GitHub Pages. Cita docs-source/ACCESO-PRODUCCION.md. NO modifiques archivos."
+              ;;
+            firestore-bootstrap)
+              PROMPT="Repo SPE. Ejecuta npm run firestore:bootstrap (requiere FIREBASE_TOKEN, VITE_FIREBASE_* en env, SPE_PROD_PASSWORD). Si falla por falta de token, documenta: firebase login:ci → FIREBASE_TOKEN. Proyecto Firebase: programalog-ccc12. NO commitees secretos."
+              ;;
+            custom)
+              PROMPT="${{ github.event.inputs.prompt }}"
+              if [ -z "$PROMPT" ]; then
+                echo "::error::task=custom requiere el input prompt"
+                exit 1
+              fi
+              ;;
+            *)
+              echo "::error::Tarea desconocida: $TASK"
+              exit 1
+              ;;
+          esac
+          echo "=== Cursor Agent: $TASK (model=$MODEL) ==="
+          agent -p "$PROMPT" --model "$MODEL" | tee /tmp/cursor-agent-output.txt
+
+      - name: Resumen
+        if: always()
+        run: |
+          echo "## Cursor Agent — ${{ github.event.inputs.task }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f /tmp/cursor-agent-output.txt ]; then
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            tail -c 12000 /tmp/cursor-agent-output.txt >> "$GITHUB_STEP_SUMMARY" || true
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Subir salida del agente
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cursor-agent-output
+          path: /tmp/cursor-agent-output.txt
+          retention-days: 14
+          if-no-files-found: ignore

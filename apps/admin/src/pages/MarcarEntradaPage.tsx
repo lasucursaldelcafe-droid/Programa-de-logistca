@@ -1,8 +1,13 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ATTENDANCE_LABEL, resolveTurnosPath } from "@spe/shared";
+import {
+  ATTENDANCE_LABEL,
+  findProximoTurnoConfirmado,
+  resolveTurnosPath,
+} from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
 import { Badge, Card } from "../components/ui";
+import { TematicaEventoCard } from "../components/TematicaEventoCard";
 import { getCurrentPosition } from "../lib/geolocation";
 import { useGeofenceMonitor } from "../hooks/useGeofenceMonitor";
 import {
@@ -10,6 +15,7 @@ import {
   checkOut,
   getActiveAttendance,
   useAttendances,
+  useEvents,
   useQrCodes,
   useShifts,
   useSites,
@@ -20,6 +26,7 @@ export function MarcarEntradaPage() {
   const { pathname } = useLocation();
   const shifts = useShifts();
   const sites = useSites();
+  const events = useEvents();
   const qrCodes = useQrCodes();
   const attendances = useAttendances();
   const [rawQr, setRawQr] = useState("");
@@ -28,15 +35,29 @@ export function MarcarEntradaPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const workerId = user?.workerId ?? "";
+  const workerNombre = user?.nombre ?? "";
+  const active = workerId ? getActiveAttendance(attendances, workerId) : null;
+  const activeSite = active ? sites.find((s) => s.id === active.siteId) ?? null : null;
+  const { dentroGeocerca, gpsError } = useGeofenceMonitor(active, activeSite, Boolean(active));
+
+  const eventoPorId = useMemo(
+    () => new Map(events.map((e) => [e.id, e])),
+    [events],
+  );
+
+  const proximoTurno = useMemo(
+    () => (workerId ? findProximoTurnoConfirmado(shifts, workerId) : null),
+    [shifts, workerId],
+  );
+
+  const eventoProximoTurno = proximoTurno
+    ? eventoPorId.get(proximoTurno.eventId) ?? null
+    : null;
+
   if (!user || user.role !== "trabajador" || !user.workerId) {
     return <p className="text-neutral-400">Solo trabajadores pueden marcar entrada.</p>;
   }
-
-  const workerId = user.workerId;
-  const workerNombre = user.nombre;
-  const active = getActiveAttendance(attendances, workerId);
-  const activeSite = active ? sites.find((s) => s.id === active.siteId) ?? null : null;
-  const { dentroGeocerca, gpsError } = useGeofenceMonitor(active, activeSite, Boolean(active));
 
   async function iniciarCheckin(e: FormEvent) {
     e.preventDefault();
@@ -87,6 +108,8 @@ export function MarcarEntradaPage() {
   }
 
   if (active) {
+    const eventoActivo = eventoPorId.get(active.eventId) ?? null;
+
     return (
       <div className="space-y-6">
         <div>
@@ -95,6 +118,11 @@ export function MarcarEntradaPage() {
             GPS activo solo durante esta jornada.
           </p>
         </div>
+
+        <TematicaEventoCard
+          evento={eventoActivo}
+          titulo="Recordatorio del evento"
+        />
 
         <Card>
           <div className="flex flex-wrap items-center gap-3">
@@ -140,13 +168,24 @@ export function MarcarEntradaPage() {
 
   if (pendingQr) {
     const qr = qrCodes.find((q) => pendingQr.includes(q.id));
+    const eventoQr = qr ? eventoPorId.get(qr.eventId) ?? null : null;
+
     return (
       <div className="space-y-6">
-        <h1 className="font-display text-3xl font-bold">Consentimiento</h1>
-        <Card>
-          <p className="text-sm text-neutral-300">
-            Antes de activar el rastreo GPS, lee y acepta la política de datos:
+        <div>
+          <h1 className="font-display text-3xl font-bold">Iniciar jornada</h1>
+          <p className="mt-1 text-neutral-400">
+            Revisa la temática del evento y acepta el consentimiento GPS.
           </p>
+        </div>
+
+        <TematicaEventoCard
+          evento={eventoQr}
+          titulo="Antes de marcar entrada"
+        />
+
+        <Card>
+          <p className="text-sm font-medium text-neutral-200">Consentimiento GPS</p>
           <p className="mt-3 rounded-lg border border-border bg-bg p-3 text-sm text-neutral-400">
             {qr?.descripcionDatos ?? "Recopilación de ubicación durante la jornada."}
           </p>
@@ -183,13 +222,20 @@ export function MarcarEntradaPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <div>
         <h1 className="font-display text-3xl font-bold">Marcar entrada</h1>
         <p className="mt-1 text-neutral-400">
           Escanea o pega el código QR del sitio para iniciar tu jornada y activar GPS.
         </p>
       </div>
+
+      {eventoProximoTurno && (
+        <TematicaEventoCard
+          evento={eventoProximoTurno}
+          titulo="Tu próximo turno"
+        />
+      )}
 
       <Card>
         <form onSubmit={iniciarCheckin} className="space-y-4">

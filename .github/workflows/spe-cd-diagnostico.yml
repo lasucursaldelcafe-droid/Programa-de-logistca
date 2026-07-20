@@ -1,0 +1,165 @@
+name: SPE — Diagnóstico y CD automático
+
+# Analiza qué falla (config, Sheets, Firebase, Pages, login) y opcionalmente corrige + despliega.
+# En push a main con [skip ci] (commits del bot de deploy), dispara Pages vía workflow_call
+# porque deploy-github-pages omite esos commits a propósito.
+on:
+  workflow_dispatch:
+    inputs:
+      auto_fix:
+        description: "Corregir automáticamente (bootstrap demo, config:sync)"
+        required: false
+        default: true
+        type: boolean
+      deploy:
+        description: "Desplegar a GitHub Pages tras diagnóstico"
+        required: false
+        default: true
+        type: boolean
+      backend:
+        description: "Forzar backend: auto | firebase"
+        required: false
+        default: auto
+        type: choice
+        options:
+          - auto
+          - firebase
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 8 * * 1"
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: spe-cd-diagnostico
+  cancel-in-progress: false
+
+jobs:
+  diagnostico:
+    runs-on: ubuntu-latest
+    outputs:
+      overall: ${{ steps.diag.outputs.overall }}
+      effective_backend: ${{ steps.diag.outputs.effective_backend }}
+      login_url: ${{ steps.diag.outputs.login_url }}
+      skip_ci_push: ${{ steps.context.outputs.skip_ci_push }}
+    env:
+      VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+      VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+      VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+      VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+      VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+      VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+      VITE_SHEETS_WEB_APP_URL: ${{ secrets.VITE_SHEETS_WEB_APP_URL }}
+      VITE_SHEETS_API_TOKEN: ${{ secrets.VITE_SHEETS_API_TOKEN }}
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+      FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+      SPE_PROD_PASSWORD: ${{ secrets.SPE_PROD_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Contexto del push
+        id: context
+        run: |
+          MSG="${{ github.event.head_commit.message }}"
+          if [ "${{ github.event_name }}" = "push" ] && echo "$MSG" | grep -qi '\[skip ci\]'; then
+            echo "skip_ci_push=true" >> "$GITHUB_OUTPUT"
+            echo "○ Push con [skip ci] — se disparará deploy vía workflow_call"
+          else
+            echo "skip_ci_push=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Forzar backend Firebase (input)
+        if: github.event.inputs.backend == 'firebase'
+        run: |
+          node -e "
+          const fs=require('fs');
+          const p='config/bootstrap.json';
+          const j=JSON.parse(fs.readFileSync(p,'utf8'));
+          j.backend='firebase'; j.demoMode=false;
+          j.sheetsWebAppUrl=''; j.sheetsApiToken='';
+          fs.writeFileSync(p, JSON.stringify(j,null,2)+'\n');
+          "
+
+      - name: Ejecutar diagnóstico
+        id: diag
+        run: |
+          node scripts/spe-diagnostico.mjs --ci --json --no-fail > /tmp/diag.json
+          cat /tmp/diag.json
+          OVERALL=$(node -e "console.log(JSON.parse(require('fs').readFileSync('/tmp/diag.json','utf8')).overall)")
+          BACKEND=$(node -e "console.log(JSON.parse(require('fs').readFileSync('/tmp/diag.json','utf8')).effectiveBackend)")
+          LOGIN=$(node -e "console.log(JSON.parse(require('fs').readFileSync('/tmp/diag.json','utf8')).loginUrl)")
+          echo "overall=$OVERALL" >> "$GITHUB_OUTPUT"
+          echo "effective_backend=$BACKEND" >> "$GITHUB_OUTPUT"
+          echo "login_url=$LOGIN" >> "$GITHUB_OUTPUT"
+          cp /tmp/diag.json config/diagnostico-report.json
+
+      - name: Resumen legible
+        run: node scripts/spe-diagnostico.mjs --ci || true
+
+      - name: Auto-fix
+        if: >-
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.auto_fix != 'false') ||
+          github.event_name == 'push' ||
+          github.event_name == 'schedule'
+        run: node scripts/spe-cd-auto.mjs --fix --ci --no-fail
+
+      - name: Subir reporte de diagnóstico
+        uses: actions/upload-artifact@v4
+        with:
+          name: spe-diagnostico-report
+          path: config/diagnostico-report.json
+          retention-days: 30
+
+      - name: Commit auto-fix (bootstrap)
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event_name == 'schedule'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add config/bootstrap.json config/diagnostico-report.json apps/admin/public/spe-runtime-config.json 2>/dev/null || true
+          git diff --staged --quiet || git commit -m "cd: auto-fix diagnóstico SPE [skip ci]"
+          git push origin main || echo "○ Sin cambios que commitear o push omitido"
+
+  deploy:
+    needs: diagnostico
+    if: >-
+      needs.diagnostico.result == 'success' &&
+      (
+        (github.event_name == 'workflow_dispatch' && github.event.inputs.deploy != 'false') ||
+        (github.event_name == 'push' && needs.diagnostico.outputs.skip_ci_push == 'true') ||
+        github.event_name == 'schedule'
+      )
+    uses: ./.github/workflows/deploy-github-pages.yml
+    with:
+      backend: ${{ github.event.inputs.backend || 'auto' }}
+    secrets: inherit
+
+  resumen:
+    needs: [diagnostico, deploy]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resultado
+        run: |
+          echo "## SPE Diagnóstico CD" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Campo | Valor |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Estado | \`${{ needs.diagnostico.outputs.overall }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Backend | \`${{ needs.diagnostico.outputs.effective_backend }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Login | ${{ needs.diagnostico.outputs.login_url }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Deploy | ${{ needs.deploy.result || 'skipped' }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Login producción:** \`lasucursaldelcafe@gmail.com\` + contraseña Firebase (ver \`docs-source/ACCESO-PRODUCCION.md\`)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Descarga el artefacto \`spe-diagnostico-report\` para el JSON completo." >> "$GITHUB_STEP_SUMMARY"

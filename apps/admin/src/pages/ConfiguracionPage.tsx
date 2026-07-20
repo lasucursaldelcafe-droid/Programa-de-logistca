@@ -10,6 +10,7 @@ import {
   puedeGestionarConfiguracion,
   setupStepIndex,
   validateEventoStep,
+  validateOperacionesStep,
   validateSitioStep,
   type SetupPaso,
 } from "@spe/shared";
@@ -19,6 +20,7 @@ import {
   createEvent,
   createQrCode,
   createSite,
+  updateEvento,
   useEvents,
   useQrCodes,
   useSites,
@@ -31,6 +33,7 @@ import {
   useSetupConfig,
 } from "../hooks/useSetup";
 import { upsertPayrollRate, usePayrollRates } from "../hooks/usePayroll";
+import { SiteLocationPicker } from "../components/SiteLocationPicker";
 
 const DEFAULT_DESCRIPCION =
   "Recopilamos tu ubicación GPS solo durante la jornada activa para verificar presencia en el sitio asignado.";
@@ -56,11 +59,18 @@ export function ConfiguracionPage() {
   });
   const [sitioForm, setSitioForm] = useState({
     nombre: "",
+    direccion: "",
     lat: "4.6533",
     lng: "-74.0836",
     radioGeocerca: "80",
   });
   const [tarifasEdit, setTarifasEdit] = useState<Record<string, string>>({});
+  const [operacionesForm, setOperacionesForm] = useState({
+    temaLaboral: "",
+    reglasOperativas: "",
+    tiempoMinimoEstadiaMinutos: "30",
+    supervisionActiva: true,
+  });
 
   const eventoActivo = useMemo(() => {
     const id = config?.eventoId;
@@ -83,6 +93,16 @@ export function ConfiguracionPage() {
     }
     setTarifasEdit(map);
   }, [rates]);
+
+  useEffect(() => {
+    if (!eventoActivo) return;
+    setOperacionesForm({
+      temaLaboral: eventoActivo.temaLaboral ?? "",
+      reglasOperativas: eventoActivo.reglasOperativas ?? "",
+      tiempoMinimoEstadiaMinutos: String(eventoActivo.tiempoMinimoEstadiaMinutos ?? 30),
+      supervisionActiva: eventoActivo.supervisionActiva !== false,
+    });
+  }, [eventoActivo?.id, eventoActivo?.temaLaboral, eventoActivo?.reglasOperativas]);
 
   if (!user || !puedeGestionarConfiguracion(user.role)) {
     return <p className="text-neutral-400">Sin permisos para configurar el sistema.</p>;
@@ -156,11 +176,12 @@ export function ConfiguracionPage() {
       await createSite({
         eventId: eventoActivo.id,
         nombre,
+        direccion: sitioForm.direccion,
         lat: Number(sitioForm.lat),
         lng: Number(sitioForm.lng),
         radioGeocerca: Number(sitioForm.radioGeocerca),
       });
-      setSitioForm((f) => ({ ...f, nombre: "" }));
+      setSitioForm((f) => ({ ...f, nombre: "", direccion: "" }));
       setMensaje(`Sitio "${nombre}" agregado.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al crear sitio");
@@ -268,7 +289,7 @@ export function ConfiguracionPage() {
         actor: { uid: currentUser.uid, nombre: currentUser.nombre },
         current: cfg,
       });
-      setPaso("resumen");
+      setPaso("operaciones");
       setMensaje(
         creados > 0
           ? `Se generaron ${creados} código(s) QR.`
@@ -281,12 +302,48 @@ export function ConfiguracionPage() {
     }
   }
 
+  async function guardarOperaciones(e: React.FormEvent) {
+    e.preventDefault();
+    if (!eventoActivo) {
+      setError("No hay evento activo.");
+      return;
+    }
+    setError(null);
+    const validation = validateOperacionesStep(operacionesForm);
+    if (validation) {
+      setError(validation);
+      return;
+    }
+    setBusy(true);
+    try {
+      await updateEvento(eventoActivo.id, {
+        temaLaboral: operacionesForm.temaLaboral.trim(),
+        reglasOperativas: operacionesForm.reglasOperativas.trim(),
+        tiempoMinimoEstadiaMinutos: Number(operacionesForm.tiempoMinimoEstadiaMinutos),
+        supervisionActiva: operacionesForm.supervisionActiva,
+      });
+      const cfg = await ensureConfig();
+      await advanceSetupPaso({
+        paso: "operaciones",
+        eventoId: eventoActivo.id,
+        actor: { uid: currentUser.uid, nombre: currentUser.nombre },
+        current: cfg,
+      });
+      setPaso("resumen");
+      setMensaje("Reglas operativas y supervisión guardadas.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al guardar operaciones");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function finalizarConfiguracion() {
     setBusy(true);
     try {
       await completeSetup({ uid: currentUser.uid, nombre: currentUser.nombre });
-      setMensaje("Configuración completada. El sistema está listo para operar.");
-      navigate("/");
+      setMensaje("Evento listo. Sigue con personal e invitaciones, luego asigna al equipo.");
+      navigate("/operacion");
     } finally {
       setBusy(false);
     }
@@ -305,11 +362,13 @@ export function ConfiguracionPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <div>
-        <h1 className="font-display text-3xl font-bold">Asistente de configuración</h1>
-        <p className="mt-1 text-neutral-400">
-          Configura un evento nuevo en 5 pasos: evento, sitios, tarifas, QR y resumen.
+        <p className="text-xs font-semibold uppercase tracking-wider text-accent">Paso 1 del flujo</p>
+        <h1 className="font-display text-3xl font-bold">Crear evento</h1>
+        <p className="mt-1 max-w-2xl text-neutral-400">
+          Asistente en 6 pasos: evento, sitios, tarifas, QR, operaciones (temática y reglas) y
+          resumen. Después registra personal, envía invitaciones y asigna turnos en Operación.
         </p>
       </div>
 
@@ -379,9 +438,10 @@ export function ConfiguracionPage() {
 
       {paso === "sitios" && (
         <Card>
-          <h2 className="font-display text-lg font-semibold">2. Sitios y geocercas</h2>
+          <h2 className="font-display text-lg font-semibold">2. Sitios y área de trabajo</h2>
           <p className="mt-1 text-sm text-neutral-400">
-            Evento: {eventoActivo?.nombre ?? "—"}
+            Evento: {eventoActivo?.nombre ?? "—"} · Indica dirección, ubica el punto en el mapa y define
+            el radio del área de trabajo (geocerca GPS).
           </p>
           <form onSubmit={agregarSitio} className="mt-4 grid gap-3 sm:grid-cols-2">
             <label className="text-sm sm:col-span-2">
@@ -393,37 +453,15 @@ export function ConfiguracionPage() {
                 required
               />
             </label>
-            <label className="text-sm">
-              Latitud
-              <input
-                value={sitioForm.lat}
-                onChange={(e) => setSitioForm((f) => ({ ...f, lat: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-border bg-bg px-3 py-2"
-                required
-              />
-            </label>
-            <label className="text-sm">
-              Longitud
-              <input
-                value={sitioForm.lng}
-                onChange={(e) => setSitioForm((f) => ({ ...f, lng: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-border bg-bg px-3 py-2"
-                required
-              />
-            </label>
-            <label className="text-sm">
-              Radio geocerca (m)
-              <input
-                type="number"
-                min={10}
-                value={sitioForm.radioGeocerca}
-                onChange={(e) =>
-                  setSitioForm((f) => ({ ...f, radioGeocerca: e.target.value }))
-                }
-                className="mt-1 w-full rounded-lg border border-border bg-bg px-3 py-2"
-                required
-              />
-            </label>
+            <SiteLocationPicker
+              value={{
+                direccion: sitioForm.direccion,
+                lat: sitioForm.lat,
+                lng: sitioForm.lng,
+                radioGeocerca: sitioForm.radioGeocerca,
+              }}
+              onChange={(loc) => setSitioForm((f) => ({ ...f, ...loc }))}
+            />
             <div className="flex flex-wrap gap-2 sm:col-span-2">
               <button
                 type="submit"
@@ -446,7 +484,13 @@ export function ConfiguracionPage() {
             <ul className="mt-4 space-y-2 text-sm">
               {sitiosEvento.map((s) => (
                 <li key={s.id} className="rounded border border-border px-3 py-2">
-                  {s.nombre} · {s.lat}, {s.lng} · radio {s.radioGeocerca}m
+                  <div className="font-medium text-neutral-200">{s.nombre}</div>
+                  {s.direccion && (
+                    <div className="text-neutral-400">{s.direccion}</div>
+                  )}
+                  <div className="text-xs text-neutral-500">
+                    {s.lat.toFixed(5)}, {s.lng.toFixed(5)} · área {s.radioGeocerca} m
+                  </div>
                 </li>
               ))}
             </ul>
@@ -514,7 +558,10 @@ export function ConfiguracionPage() {
           <ul className="mt-4 space-y-2 text-sm">
             {sitiosEvento.map((s) => {
               const tieneQr = qrCodes.some(
-                (q) => q.siteId === s.id && q.activo,
+                (q) =>
+                  q.siteId === s.id &&
+                  q.eventId === eventoActivo?.id &&
+                  q.activo,
               );
               return (
                 <li
@@ -540,9 +587,101 @@ export function ConfiguracionPage() {
         </Card>
       )}
 
+      {paso === "operaciones" && (
+        <Card>
+          <h2 className="font-display text-lg font-semibold">5. Operaciones y supervisión</h2>
+          <p className="mt-1 text-sm text-neutral-400">
+            Define la temática laboral, reglas en sitio y checklist de personal antes de operar.
+          </p>
+          <form onSubmit={guardarOperaciones} className="mt-4 grid gap-3">
+            <label className="text-sm">
+              Temática laboral del evento
+              <textarea
+                value={operacionesForm.temaLaboral}
+                onChange={(e) =>
+                  setOperacionesForm((f) => ({ ...f, temaLaboral: e.target.value }))
+                }
+                rows={3}
+                className="mt-1 w-full rounded-lg border border-border bg-bg px-3 py-2"
+                placeholder="Ej.: Montaje de stand, atención al público, uniforme corporativo…"
+                required
+              />
+            </label>
+            <label className="text-sm">
+              Reglas operativas y supervisión
+              <textarea
+                value={operacionesForm.reglasOperativas}
+                onChange={(e) =>
+                  setOperacionesForm((f) => ({ ...f, reglasOperativas: e.target.value }))
+                }
+                rows={4}
+                className="mt-1 w-full rounded-lg border border-border bg-bg px-3 py-2"
+                placeholder="Horarios, funciones por sitio, reportes obligatorios, conducta en área…"
+                required
+              />
+            </label>
+            <label className="text-sm sm:max-w-xs">
+              Tiempo mínimo de estadía (minutos)
+              <input
+                type="number"
+                min={0}
+                value={operacionesForm.tiempoMinimoEstadiaMinutos}
+                onChange={(e) =>
+                  setOperacionesForm((f) => ({
+                    ...f,
+                    tiempoMinimoEstadiaMinutos: e.target.value,
+                  }))
+                }
+                className="mt-1 w-full rounded-lg border border-border bg-bg px-3 py-2"
+              />
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={operacionesForm.supervisionActiva}
+                onChange={(e) =>
+                  setOperacionesForm((f) => ({ ...f, supervisionActiva: e.target.checked }))
+                }
+              />
+              Activar supervisión GPS (llegada, movimiento y geocerca)
+            </label>
+            <div className="rounded-lg border border-border bg-bg/50 px-4 py-3 text-sm text-neutral-400">
+              <p className="font-medium text-neutral-300">Checklist antes de operar</p>
+              <ul className="mt-2 list-inside list-disc space-y-1">
+                <li>
+                  <Link to="/personal" className="text-accent hover:underline">
+                    Registrar personal
+                  </Link>{" "}
+                  en el evento
+                </li>
+                <li>
+                  <Link to="/cuentas" className="text-accent hover:underline">
+                    Enviar invitaciones
+                  </Link>{" "}
+                  para que descarguen la app
+                </li>
+                <li>
+                  <Link to="/turnos" className="text-accent hover:underline">
+                    Asignar turnos
+                  </Link>{" "}
+                  por sitio y horario
+                </li>
+              </ul>
+            </div>
+            <button
+              type="submit"
+              disabled={busy || !eventoActivo}
+              className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg disabled:opacity-50"
+            >
+              Guardar operaciones y continuar
+            </button>
+          </form>
+        </Card>
+      )}
+
       {paso === "resumen" && (
         <Card>
-          <h2 className="font-display text-lg font-semibold">5. Resumen</h2>
+          <h2 className="font-display text-lg font-semibold">6. Resumen</h2>
           <ul className="mt-4 space-y-3">
             {resumen.map((item) => (
               <li
@@ -574,6 +713,12 @@ export function ConfiguracionPage() {
             >
               Configurar otro evento
             </button>
+            <Link to="/personal" className="rounded-lg border border-border px-4 py-2 text-sm">
+              Siguiente: Personal →
+            </Link>
+            <Link to="/operacion" className="rounded-lg border border-border px-4 py-2 text-sm">
+              Asignar al evento →
+            </Link>
             <Link to="/qr-sitios" className="rounded-lg border border-border px-4 py-2 text-sm">
               Ver QR sitios
             </Link>

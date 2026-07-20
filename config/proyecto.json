@@ -1,0 +1,10 @@
+{
+  "nombre": "Sistema de Personal para Eventos (SPE)",
+  "organizacion": "La Sucursal del Café",
+  "correoProyecto": "lasucursaldelcafe@gmail.com",
+  "repositorio": "https://github.com/lasucursaldelcafe-droid/Programa-de-logistca",
+  "appWeb": "https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/",
+  "cuentasApp": "./cuentas-app.json",
+  "credencialesLocales": "./credenciales.local.json",
+  "bootstrap": "./bootstrap.json"
+}

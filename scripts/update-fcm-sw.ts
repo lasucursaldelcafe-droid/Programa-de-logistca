@@ -8,7 +8,9 @@ import { resolve } from "node:path";
 const ROOT = resolve(import.meta.dirname, "..");
 const SW_PATH = resolve(ROOT, "apps/admin/public/firebase-messaging-sw.js");
 const CONFIG_CANDIDATES = [
+  resolve(ROOT, "config/bootstrap.json"),
   resolve(ROOT, "firebase-web-config.json"),
+  resolve(ROOT, "docs/spe-runtime-config.json"),
   resolve(ROOT, "apps/admin/.env.local"),
 ];
 
@@ -46,11 +48,14 @@ function loadFirebaseConfig(): Record<string, string> | null {
     const raw = readFileSync(path, "utf-8");
     if (path.endsWith(".json")) {
       try {
-        const data = JSON.parse(raw) as Record<string, string>;
+        const data = JSON.parse(raw) as Record<string, string> & {
+          firebase?: Record<string, string>;
+        };
+        const src = data.firebase ?? data;
         const mapped: Record<string, string> = {};
-        for (const [src, dest] of Object.entries(KEY_MAP)) {
-          const val = data[src] ?? data[dest];
-          if (val) mapped[src] = String(val).trim();
+        for (const [srcKey, dest] of Object.entries(KEY_MAP)) {
+          const val = src[srcKey] ?? data[dest];
+          if (val) mapped[srcKey] = String(val).trim();
         }
         if (mapped.apiKey && !PLACEHOLDERS.has(mapped.apiKey)) return mapped;
       } catch {

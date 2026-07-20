@@ -7,9 +7,9 @@ interface PageHeaderProps {
 /** Encabezado uniforme — título corto, descripción opcional, acciones a la derecha. */
 export function PageHeader({ title, description, children }: PageHeaderProps) {
   return (
-    <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
-        <h1 className="font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">
+        <h1 className="font-display text-xl font-bold tracking-tight text-white sm:text-2xl">
           {title}
         </h1>
         {description && (

@@ -1,0 +1,142 @@
+name: Producción completa (SPE)
+
+# Pipeline único: Pages → Firestore → verificación → instaladores
+# Trigger: 2026-07-20 deploy post #77 #78
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - firestore.rules
+      - firestore.indexes.json
+      - firebase.json
+      - functions/**
+      - .github/workflows/produccion-completa.yml
+      - scripts/firestore-bootstrap.mjs
+      - scripts/deploy-firestore.mjs
+      - scripts/deploy-firestore-rules-api.mjs
+  schedule:
+    - cron: "0 9 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: produccion-completa
+  cancel-in-progress: false
+
+jobs:
+  firestore:
+    name: Firestore (reglas + bootstrap)
+    runs-on: ubuntu-latest
+    env:
+      FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+      SPE_PROD_PASSWORD: ${{ secrets.SPE_PROD_PASSWORD }}
+      VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+      VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+      VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+      VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+      VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+      VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Runtime config + firebase-web-config
+        run: |
+          node scripts/write-runtime-config.mjs
+          npm run setup:fcm
+          node <<'NODE'
+          const fs = require("fs");
+          const cfg = JSON.parse(fs.readFileSync("apps/admin/public/spe-runtime-config.json", "utf8"));
+          if (cfg.firebase?.projectId) {
+            fs.writeFileSync("firebase-web-config.json", JSON.stringify(cfg.firebase, null, 2) + "\n");
+            fs.writeFileSync(
+              ".firebaserc",
+              JSON.stringify({ projects: { default: cfg.firebase.projectId } }, null, 2) + "\n",
+            );
+          }
+          NODE
+
+      - name: Desplegar reglas Firestore
+        id: rules
+        continue-on-error: true
+        run: |
+          if [ -z "$FIREBASE_TOKEN" ] && [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "status=skipped" >> "$GITHUB_OUTPUT"
+            echo "::warning::Falta FIREBASE_TOKEN — pega reglas manualmente en Firebase Console"
+            exit 0
+          fi
+          npm install firebase-tools@14 --no-save
+          if node scripts/deploy-firestore.mjs; then
+            echo "status=ok" >> "$GITHUB_OUTPUT"
+          elif node scripts/deploy-firestore-rules-api.mjs; then
+            echo "status=ok" >> "$GITHUB_OUTPUT"
+          elif npx firebase-tools deploy --only firestore:rules,firestore:indexes \
+            --project "${VITE_FIREBASE_PROJECT_ID:-programalog-ccc12}" --non-interactive; then
+            echo "status=ok" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=fail" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bootstrap Firestore (users + setupConfig)
+        if: env.FIREBASE_TOKEN != '' || env.FIREBASE_SERVICE_ACCOUNT_JSON != ''
+        continue-on-error: true
+        run: |
+          npm run firestore:bootstrap -- --uid 8kJ9xnbXwlNVQerimF088JXo8Ql1 --skip-auth || \
+          SPE_PROD_PASSWORD="${SPE_PROD_PASSWORD:-SpeAdmin2026!}" npm run firestore:bootstrap
+
+      - name: Desplegar Cloud Functions (push FCM)
+        id: functions
+        continue-on-error: true
+        run: |
+          if [ -z "$FIREBASE_TOKEN" ] && [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "status=skipped" >> "$GITHUB_OUTPUT"
+            echo "::warning::Falta FIREBASE_TOKEN — despliega functions manualmente con npm run firebase:deploy-functions"
+            exit 0
+          fi
+          npm run build:functions
+          if npx firebase-tools deploy --only functions \
+            --project "${VITE_FIREBASE_PROJECT_ID:-programalog-ccc12}" --non-interactive; then
+            echo "status=ok" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=fail" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verificar login producción
+        id: verify
+        continue-on-error: true
+        run: |
+          SPE_PROD_PASSWORD="${SPE_PROD_PASSWORD:-SpeAdmin2026!}" node scripts/verify-prod-login.mjs && \
+            echo "status=ok" >> "$GITHUB_OUTPUT" || echo "status=fail" >> "$GITHUB_OUTPUT"
+
+      - name: Fallar si Firestore sigue bloqueado (con credenciales)
+        if: >-
+          steps.rules.outputs.status == 'ok' &&
+          steps.verify.outputs.status == 'fail'
+        run: |
+          echo "::error::Reglas desplegadas pero login Firestore sigue fallando — revisa verify-prod-login"
+          exit 1
+
+      - name: Resumen
+        if: always()
+        run: |
+          echo "## Producción completa — Firestore" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Paso | Estado |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|------|--------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Reglas | \`${{ steps.rules.outputs.status || 'n/a' }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Cloud Functions | \`${{ steps.functions.outputs.status || 'n/a' }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Login verify | \`${{ steps.verify.outputs.status || 'n/a' }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.verify.outputs.status }}" != "ok" ]; then
+            echo "**Pendiente:** en PC ejecuta \`firebase login:ci\` → \`npm run setup:firebase-token\` → vuelve a lanzar este workflow." >> "$GITHUB_STEP_SUMMARY"
+          fi

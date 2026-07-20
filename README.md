@@ -21,7 +21,59 @@ npm start                  # desarrollo local :5173
 
 Para desarrollo con emuladores (opcional): `npm run dev:full`
 
-## Producción
+## Configuración en el repositorio (`config/`)
+
+Toda la configuración vive en el repo bajo **`config/`**:
+
+| Archivo | En Git | Uso |
+|---------|--------|-----|
+| `config/proyecto.json` | Sí | Metadatos, correo del proyecto |
+| `config/cuentas-app.json` | Sí | Cuentas demo (`admin@eventos.test` / `Admin123!`) |
+| `config/bootstrap.json` | Sí | Backend activo (demo / Sheets / Firebase) — CI y GitHub Pages leen esto |
+| `config/bootstrap.example.json` | Sí | Plantilla |
+| `config/credenciales.local.ejemplo.json` | Sí | Plantilla de secretos |
+| `config/credenciales.local.json` | **No** (gitignore) | Contraseñas y tokens — solo en tu PC |
+
+```bash
+npm run config:sync   # bootstrap.json + .env.local de las 3 apps + spe-runtime-config.json
+```
+
+**Desde el celular (sin PC):** edita `config/bootstrap.json` en GitHub (pega URL y token de Sheets) → push a `main` → el deploy actualiza la app.
+
+**Contraseña Google:** cópiala en `config/credenciales.local.json` en tu máquina (nunca la subas a Git). Correo del proyecto: `lasucursaldelcafe@gmail.com`.
+
+**¿Te pide un Secret y no sabes dónde conseguirlo?** → [`docs-source/DONDE-CONSEGUIR-CADA-SECRET.md`](docs-source/DONDE-CONSEGUIR-CADA-SECRET.md) (rutas exactas Gmail, Firebase, GitHub).
+
+## Diagnóstico y CD automático
+
+Analiza qué falla (config, Sheets, Firebase, Pages, login) y corrige lo posible:
+
+```bash
+npm run diagnostico        # reporte en config/diagnostico-report.json
+npm run diagnostico:fix    # auto-fix + config:sync
+npm run cd:auto            # fix + build Pages local
+```
+
+**GitHub Actions → «SPE — Diagnóstico y CD automático»** (Run workflow):
+
+| Input | Efecto |
+|-------|--------|
+| auto_fix | Resetea bootstrap a demo si Sheets falla; ejecuta config:sync |
+| deploy | Publica en GitHub Pages tras el diagnóstico |
+| backend | `auto` \| `demo` \| `sheets` |
+
+Se ejecuta en **cada push a `main`**, los **lunes 08:00 UTC**, y al editar `config/**`.
+
+### Por qué a veces «no corre» el push automático
+
+| Situación | Qué pasa |
+|-----------|----------|
+| Commit con **`[skip ci]`** en el mensaje | CI y «Publicar app» **no se re-disparan** (evita bucles). El bot de deploy usa esto. El workflow de diagnóstico **sí corre** y publica vía `workflow_call`. |
+| Merge de PR con workflows nuevos | GitHub a veces **no ejecuta** workflows en el primer merge; el siguiente push a `main` o un Run workflow manual lo corrige. |
+| Solo cambiaste `config/` antes | El diagnóstico solo escuchaba `config/**`; ahora escucha **todo push a main**. |
+
+Para forzar publicación: **Actions → Publicar app (GitHub Pages) → Run workflow**.
+
 
 La app usa **Firebase Auth + Firestore**. Configura credenciales en GitHub Secrets para CI y en `apps/admin/.env.local` para desarrollo.
 

@@ -1,0 +1,119 @@
+name: Desplegar reglas Firestore
+
+# Corrige "Missing or insufficient permissions" en login.
+# Secrets: FIREBASE_TOKEN (firebase login:ci) o FIREBASE_SERVICE_ACCOUNT_JSON
+on:
+  push:
+    branches: [main]
+    paths:
+      - firestore.rules
+      - firestore.indexes.json
+      - firebase.json
+      - .github/workflows/deploy-firestore-rules.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-rules:
+    runs-on: ubuntu-latest
+    env:
+      FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+      VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+      VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+      VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+      VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+      VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+      VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+      SPE_PROD_PASSWORD: ${{ secrets.SPE_PROD_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Preparar firebase-web-config.json
+        run: |
+          if [ -n "$VITE_FIREBASE_PROJECT_ID" ]; then
+            node -e "
+            const fs=require('fs');
+            fs.writeFileSync('firebase-web-config.json', JSON.stringify({
+              apiKey: process.env.VITE_FIREBASE_API_KEY,
+              authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
+              projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+              storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+              messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+              appId: process.env.VITE_FIREBASE_APP_ID,
+            }, null, 2)+'\n');
+            fs.writeFileSync('.firebaserc', JSON.stringify({projects:{default:process.env.VITE_FIREBASE_PROJECT_ID}},null,2)+'\n');
+            "
+          fi
+
+      - name: Verificar credenciales
+        id: creds
+        run: |
+          if [ -z "$FIREBASE_TOKEN" ] && [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "status=skipped" >> "$GITHUB_OUTPUT"
+            echo "::warning::Falta FIREBASE_TOKEN o FIREBASE_SERVICE_ACCOUNT_JSON"
+            echo "  PC: .\\scripts\\windows\\SPE-Produccion-Completa.ps1"
+            echo "  O GitHub → Settings → Secrets → Actions → FIREBASE_TOKEN"
+            exit 0
+          fi
+          if [ -z "$VITE_FIREBASE_PROJECT_ID" ]; then
+            echo "::error::Falta VITE_FIREBASE_PROJECT_ID"
+            exit 1
+          fi
+          echo "status=ready" >> "$GITHUB_OUTPUT"
+
+      - name: Desplegar reglas (REST API o firebase-tools)
+        if: steps.creds.outputs.status == 'ready'
+        run: |
+          npm install firebase-tools@14 --no-save
+          if node scripts/deploy-firestore-rules-api.mjs; then
+            echo "deploy=ok"
+          elif npx firebase-tools deploy \
+            --only firestore:rules,firestore:indexes \
+            --project "$VITE_FIREBASE_PROJECT_ID" \
+            --non-interactive; then
+            echo "deploy=ok"
+          else
+            echo "::error::No se pudieron desplegar reglas Firestore"
+            exit 1
+          fi
+
+      - name: Bootstrap admin (users/{uid})
+        if: steps.creds.outputs.status == 'ready'
+        continue-on-error: true
+        run: |
+          SPE_PROD_PASSWORD="${SPE_PROD_PASSWORD:-SpeAdmin2026!}" \
+            npm run firestore:bootstrap -- --uid 8kJ9xnbXwlNVQerimF088JXo8Ql1 --skip-auth || \
+          SPE_PROD_PASSWORD="${SPE_PROD_PASSWORD:-SpeAdmin2026!}" npm run firestore:bootstrap
+
+      - name: Verificar login
+        if: steps.creds.outputs.status == 'ready'
+        id: verify
+        run: |
+          SPE_PROD_PASSWORD="${SPE_PROD_PASSWORD:-SpeAdmin2026!}" \
+            node scripts/verify-prod-login.mjs && echo "status=ok" >> "$GITHUB_OUTPUT" || \
+            echo "status=fail" >> "$GITHUB_OUTPUT"
+
+      - name: Resumen
+        if: always()
+        run: |
+          echo "## Firestore rules" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Paso | Estado |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|------|--------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Credenciales | \`${{ steps.creds.outputs.status || 'n/a' }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Login verify | \`${{ steps.verify.outputs.status || 'skipped' }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.creds.outputs.status }}" = "skipped" ]; then
+            echo "**Pendiente:** añade \`FIREBASE_TOKEN\` en GitHub Secrets y relanza este workflow." >> "$GITHUB_STEP_SUMMARY"
+          fi
