@@ -26,18 +26,46 @@ function readJson(path) {
 function main() {
   const existing = readJson(RUNTIME_PATH);
   const bootstrap = readJson(resolve(ROOT, "config/bootstrap.json"));
+  const fbWeb = readJson(resolve(ROOT, "firebase-web-config.json"));
+  const docsRuntime = readJson(resolve(ROOT, "docs/spe-runtime-config.json"));
 
   const firebase = {
-    apiKey: process.env.VITE_FIREBASE_API_KEY?.trim() || bootstrap.firebase?.apiKey || "",
-    authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN?.trim() || bootstrap.firebase?.authDomain || "",
-    projectId: process.env.VITE_FIREBASE_PROJECT_ID?.trim() || bootstrap.firebase?.projectId || "",
+    apiKey:
+      process.env.VITE_FIREBASE_API_KEY?.trim() ||
+      bootstrap.firebase?.apiKey ||
+      fbWeb?.apiKey ||
+      docsRuntime?.firebase?.apiKey ||
+      "",
+    authDomain:
+      process.env.VITE_FIREBASE_AUTH_DOMAIN?.trim() ||
+      bootstrap.firebase?.authDomain ||
+      fbWeb?.authDomain ||
+      docsRuntime?.firebase?.authDomain ||
+      "",
+    projectId:
+      process.env.VITE_FIREBASE_PROJECT_ID?.trim() ||
+      bootstrap.firebase?.projectId ||
+      fbWeb?.projectId ||
+      docsRuntime?.firebase?.projectId ||
+      "",
     storageBucket:
-      process.env.VITE_FIREBASE_STORAGE_BUCKET?.trim() || bootstrap.firebase?.storageBucket || "",
+      process.env.VITE_FIREBASE_STORAGE_BUCKET?.trim() ||
+      bootstrap.firebase?.storageBucket ||
+      fbWeb?.storageBucket ||
+      docsRuntime?.firebase?.storageBucket ||
+      "",
     messagingSenderId:
       process.env.VITE_FIREBASE_MESSAGING_SENDER_ID?.trim() ||
       bootstrap.firebase?.messagingSenderId ||
+      fbWeb?.messagingSenderId ||
+      docsRuntime?.firebase?.messagingSenderId ||
       "",
-    appId: process.env.VITE_FIREBASE_APP_ID?.trim() || bootstrap.firebase?.appId || "",
+    appId:
+      process.env.VITE_FIREBASE_APP_ID?.trim() ||
+      bootstrap.firebase?.appId ||
+      fbWeb?.appId ||
+      docsRuntime?.firebase?.appId ||
+      "",
   };
 
   const hasFirebase =

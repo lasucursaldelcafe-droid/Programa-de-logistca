@@ -55,6 +55,8 @@ jobs:
       VITE_SHEETS_WEB_APP_URL: ${{ secrets.VITE_SHEETS_WEB_APP_URL }}
       VITE_SHEETS_API_TOKEN: ${{ secrets.VITE_SHEETS_API_TOKEN }}
       FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+      FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+      SPE_PROD_PASSWORD: ${{ secrets.SPE_PROD_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
 
@@ -92,7 +94,7 @@ jobs:
       - name: Ejecutar diagnóstico
         id: diag
         run: |
-          node scripts/spe-diagnostico.mjs --ci --json > /tmp/diag.json
+          node scripts/spe-diagnostico.mjs --ci --json --no-fail > /tmp/diag.json
           cat /tmp/diag.json
           OVERALL=$(node -e "console.log(JSON.parse(require('fs').readFileSync('/tmp/diag.json','utf8')).overall)")
           BACKEND=$(node -e "console.log(JSON.parse(require('fs').readFileSync('/tmp/diag.json','utf8')).effectiveBackend)")
