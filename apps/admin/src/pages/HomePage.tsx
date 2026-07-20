@@ -197,11 +197,11 @@ export function HomePage() {
           <Link to="/configuracion" className="text-accent hover:underline">
             crear evento
           </Link>
-          , registrar personal, invitar cuentas y{" "}
-          <Link to="/operacion" className="text-accent hover:underline">
-            asignar al evento
+          , registrar personal, invitar cuentas y asignar turnos. El mapa GPS vive en{" "}
+          <Link to="/operacion?tab=supervision" className="text-accent hover:underline">
+            Supervisión del evento
           </Link>
-          . El mapa y la supervisión se usan el día del evento.
+          .
         </p>
       </div>
       {puedeFlujo && (

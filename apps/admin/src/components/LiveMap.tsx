@@ -10,24 +10,27 @@ const GoogleLiveMap = lazy(() =>
 interface LiveMapProps {
   sites: Sitio[];
   attendances: Attendance[];
+  className?: string;
 }
 
-export function LiveMap({ sites, attendances }: LiveMapProps) {
+export function LiveMap({ sites, attendances, className }: LiveMapProps) {
   const useGoogle = isGoogleMapsEnabled();
+  const heightClass = className ?? "h-80";
 
   if (useGoogle) {
     return (
-      <Suspense fallback={<LiveMapSchematic sites={sites} attendances={attendances} />}>
+      <Suspense fallback={<LiveMapSchematic sites={sites} attendances={attendances} className={heightClass} />}>
         <GoogleLiveMap
           apiKey={getGoogleMapsApiKey()}
           sites={sites}
           attendances={attendances}
+          className={heightClass}
         />
       </Suspense>
     );
   }
 
-  return <LiveMapSchematic sites={sites} attendances={attendances} />;
+  return <LiveMapSchematic sites={sites} attendances={attendances} className={heightClass} />;
 }
 
 /** Indica si la UI está usando Google Maps (útil para avisos en la página). */

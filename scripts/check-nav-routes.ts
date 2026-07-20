@@ -29,7 +29,8 @@ function checkSections(
   const broken: string[] = [];
   for (const section of sections) {
     for (const item of section.items) {
-      if (!allowed.has(item.to) && !REDIRECTS.has(item.to)) {
+      const path = item.to.split("?")[0] ?? item.to;
+      if (!allowed.has(path) && !REDIRECTS.has(path)) {
         broken.push(`${label}: ${item.to}`);
       }
     }
