@@ -115,6 +115,16 @@ function buildBootstrap() {
     sheetsApiToken: useSheets ? sheetsToken : "",
     googleMapsApiKey: isSet(googleMapsApiKey) ? googleMapsApiKey : "",
     firebase: useFirebase ? firebase : {},
+    setupCompletado: {
+      sheetsBackend: useSheets || existing.setupCompletado?.sheetsBackend === true,
+      firebaseSecrets:
+        useFirebase ||
+        existing.setupCompletado?.firebaseSecrets === true,
+      googleMaps:
+        isSet(googleMapsApiKey) || existing.setupCompletado?.googleMaps === true,
+      cuentasPlataforma: existing.setupCompletado?.cuentasPlataforma === true,
+      fcm: existing.setupCompletado?.fcm === true,
+    },
   };
 }
 
@@ -162,6 +172,7 @@ function runtimeConfig(bootstrap) {
   const base = {
     backend: bootstrap.backend,
     demoMode: bootstrap.demoMode,
+    setupCompletado: bootstrap.setupCompletado ?? {},
   };
   const maps =
     isSet(bootstrap.googleMapsApiKey) ? { googleMapsApiKey: bootstrap.googleMapsApiKey } : {};

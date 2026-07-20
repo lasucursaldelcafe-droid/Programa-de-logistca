@@ -1,5 +1,7 @@
 /** URLs de acceso rápido y checklist de configuración pendiente. */
 
+import { isSetupItemDone, type ResolvedSetupStatus } from "./setupStatus";
+
 export interface DeploymentBase {
   pagesUrl: string;
   repoUrl: string;
@@ -144,12 +146,15 @@ export function getPlatformDownloads(base: DeploymentBase): PlatformDownloadSpec
   ];
 }
 
-export function getSetupChecklist(base: DeploymentBase): SetupChecklistItem[] {
+export function getSetupChecklist(
+  base: DeploymentBase,
+  status?: ResolvedSetupStatus,
+): SetupChecklistItem[] {
   const pages = base.pagesUrl.replace(/\/?$/, "/");
   const secretsUrl = buildGitHubSecretsUrl(base.owner, base.repo);
   const releasesUrl = buildReleasesUrl(base.owner, base.repo);
 
-  return [
+  const items: SetupChecklistItem[] = [
     {
       id: "pendientes-guia",
       title: "Guía paso a paso (config. pendiente)",
@@ -233,4 +238,7 @@ export function getSetupChecklist(base: DeploymentBase): SetupChecklistItem[] {
       actionLabel: "Ver Actions",
     },
   ];
+
+  if (!status) return items;
+  return items.filter((item) => !isSetupItemDone(item.id, status));
 }

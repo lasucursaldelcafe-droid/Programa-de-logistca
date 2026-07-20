@@ -273,11 +273,23 @@ export async function runDiagnostic(opts = {}) {
 
     checks.push({
       id: "firebase.serviceAccount",
-      status: serviceAccount ? "ok" : "warn",
+      status:
+        serviceAccount || bootstrap?.setupCompletado?.firebaseSecrets
+          ? "ok"
+          : effectiveBackend === "sheets"
+            ? "ok"
+            : "warn",
       message: serviceAccount
         ? "service-account.json presente (seed local)"
-        : "Sin service-account.json — seed:production solo vía GitHub Actions",
-      fix: "Firebase Console → Cuentas de servicio → Generar clave",
+        : bootstrap?.setupCompletado?.firebaseSecrets
+          ? "Firebase Secrets marcados listos (GitHub Actions)"
+          : effectiveBackend === "sheets"
+            ? "Opcional — backend activo es Sheets; Firebase solo para releases/FCM"
+            : "Sin service-account.json — seed:production solo vía GitHub Actions",
+      fix:
+        serviceAccount || bootstrap?.setupCompletado?.firebaseSecrets || effectiveBackend === "sheets"
+          ? undefined
+          : "Firebase Console → Cuentas de servicio → Generar clave",
     });
   }
 

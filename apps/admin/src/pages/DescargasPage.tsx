@@ -8,6 +8,7 @@ import {
 } from "@spe/shared";
 import { useDeploymentLinks } from "../hooks/useDeploymentLinks";
 import { useReleaseAssets } from "../hooks/useReleaseAssets";
+import { useProductionSetupStatusLive } from "../hooks/useProductionSetupStatus";
 import { authButtonClass } from "../components/AuthShell";
 
 const priorityLabel = {
@@ -63,7 +64,8 @@ export function DescargasPage() {
   };
 
   const platformSpecs = useMemo(() => getPlatformDownloads(base), [base.pagesUrl, base.repoUrl, base.actionsUrl, base.owner, base.repo]);
-  const checklist = getSetupChecklist(base);
+  const setupStatus = useProductionSetupStatusLive();
+  const checklist = useMemo(() => getSetupChecklist(base, setupStatus), [base, setupStatus]);
   const { loading, tagName, platforms } = useReleaseAssets(deployLinks, platformSpecs);
   const adminLogin = buildDemoLoginUrl(base.pagesUrl);
 
@@ -155,16 +157,29 @@ export function DescargasPage() {
 
         <section>
           <div className="mb-5">
-            <h2 className="font-display text-xl font-semibold">Pendientes con enlace directo</h2>
+            <h2 className="font-display text-xl font-semibold">
+              {checklist.length > 0 ? "Pendientes con enlace directo" : "Infraestructura lista"}
+            </h2>
             <p className="text-sm text-neutral-500">
-              Cada ítem abre la pantalla o documento correcto — sin buscar en menús.
+              {checklist.length > 0
+                ? "Cada ítem abre la pantalla o documento correcto — sin buscar en menús."
+                : "Sheets, Firebase Secrets y mapa ya están configurados. Configura tu evento en el asistente."}
             </p>
           </div>
-          <ul className="space-y-3">
-            {checklist.map((item) => (
-              <ChecklistRow key={item.id} item={item} />
-            ))}
-          </ul>
+          {checklist.length > 0 ? (
+            <ul className="space-y-3">
+              {checklist.map((item) => (
+                <ChecklistRow key={item.id} item={item} />
+              ))}
+            </ul>
+          ) : (
+            <Link
+              to="/configuracion"
+              className="inline-block rounded-xl bg-accent/15 px-4 py-2 text-sm font-semibold text-accent ring-1 ring-accent/30"
+            >
+              Ir al asistente de evento →
+            </Link>
+          )}
         </section>
 
         <footer className="mt-12 border-t border-border/60 pt-6 text-center text-xs text-neutral-500">

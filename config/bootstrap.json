@@ -8,5 +8,12 @@
   "sheetsWebAppUrl": "https://script.google.com/macros/s/AKfycbwkZ4_hCipfCMX_8-yq4QS3vuW0Ga1NeeSY5Erh-CQtJsHBS1KXfpjGvUCuh4wE5AWr/exec",
   "sheetsApiToken": "cambiar-token-seguro",
   "googleMapsApiKey": "AIzaSyBsdglQ29ZUH7_h2HXsk0lqSHtdxhBqOak",
-  "firebase": {}
+  "firebase": {},
+  "setupCompletado": {
+    "sheetsBackend": true,
+    "firebaseSecrets": true,
+    "googleMaps": true,
+    "cuentasPlataforma": true,
+    "fcm": false
+  }
 }
