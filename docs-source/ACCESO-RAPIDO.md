@@ -1,5 +1,18 @@
 # Acceso rápido — Personal Eventos (producción)
 
+## Sincronización entre plataformas
+
+Web, Windows, Android y Linux usan **el mismo proyecto Firebase** (`programalog-ccc12`). Los datos (eventos, personal, turnos, asistencia) se actualizan en **tiempo real** en todas las plataformas.
+
+| Plataforma | Cómo sincroniza |
+|------------|-----------------|
+| **Web** | Firebase Firestore directo |
+| **Windows / Linux** | App embebida + Firebase (misma cuenta) |
+| **Android** | App embebida + Firebase (misma cuenta) |
+| **iOS** | PWA en Safari (misma web) |
+
+Usa **las mismas credenciales** en todas. No hace falta configurar nada extra en cada dispositivo.
+
 ## Login
 
 **URL:** https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/login

@@ -13,11 +13,10 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  APP_VERSION: "0.2.3"
+  APP_VERSION: "0.2.4"
   VITE_USE_FIREBASE_EMULATORS: "false"
   NATIVE_BUILD: "true"
-  NATIVE_BUILD_ALLOW_MISSING_FIREBASE: "true"
-  CAPACITOR_SERVER_URL: "https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/"
+  VITE_SPE_CANONICAL_URL: "https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/"
   VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
   VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
   VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
@@ -75,6 +74,9 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
+      - name: Runtime config compartido (Firebase)
+        run: node scripts/write-runtime-config.mjs
+
       - name: Validar entorno
         run: npx tsx scripts/ensure-production-env.ts --native
 
@@ -122,6 +124,9 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
+      - name: Runtime config compartido (Firebase)
+        run: node scripts/write-runtime-config.mjs
+
       - name: Validar entorno
         run: npx tsx scripts/ensure-production-env.ts --native
 
@@ -168,6 +173,9 @@ jobs:
 
       - name: Instalar dependencias
         run: npm ci
+
+      - name: Runtime config compartido (Firebase)
+        run: node scripts/write-runtime-config.mjs
 
       - name: Validar entorno
         run: npx tsx scripts/ensure-production-env.ts --native
@@ -247,15 +255,17 @@ jobs:
             | **iOS** | Safari → Añadir a pantalla de inicio (PWA) |
 
             **Una sola app:** Admin, Master y Trabajador según tu rol al iniciar sesión.
+            **Sincronización:** Web, Windows, Android y Linux comparten la misma base Firebase — los cambios se ven en tiempo real en todas las plataformas.
 
-            ### Acceso rápido admin (demo)
-            https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/login?spe_backend=demo&email=admin@eventos.test&password=Admin123%21&auto=1
+            ### Acceso admin (producción)
+            https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/login
 
-            ### Cuentas demo
-            | Rol | Correo | Contraseña |
-            |-----|--------|------------|
-            | Master | master@eventos.test | Master123! |
-            | Admin | admin@eventos.test | Admin123! |
+            | Campo | Valor |
+            |-------|--------|
+            | Correo | `lasucursaldelcafe@gmail.com` |
+            | Contraseña | `SpeAdmin2026!` |
+
+            Usa las **mismas credenciales** en web y en apps descargadas.
 
             ---
             Build: `${{ github.sha }}`

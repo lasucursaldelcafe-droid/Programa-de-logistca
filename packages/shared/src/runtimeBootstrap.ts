@@ -1,4 +1,8 @@
 import { configureFirebase, isFirebaseConfigured, type FirebaseClientConfig } from "./firebase";
+import {
+  isEmbeddedAppShell,
+  resolveCanonicalConfigUrl,
+} from "./platformShell";
 
 export type EffectiveBackend = "firebase";
 
@@ -6,6 +10,7 @@ export interface RuntimeBootstrapConfig {
   backend?: EffectiveBackend;
   demoMode?: boolean;
   googleMapsApiKey?: string;
+  canonicalAppUrl?: string;
   firebase?: Partial<FirebaseClientConfig>;
   setupCompletado?: {
     firebaseSecrets?: boolean;
@@ -176,16 +181,41 @@ export async function bootstrapRuntimeConfig(
   const stored = loadStored();
   if (stored) applyConfig({ ...stored, backend: "firebase", demoMode: false });
 
-  try {
-    const res = await fetch(`${baseUrl.replace(/\/?$/, "/")}spe-runtime-config.json`, {
-      cache: "no-store",
-    });
-    if (res.ok) {
+  const configUrls = [
+    `${baseUrl.replace(/\/?$/, "/")}spe-runtime-config.json`,
+  ];
+  if (isEmbeddedAppShell()) {
+    configUrls.push(resolveCanonicalConfigUrl());
+  }
+
+  let remoteCanonical: string | undefined;
+
+  for (const url of configUrls) {
+    try {
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) continue;
       const remote = (await res.json()) as RuntimeBootstrapConfig;
+      if (remote.canonicalAppUrl) remoteCanonical = remote.canonicalAppUrl;
       applyConfig({ ...remote, backend: "firebase", demoMode: false });
+      if (isFirebaseConfigured()) break;
+    } catch {
+      /* intentar siguiente URL */
     }
-  } catch {
-    /* sin archivo remoto */
+  }
+
+  if (!isFirebaseConfigured() && isEmbeddedAppShell() && remoteCanonical) {
+    try {
+      const res = await fetch(
+        `${remoteCanonical.replace(/\/?$/, "/")}spe-runtime-config.json`,
+        { cache: "no-store" },
+      );
+      if (res.ok) {
+        const remote = (await res.json()) as RuntimeBootstrapConfig;
+        applyConfig({ ...remote, backend: "firebase", demoMode: false });
+      }
+    } catch {
+      /* sin config remota */
+    }
   }
 }
 

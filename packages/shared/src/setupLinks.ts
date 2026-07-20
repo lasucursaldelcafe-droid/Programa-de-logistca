@@ -87,7 +87,8 @@ export function getPlatformDownloads(base: DeploymentBase): PlatformDownloadSpec
       installSteps: [
         "Descarga el archivo *-nsis.exe.",
         "Ejecuta el instalador y sigue el asistente.",
-        "Abre SPE Eventos desde el menú Inicio.",
+        "Abre SPE Eventos e inicia sesión con tu cuenta Firebase (misma que la web).",
+        "Los datos se sincronizan en tiempo real con web y móvil.",
       ],
     },
     {
@@ -100,7 +101,7 @@ export function getPlatformDownloads(base: DeploymentBase): PlatformDownloadSpec
       installSteps: [
         "Descarga *-portable.exe.",
         "Ejecuta directamente (no requiere instalación).",
-        "Requiere conexión a internet para cargar datos.",
+        "Inicia sesión con la misma cuenta que en la web — datos sincronizados vía Firebase.",
       ],
     },
     {
@@ -113,7 +114,8 @@ export function getPlatformDownloads(base: DeploymentBase): PlatformDownloadSpec
       installSteps: [
         "Descarga el .apk en el teléfono.",
         "Permite orígenes desconocidos en Ajustes → Seguridad.",
-        "Abre el archivo e instala SPE Eventos.",
+        "Instala y abre SPE Eventos.",
+        "Inicia sesión con la misma cuenta Firebase que en web/PC.",
       ],
     },
     {

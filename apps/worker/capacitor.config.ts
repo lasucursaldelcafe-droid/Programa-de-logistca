@@ -1,11 +1,10 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 /**
- * App unificada SPE: Android carga la versión web (GitHub Pages) o el bundle
- * embebido de apps/admin/dist. Tras login, el panel se elige según el rol.
+ * App unificada SPE (Android): bundle embebido de apps/admin/dist.
+ * Los datos se sincronizan con web/Windows vía Firebase Firestore (mismo proyecto).
+ * Config remota: spe-runtime-config.json en GitHub Pages.
  */
-const remoteUrl = process.env.CAPACITOR_SERVER_URL?.trim();
-
 const config: CapacitorConfig = {
   appId: "com.spe.personaleventos",
   appName: "SPE Eventos",
@@ -13,15 +12,9 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: true,
   },
-  server: remoteUrl
-    ? {
-        url: remoteUrl,
-        cleartext: false,
-        androidScheme: "https",
-      }
-    : {
-        androidScheme: "https",
-      },
+  server: {
+    androidScheme: "https",
+  },
   plugins: {
     Geolocation: {
       permissions: ["location"],
