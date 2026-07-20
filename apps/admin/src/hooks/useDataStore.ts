@@ -1680,12 +1680,76 @@ export async function createPlatformAccount(
     throw new Error("Creación de cuentas administrativas no disponible con backend Sheets.");
   }
 
-  const fn = httpsCallable<
-    { email: string; password: string; nombre: string; role: string },
-    { uid: string }
-  >(getFunctions(getFirebaseApp(), "us-central1"), "createPlatformAccountFn");
-  const result = await fn({ email, password: data.password, nombre, role });
-  return result.data.uid;
+  try {
+    const fn = httpsCallable<
+      { email: string; password: string; nombre: string; role: string },
+      { uid: string }
+    >(getFunctions(getFirebaseApp(), "us-central1"), "createPlatformAccountFn");
+    const result = await fn({ email, password: data.password, nombre, role });
+    return result.data.uid;
+  } catch {
+    // Fallback producción: Identity Toolkit REST (sin cambiar sesión) + doc Firestore.
+    return createPlatformAccountViaAuthRest({
+      email,
+      password: data.password,
+      nombre,
+      role,
+      creatorUid: creator.uid,
+      creatorNombre: creator.nombre,
+    });
+  }
+}
+
+async function createPlatformAccountViaAuthRest(data: {
+  email: string;
+  password: string;
+  nombre: string;
+  role: UserRole;
+  creatorUid: string;
+  creatorNombre: string;
+}): Promise<string> {
+  const app = getFirebaseApp();
+  const apiKey = app.options.apiKey;
+  if (!apiKey) throw new Error("Firebase apiKey no configurada.");
+
+  const signUp = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: data.email,
+        password: data.password,
+        displayName: data.nombre,
+        returnSecureToken: true,
+      }),
+    },
+  );
+  const signUpData = (await signUp.json()) as {
+    localId?: string;
+    error?: { message?: string };
+  };
+
+  if (!signUp.ok || !signUpData.localId) {
+    const msg = signUpData.error?.message ?? `HTTP ${signUp.status}`;
+    if (msg.includes("EMAIL_EXISTS")) {
+      throw new Error("Ya existe una cuenta con ese correo.");
+    }
+    throw new Error(`No se pudo crear la cuenta Auth: ${msg}`);
+  }
+
+  const uid = signUpData.localId;
+  await setDoc(doc(getFirestoreDb(), "users", uid), {
+    email: data.email,
+    nombre: data.nombre,
+    role: data.role,
+    workerId: null,
+    perfilCompleto: true,
+    habilitado: true,
+    creadoPor: data.creatorUid,
+    creadoPorNombre: data.creatorNombre,
+  });
+  return uid;
 }
 
 export async function createReporte(data: {

@@ -76,16 +76,19 @@ async function main() {
     return run("npm", ["run", "firestore:bootstrap", "--", "--uid", "8kJ9xnbXwlNVQerimF088JXo8Ql1", "--skip-auth"]) === 0;
   });
 
-  mainStep("8. Verificar login", () => {
+  mainStep("8. Asegurar CEO + verificar login", () => {
     process.env.SPE_PROD_PASSWORD = pwd;
-    return run("node", ["scripts/verify-prod-login.mjs"]) === 0;
+    const ceo = run("npm", ["run", "ensure:prod-ceo"]) === 0;
+    const ok = run("node", ["scripts/verify-prod-login.mjs"]) === 0;
+    return ceo && ok;
   });
 
   console.log("\n=== Resumen ===");
   for (const s of steps) console.log(`  ${s.ok ? "✓" : "✗"} ${s.title}`);
 
   console.log(`\nLogin: https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/login`);
-  console.log(`Cuenta: ${ADMIN_EMAIL} / ${pwd}`);
+  console.log(`Cuenta raíz CEO: ${ADMIN_EMAIL}`);
+  console.log(`Siguiente: Master → Equipo administrativo`);
   console.log(`Repo: ${REPO}\n`);
 }
 

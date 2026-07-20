@@ -1,12 +1,10 @@
 /**
- * Crea la cuenta de administración en Firebase PRODUCCIÓN (Auth + Firestore).
- * Requiere cuenta de servicio con permisos Admin SDK (solo servidor — no va en la app web).
+ * Crea/actualiza la cuenta raíz de producción (CEO) en Firebase Auth + Firestore.
+ * Requiere cuenta de servicio Admin SDK (solo servidor — no va en la app web).
  *
  * Uso:
- *   npm run seed:production -- --service-account ./service-account.json
- *   SPE_PROD_PASSWORD='…' npm run seed:production -- --service-account ./sa.json
- *   FIREBASE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}' SPE_PROD_PASSWORD='…' npm run seed:production
- *   npm run seed:production -- --service-account ./sa.json --email admin@empresa.com --password "MiPass123!"
+ *   SPE_PROD_PASSWORD='…' npm run seed:production -- --service-account ./service-account.json
+ *   FIREBASE_SERVICE_ACCOUNT_JSON='{…}' SPE_PROD_PASSWORD='…' npm run seed:production
  */
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -16,13 +14,15 @@ import { getFirestore } from "firebase-admin/firestore";
 
 const ROOT = resolve(import.meta.dirname, "..");
 
-const PLATFORM_ADMIN_EMAIL = "lasucursaldelcafe@gmail.com";
+const PLATFORM_CEO_EMAIL = "lasucursaldelcafe@gmail.com";
+
+type ProdRootRole = "ceo" | "master_app";
 
 interface SeedUser {
   email: string;
   password: string;
   nombre: string;
-  role: "super_admin" | "administrador";
+  role: ProdRootRole;
 }
 
 function parseArgs(): {
@@ -31,10 +31,10 @@ function parseArgs(): {
 } {
   const args = process.argv.slice(2);
   let serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS ?? "";
-  let customEmail = process.env.SPE_PROD_EMAIL?.trim() ?? PLATFORM_ADMIN_EMAIL;
+  let customEmail = process.env.SPE_PROD_EMAIL?.trim() ?? PLATFORM_CEO_EMAIL;
   let customPassword = process.env.SPE_PROD_PASSWORD?.trim() ?? "";
-  let customNombre = "La Sucursal del Café";
-  let customRole: SeedUser["role"] = "administrador";
+  let customNombre = "CEO — Dirección general";
+  let customRole: ProdRootRole = "ceo";
 
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
@@ -48,7 +48,7 @@ function parseArgs(): {
       customNombre = args[++i]!;
     } else if (a === "--role" && args[i + 1]) {
       const r = args[++i]!;
-      if (r === "super_admin" || r === "administrador") customRole = r;
+      if (r === "ceo" || r === "master_app") customRole = r;
     }
   }
 
@@ -100,9 +100,9 @@ function loadServiceAccount(serviceAccountPath: string): {
     console.error("  Opción A — archivo:");
     console.error("    Firebase Console → Cuentas de servicio → Generar clave privada");
     console.error("    npm run seed:production -- --service-account ./service-account.json");
-    console.error("  Opción B — variable de entorno (CI / sin guardar archivo):");
+    console.error("  Opción B — variable de entorno (CI):");
     console.error("    FIREBASE_SERVICE_ACCOUNT_JSON='{...}' SPE_PROD_PASSWORD='…' npm run seed:production");
-    console.error("  GitHub Actions: secretos FIREBASE_SERVICE_ACCOUNT_JSON + SPE_PROD_PASSWORD");
+    console.error("  Alternativa sin JSON: npm run ensure:prod-ceo (usa login Auth + REST)");
     process.exit(1);
   }
 
@@ -142,7 +142,7 @@ async function main(): Promise<void> {
   const auth = getAuth();
   const db = getFirestore();
 
-  console.log("> Seed producción — Firebase Auth + Firestore");
+  console.log("> Seed producción — cuenta raíz CEO / Master App");
   console.log(`  Proyecto: ${(raw as { project_id?: string }).project_id ?? "?"}`);
   console.log(`  Cuenta de servicio: ${source}\n`);
 
@@ -155,11 +155,11 @@ async function main(): Promise<void> {
         role: u.role,
         workerId: null,
         perfilCompleto: true,
+        habilitado: true,
       },
       { merge: true },
     );
     console.log(`+ ${u.email} (${u.role})`);
-    console.log(`    Password: ${u.password}`);
   }
 
   await db.collection("setupConfig").doc("default").set(
@@ -173,8 +173,8 @@ async function main(): Promise<void> {
     { merge: true },
   );
 
-  console.log("\n✓ Cuenta de producción lista.");
-  console.log("  Inicia sesión en la app con las credenciales mostradas arriba.");
+  console.log("\n✓ Cuenta raíz de producción lista.");
+  console.log("  Siguiente: Master → Equipo administrativo → crear Administrador, RH, Contabilidad.");
 }
 
 main().catch((err: unknown) => {

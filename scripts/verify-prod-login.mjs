@@ -4,9 +4,9 @@
  *
  *   SPE_PROD_PASSWORD='SpeAdmin2026!' node scripts/verify-prod-login.mjs
  */
-import { readFileSync, existsSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { loadFirebaseWebConfig, ADMIN_EMAIL, getProdPassword } from "./lib/firebase-setup.mjs";
+import { loadFirebaseWebConfig, ADMIN_EMAIL, getProdPassword, readJson } from "./lib/firebase-setup.mjs";
 import { signInOrCreateUser } from "./lib/firestore-rest.mjs";
 
 const ROOT = resolve(import.meta.dirname, "..");
@@ -15,24 +15,30 @@ function loadConfig() {
   const fb = loadFirebaseWebConfig();
   if (fb?.apiKey && fb?.projectId) return fb;
 
-  const bundle = resolve(ROOT, "docs/assets/index-DiLZZIek.js");
-  if (!existsSync(bundle)) return null;
-  const src = readFileSync(bundle, "utf-8");
-  const apiKey = src.match(/apiKey:"(AIza[^"]+)"/)?.[1];
-  const projectId = src.match(/projectId:"(programalog[^"]+)"/)?.[1];
-  if (!apiKey || !projectId) return null;
-  return { apiKey, projectId };
+  const bootstrap = readJson(resolve(ROOT, "config/bootstrap.json"));
+  if (bootstrap?.firebase?.apiKey) {
+    writeFileSync(
+      resolve(ROOT, "firebase-web-config.json"),
+      JSON.stringify(bootstrap.firebase, null, 2) + "\n",
+    );
+    return bootstrap.firebase;
+  }
+  return null;
+}
+
+function fieldString(fields, key) {
+  return fields?.[key]?.stringValue ?? null;
 }
 
 async function main() {
   const fb = loadConfig();
-  const password = getProdPassword() || process.argv[2]?.trim();
+  const password = getProdPassword() || process.argv[2]?.trim() || "SpeAdmin2026!";
   if (!fb) {
-    console.error("✗ No hay firebase-web-config.json ni bundle de producción");
+    console.error("✗ No hay firebase-web-config.json ni config/bootstrap.json");
     process.exit(1);
   }
   if (!password) {
-    console.error("✗ Indica SPE_PROD_PASSWORD o pasa la contraseña como argumento");
+    console.error("✗ Indica SPE_PROD_PASSWORD");
     process.exit(1);
   }
 
@@ -51,17 +57,58 @@ async function main() {
   });
   const body = await res.json();
 
-  if (res.ok) {
-    console.log("✓ Firestore users/{uid} legible");
-    console.log(JSON.stringify(body.fields ?? body, null, 2));
-    return;
+  if (!res.ok) {
+    console.error(`✗ Firestore (${res.status}): ${body.error?.message ?? res.statusText}`);
+    console.error("\nSolución:");
+    console.error("  1. Firebase Console → Firestore → Reglas → pegar firestore.rules → Publicar");
+    console.error("  2. npm run ensure:prod-ceo");
+    process.exit(1);
   }
 
-  console.error(`✗ Firestore (${res.status}): ${body.error?.message ?? res.statusText}`);
-  console.error("\nSolución:");
-  console.error("  1. Firebase Console → Firestore → Reglas → pegar firestore.rules → Publicar");
-  console.error("  2. GitHub Actions → Bootstrap Firestore (SPE) con FIREBASE_TOKEN");
-  process.exit(1);
+  const role = fieldString(body.fields, "role");
+  console.log("✓ Firestore users/{uid} legible");
+  console.log(`  role: ${role}`);
+  console.log(`  nombre: ${fieldString(body.fields, "nombre")}`);
+
+  if (role !== "ceo" && role !== "master_app" && role !== "super_admin" && role !== "administrador") {
+    console.error(
+      `\n✗ Rol inesperado en producción (${role}). Ver docs-source/LANZAMIENTO-PRODUCCION.md`,
+    );
+    process.exit(1);
+  }
+
+  // Probe escritura: setupConfig (requiere isAdmin/isMaster en reglas publicadas)
+  const probeUrl =
+    `https://firestore.googleapis.com/v1/projects/${fb.projectId}` +
+    `/databases/(default)/documents/setupConfig/default` +
+    `?updateMask.fieldPaths=actualizadoEn&updateMask.fieldPaths=actualizadoPorNombre`;
+  const probe = await fetch(probeUrl, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${session.idToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      fields: {
+        actualizadoEn: { stringValue: new Date().toISOString() },
+        actualizadoPorNombre: { stringValue: "verify-prod-login" },
+      },
+    }),
+  });
+
+  if (!probe.ok) {
+    console.error("\n✗ Auth OK pero Firestore rechaza escrituras (reglas desactualizadas).");
+    console.error("  Publica firestore.rules en:");
+    console.error("  https://console.firebase.google.com/project/programalog-ccc12/firestore/rules");
+    console.error("  Guía: docs-source/LANZAMIENTO-PRODUCCION.md");
+    process.exit(2);
+  }
+
+  console.log("✓ Escritura Firestore OK");
+  console.log("\n✓ Producción OK — cuenta raíz operativa.");
+  if (role === "super_admin" || role === "administrador") {
+    console.log(`  Nota: rol actual ${role} — ejecuta npm run ensure:prod-ceo tras publicar reglas.`);
+  }
 }
 
 main().catch((err) => {

@@ -1,6 +1,6 @@
 name: Crear usuarios Firebase (producción)
 
-# Crea o actualiza lasucursaldelcafe@gmail.com en Firebase Auth + Firestore.
+# Crea o actualiza lasucursaldelcafe@gmail.com como CEO (cuenta raíz).
 # Requiere secretos FIREBASE_SERVICE_ACCOUNT_JSON y SPE_PROD_PASSWORD.
 on:
   workflow_dispatch:
@@ -19,15 +19,14 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Crear cuenta de administración
+      - name: Crear cuenta raíz CEO
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
           SPE_PROD_PASSWORD: ${{ secrets.SPE_PROD_PASSWORD }}
         run: |
           if [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
             echo "✗ Falta el secreto FIREBASE_SERVICE_ACCOUNT_JSON"
-            echo "  Firebase → Configuración → Cuentas de servicio → Generar clave privada"
-            echo "  GitHub → Settings → Secrets → FIREBASE_SERVICE_ACCOUNT_JSON"
+            echo "  Alternativa local sin JSON: SPE_PROD_PASSWORD='…' npm run ensure:prod-ceo"
             exit 1
           fi
           if [ -z "$SPE_PROD_PASSWORD" ]; then

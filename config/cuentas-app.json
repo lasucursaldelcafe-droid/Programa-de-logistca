@@ -1,27 +1,28 @@
 {
   "produccion": {
-    "descripcion": "Cuenta real — backend Firebase Auth + Firestore.",
+    "descripcion": "Cuenta raíz real — Firebase Auth + Firestore. Al inicio solo existe el CEO; el resto se crea en cascada.",
     "backend": "firebase",
     "url": "https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/login",
     "cuentas": [
       {
         "email": "lasucursaldelcafe@gmail.com",
-        "password": "Defínela con SPE_PROD_PASSWORD al ejecutar npm run seed:production",
-        "nombre": "La Sucursal del Café",
-        "role": "administrador",
-        "panel": "/panel"
+        "password": "Definida en SPE_PROD_PASSWORD (GitHub Secret / entorno)",
+        "nombre": "CEO — Dirección general",
+        "role": "ceo",
+        "panel": "/master"
       }
     ],
     "instrucciones": [
-      "npm run acceso — muestra URL y cómo crear la contraseña",
-      "docs-source/ACCESO-PRODUCCION.md — guía completa",
-      "SPE_PROD_PASSWORD='…' npm run seed:production -- --service-account ./service-account.json",
-      "Trabajadores nuevos: Admin → Personal → Invitar."
+      "Login en producción con lasucursaldelcafe@gmail.com",
+      "Entras a consolas Master (/master) como CEO",
+      "Master → Equipo administrativo → crear Administrador, Recursos Humanos y Contabilidad",
+      "Esas cuentas operan en /panel según su rol; el personal de campo en /worker",
+      "docs-source/PRODUCCION-FIREBASE.md — guía completa"
     ]
   },
   "local_emuladores": {
     "ceo@eventos.test": "Ceo123!",
     "master@eventos.test": "Master123!",
-    "nota": "Solo npm run dev:full — crear Admin/RH/Contador desde Master → Equipo administrativo"
+    "nota": "Solo desarrollo local (npm run dev:full). No usar en producción."
   }
 }
