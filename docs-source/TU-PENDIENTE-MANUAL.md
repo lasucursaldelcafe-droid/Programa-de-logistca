@@ -4,11 +4,31 @@
 
 ## Checklist rápido
 
-- [ ] **1. Secrets Firebase** en GitHub (6× `VITE_FIREBASE_*`) — ver [`PRODUCCION-FIREBASE.md`](./PRODUCCION-FIREBASE.md)
-- [ ] **2. Crear cuenta admin** con seed o Firebase Console
-- [ ] **3. Desplegar Firestore** (`npm run firebase:deploy-firestore` tras `firebase login`)
+- [ ] **1. Un comando en PC:** `npm run setup:cli -- --full` (o `.\scripts\windows\SPE-Setup-Completo.ps1`)
+- [ ] **2. Archivos locales:** `firebase-web-config.json` + `service-account.json` + `SPE_PROD_PASSWORD`
+- [ ] **3. GitHub Actions:** workflow **Setup completo SPE** (seed + Firestore + Pages)
 - [ ] **4. Probar login** en producción (Backend: Firebase)
-- [ ] **5. (Opcional)** Mapa Google Maps, FCM, Releases
+
+---
+
+## Comando único (PC)
+
+```bash
+# Copia plantillas y completa Firebase Console:
+cp firebase-web-config.example.json firebase-web-config.json
+cp config/credenciales.local.ejemplo.json config/credenciales.local.json
+
+# Setup completo: sync, secrets gh, seed, Firestore, build
+SPE_PROD_PASSWORD='TuClaveSegura' npm run setup:cli -- --full
+```
+
+Windows PowerShell:
+
+```powershell
+.\scripts\windows\SPE-Setup-Completo.ps1
+```
+
+Resultado en `SETUP-RESULTADO.txt` y `npm run acceso`.
 
 ---
 

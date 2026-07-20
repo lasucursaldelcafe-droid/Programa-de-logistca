@@ -73,6 +73,8 @@ sheets-web-app-url.txt
 CREDENCIALES-SHEETS-AUTO.txt
 CREDENCIALES-SPE-GENERADAS.txt
 CREDENCIALES-PRODUCCION.txt
+SETUP-RESULTADO.txt
+.tmp-service-account.json
 config/pendientes-setup.json
 apps-script/spe-backend/.clasp.json
 config/credenciales.local.json

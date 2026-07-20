@@ -16,5 +16,6 @@
     "messagingSenderId": "",
     "appId": ""
   },
-  "firebaseServiceAccountPath": "service-account.json"
+  "firebaseServiceAccountPath": "service-account.json",
+  "speProdPassword": "TU_CONTRASEÑA_FIREBASE_AUTH"
 }

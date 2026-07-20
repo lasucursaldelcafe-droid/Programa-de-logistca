@@ -7,7 +7,7 @@ const ADMIN_ROUTES = new Set([
   "/panel", "/clientes", "/facturacion", "/inventario", "/integraciones",
   "/supervision", "/personal", "/turnos", "/cuentas", "/qr-sitios", "/mapa",
   "/reportes", "/notificaciones", "/nomina", "/configuracion", "/pendientes",
-  "/descargas", "/ayuda",
+  "/comunicacion", "/descargas", "/ayuda",
 ]);
 
 const MASTER_ROUTES = new Set([
@@ -16,7 +16,7 @@ const MASTER_ROUTES = new Set([
 
 const WORKER_ROUTES = new Set([
   "/worker", "/worker/turnos", "/worker/entrada", "/worker/reportar",
-  "/worker/notificaciones", "/worker/ayuda",
+  "/worker/notificaciones", "/worker/comunicacion", "/worker/ayuda",
 ]);
 
 const REDIRECTS = new Set(["/marcar-entrada"]);
