@@ -159,8 +159,11 @@ export interface Sitio {
   id: string;
   eventId: string;
   nombre: string;
+  /** Dirección legible del punto de trabajo (geocodificada o ingresada manualmente). */
+  direccion?: string;
   lat: number;
   lng: number;
+  /** Radio en metros del área de trabajo (geocerca GPS). */
   radioGeocerca: number;
 }
 

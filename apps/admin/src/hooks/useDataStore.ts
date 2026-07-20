@@ -1040,6 +1040,7 @@ export async function createEvent(data: {
 export async function createSite(data: {
   eventId: string;
   nombre: string;
+  direccion?: string;
   lat: number;
   lng: number;
   radioGeocerca: number;
@@ -1048,6 +1049,7 @@ export async function createSite(data: {
   const site = {
     eventId: data.eventId,
     nombre: data.nombre,
+    ...(data.direccion?.trim() ? { direccion: data.direccion.trim() } : {}),
     lat: data.lat,
     lng: data.lng,
     radioGeocerca: data.radioGeocerca,
