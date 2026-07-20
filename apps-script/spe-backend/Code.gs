@@ -177,7 +177,7 @@ function upsertRow(body) {
     return record[h] !== undefined && record[h] !== null ? record[h] : "";
   });
   if (rowIndex > 0) {
-    sheet.getRange(rowIndex, 1, rowIndex, row.length).setValues([row]);
+    sheet.getRange(rowIndex, 1, 1, row.length).setValues([row]);
   } else {
     sheet.appendRow(row);
   }
