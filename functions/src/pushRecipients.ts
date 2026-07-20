@@ -92,3 +92,56 @@ export async function resolveRecipientUids(
 
   return [...uids];
 }
+
+function comunicacionLinkForRole(role: string | undefined): string {
+  if (role === "trabajador" || role === "supervisor_sitio") {
+    return "/worker/comunicacion";
+  }
+  return "/comunicacion";
+}
+
+/** Destinatarios push para un mensaje de chat (excluye al remitente). */
+export async function resolveChatRecipientUids(
+  db: Firestore,
+  data: {
+    channelId: string;
+    eventId?: string | null;
+    senderUid: string;
+  },
+): Promise<string[]> {
+  const uids = new Set<string>();
+  const { channelId, senderUid } = data;
+
+  if (channelId === "general") {
+    const tokens = await db.collection("fcmTokens").get();
+    for (const doc of tokens.docs) {
+      if (doc.id !== senderUid) uids.add(doc.id);
+    }
+    return [...uids];
+  }
+
+  if (channelId.startsWith("event-")) {
+    const eventId = data.eventId ?? channelId.slice("event-".length);
+    if (eventId) {
+      for (const uid of await uidsFromWorkerIds(db, await workerIdsForEvent(db, eventId))) {
+        if (uid !== senderUid) uids.add(uid);
+      }
+      for (const uid of await adminUids(db)) {
+        if (uid !== senderUid) uids.add(uid);
+      }
+    }
+    return [...uids];
+  }
+
+  const tokens = await db.collection("fcmTokens").get();
+  for (const doc of tokens.docs) {
+    if (doc.id !== senderUid) uids.add(doc.id);
+  }
+  return [...uids];
+}
+
+export async function comunicacionLinkForUid(db: Firestore, uid: string): Promise<string> {
+  const userDoc = await db.collection("users").doc(uid).get();
+  const role = userDoc.data()?.role as string | undefined;
+  return comunicacionLinkForRole(role);
+}
