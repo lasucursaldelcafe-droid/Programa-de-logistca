@@ -7,6 +7,7 @@ import {
   activateAccountWithInvitation,
   getInvitationByToken,
 } from "../hooks/useDataStore";
+import { formatAuthError } from "../lib/authErrors";
 import type { Invitation } from "@spe/shared";
 
 export function ActivarCuentaPage() {
@@ -59,7 +60,7 @@ export function ActivarCuentaPage() {
         navigate("/completar-perfil", { replace: true });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo activar la cuenta.");
+      setError(formatAuthError(err));
     } finally {
       setSubmitting(false);
     }
