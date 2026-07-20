@@ -13,6 +13,13 @@ export function notificationsPath(role: UserRole): string {
   return "/notificaciones";
 }
 
+export function comunicacionPath(role: UserRole): string {
+  if (role === "trabajador" || role === "supervisor_sitio") {
+    return workerPath("comunicacion");
+  }
+  return "/comunicacion";
+}
+
 /** Resuelve enlace según contexto actual (admin vs worker). */
 export function resolveTurnosPath(pathname: string): string {
   return pathname.startsWith("/worker") ? workerPath("turnos") : "/turnos";
