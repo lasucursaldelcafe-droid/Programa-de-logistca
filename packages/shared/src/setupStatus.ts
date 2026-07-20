@@ -40,6 +40,8 @@ export function isSetupItemDone(
     case "firebase-secrets":
     case "firebase-login":
       return status.firebaseSecretsReady;
+    case "firestore-deploy":
+      return false;
     case "maps":
       return status.mapsReady;
     case "fcm":
