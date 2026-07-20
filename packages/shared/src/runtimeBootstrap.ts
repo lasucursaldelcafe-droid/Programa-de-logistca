@@ -47,7 +47,6 @@ function normalizeBackend(value: string | undefined): EffectiveBackend | null {
 
 const PLACEHOLDER_SHEETS_TOKENS = new Set([
   "",
-  "cambiar-token-seguro",
   "placeholder",
   "changeme",
 ]);

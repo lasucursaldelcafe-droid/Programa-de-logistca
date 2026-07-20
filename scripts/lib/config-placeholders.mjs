@@ -1,6 +1,5 @@
-/** Tokens de API que no son credenciales reales de producción. */
+/** Tokens que nunca deben usarse como credenciales reales en producción. */
 const PLACEHOLDER_TOKENS = new Set([
-  "cambiar-token-seguro",
   "placeholder",
   "changeme",
   "tu-token",

@@ -1,6 +1,6 @@
 /**
  * Cliente HTTP para backend Google Sheets (Apps Script Web App).
- * Usa GET (no POST) — Apps Script redirige POST y el navegador lanza "Failed to fetch".
+ * Health/list usan GET; login y escritura usan POST JSON (Apps Script desplegado).
  */
 
 export interface SheetsLoginResult {
@@ -35,6 +35,29 @@ function sheetsActionUrl(params: Record<string, string>): string {
   return `${webAppUrl}?${qs.toString()}`;
 }
 
+async function sheetsPost(payload: Record<string, unknown>): Promise<Response> {
+  if (!isSheetsBackendConfigured()) {
+    throw new Error("Backend Sheets no configurado");
+  }
+  try {
+    return await fetch(webAppUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: apiToken, ...payload }),
+      redirect: "follow",
+      credentials: "omit",
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
+      throw new Error(
+        "No se pudo conectar a Google Sheets. Usa «Restablecer modo demo» o revisa URL/token en /configurar.",
+      );
+    }
+    throw err;
+  }
+}
+
 async function sheetsFetch(url: string): Promise<Response> {
   try {
     return await fetch(url, {
@@ -63,12 +86,11 @@ export async function sheetsLogin(email: string, password: string): Promise<Shee
   if (!isSheetsBackendConfigured()) {
     throw new Error("Backend Sheets no configurado. Ve a /configurar o restablece modo demo.");
   }
-  const url = sheetsActionUrl({
+  const res = await sheetsPost({
     action: "login",
     email: email.trim().toLowerCase(),
     password: password.trim(),
   });
-  const res = await sheetsFetch(url);
   let data: SheetsLoginResult & { error?: string };
   try {
     data = (await res.json()) as SheetsLoginResult & { error?: string };
@@ -97,13 +119,12 @@ export async function sheetsUpsert(
   record: Record<string, unknown>,
   idField = "id",
 ): Promise<void> {
-  const url = sheetsActionUrl({
+  const res = await sheetsPost({
     action: "upsert",
     collection,
     idField,
-    record: JSON.stringify(record),
+    record,
   });
-  const res = await sheetsFetch(url);
   const data = (await res.json()) as { ok?: boolean; error?: string };
   if (!res.ok || data.error) throw new Error(data.error ?? "Upsert Sheets falló");
 }
@@ -113,28 +134,19 @@ export async function sheetsDelete(
   id: string,
   idField = "id",
 ): Promise<void> {
-  const url = sheetsActionUrl({
+  const res = await sheetsPost({
     action: "delete",
     collection,
     id,
     idField,
   });
-  const res = await sheetsFetch(url);
   const data = (await res.json()) as { ok?: boolean; error?: string };
   if (!res.ok || data.error) throw new Error(data.error ?? "Delete Sheets falló");
 }
 
-/** POST desde Node/scripts (clasp, seed). El navegador debe usar GET vía sheetsUpsert. */
+/** POST desde Node/scripts (clasp, seed). Misma ruta que el navegador. */
 export async function sheetsPostJson(payload: Record<string, unknown>): Promise<unknown> {
-  if (!isSheetsBackendConfigured()) {
-    throw new Error("Backend Sheets no configurado");
-  }
-  const res = await fetch(webAppUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token: apiToken, ...payload }),
-    redirect: "follow",
-  });
+  const res = await sheetsPost(payload);
   const data = (await res.json()) as { error?: string };
   if (!res.ok || data.error) throw new Error(data.error ?? `Sheets POST falló (${res.status})`);
   return data;
