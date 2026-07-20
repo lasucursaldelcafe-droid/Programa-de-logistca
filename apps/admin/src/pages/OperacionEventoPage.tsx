@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   ATTENDANCE_LABEL,
   SHIFT_LABEL,
@@ -14,16 +14,21 @@ import {
   createShift,
   deleteShift,
   useAttendances,
-  useEvents,
   useQrCodes,
   useShifts,
   useSites,
   useWorkers,
 } from "../hooks/useDataStore";
-import { useSetupConfig } from "../hooks/useSetup";
+import { useEventoOperacion } from "../hooks/useEventoOperacion";
 import { EventFlowGuide } from "../components/EventFlowGuide";
+import { EventSupervisionPanel } from "../components/EventSupervisionPanel";
 
-const EVENTO_STORAGE_KEY = "spe-evento-operacion";
+type OperacionTab = "resumen" | "supervision" | "equipo";
+
+function parseOperacionTab(value: string | null): OperacionTab {
+  if (value === "supervision" || value === "equipo") return value;
+  return "resumen";
+}
 
 function toDatetimeLocal(iso: string): string {
   const d = new Date(iso);
@@ -34,15 +39,15 @@ function toDatetimeLocal(iso: string): string {
 
 export function OperacionEventoPage() {
   const { user } = useAuth();
-  const events = useEvents();
+  const { events, eventId, setEventId, evento } = useEventoOperacion();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = parseOperacionTab(searchParams.get("tab"));
   const sites = useSites();
   const shifts = useShifts();
   const workers = useWorkers();
   const attendances = useAttendances();
   const qrCodes = useQrCodes();
-  const setupConfig = useSetupConfig();
 
-  const [eventId, setEventId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
@@ -53,26 +58,16 @@ export function OperacionEventoPage() {
     fin: "",
   });
 
-  useEffect(() => {
-    if (events.length === 0) return;
-    const stored = sessionStorage.getItem(EVENTO_STORAGE_KEY);
-    const fromSetup = setupConfig?.eventoId;
-    const initial =
-      (stored && events.some((e) => e.id === stored) ? stored : null) ??
-      (fromSetup && events.some((e) => e.id === fromSetup) ? fromSetup : null) ??
-      events[0]?.id ??
-      "";
-    setEventId(initial);
-  }, [events, setupConfig?.eventoId]);
+  function setActiveTab(tab: OperacionTab) {
+    setSearchParams(tab === "resumen" ? {} : { tab }, { replace: true });
+  }
 
-  useEffect(() => {
-    if (eventId) sessionStorage.setItem(EVENTO_STORAGE_KEY, eventId);
-  }, [eventId]);
-
-  const evento = useMemo(
-    () => events.find((e) => e.id === eventId) ?? null,
-    [events, eventId],
-  );
+  const tabClass = (tab: OperacionTab) =>
+    `rounded-lg px-4 py-2 text-sm font-medium transition ${
+      activeTab === tab
+        ? "bg-accent text-bg"
+        : "border border-border text-neutral-400 hover:border-accent/40"
+    }`;
 
   const sitiosEvento = useMemo(
     () => sites.filter((s) => s.eventId === eventId),
@@ -253,15 +248,15 @@ export function OperacionEventoPage() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-accent">Paso 4 · Operación</p>
-          <h1 className="font-display text-3xl font-bold">Asignar al evento</h1>
+          <p className="text-xs font-semibold uppercase tracking-wider text-accent">Dashboard del evento</p>
+          <h1 className="font-display text-3xl font-bold">Operación y supervisión</h1>
           <p className="mt-1 max-w-2xl text-neutral-400">
-            Revisa el estado del evento y agrega o quita empleados. Cuando empiece el evento, usa
-            mapa, supervisión y comunicación.
+            Un mapa por evento: resumen, supervisión GPS (plano general e individual) y gestión del
+            equipo — todo en este panel.
           </p>
         </div>
         <label className="text-sm">
-          Evento
+          Evento activo
           <select
             value={eventId}
             onChange={(e) => setEventId(e.target.value)}
@@ -276,6 +271,20 @@ export function OperacionEventoPage() {
         </label>
       </div>
 
+      {evento && (
+        <div className="flex flex-wrap gap-2 border-b border-border/60 pb-3">
+          <button type="button" className={tabClass("resumen")} onClick={() => setActiveTab("resumen")}>
+            Resumen
+          </button>
+          <button type="button" className={tabClass("supervision")} onClick={() => setActiveTab("supervision")}>
+            Supervisión y mapa
+          </button>
+          <button type="button" className={tabClass("equipo")} onClick={() => setActiveTab("equipo")}>
+            Equipo
+          </button>
+        </div>
+      )}
+
       {error && (
         <div className="rounded-lg border border-alert/40 bg-alert/10 px-4 py-3 text-sm text-alert">
           {error}
@@ -287,7 +296,15 @@ export function OperacionEventoPage() {
         </div>
       )}
 
-      {evento && (
+      {evento && activeTab === "supervision" && (
+        <EventSupervisionPanel
+          evento={evento}
+          sites={sitiosEvento}
+          attendances={asistenciasEvento}
+        />
+      )}
+
+      {evento && activeTab === "resumen" && (
         <>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <MetricCard value={kpis.workersEnSitio} label="En sitio ahora" tone="positive" />
@@ -332,12 +349,13 @@ export function OperacionEventoPage() {
               <Link to="/cuentas" className="rounded-lg border border-border px-3 py-1.5 hover:border-accent/50">
                 Invitaciones
               </Link>
-              <Link to="/mapa" className="rounded-lg border border-border px-3 py-1.5 hover:border-accent/50">
-                Mapa en vivo
-              </Link>
-              <Link to="/supervision" className="rounded-lg border border-border px-3 py-1.5 hover:border-accent/50">
-                Supervisión GPS
-              </Link>
+              <button
+                type="button"
+                onClick={() => setActiveTab("supervision")}
+                className="rounded-lg border border-accent/40 bg-accent/10 px-3 py-1.5 text-accent hover:bg-accent/20"
+              >
+                Supervisión y mapa →
+              </button>
               <Link to="/comunicacion" className="rounded-lg border border-border px-3 py-1.5 hover:border-accent/50">
                 Comunicación
               </Link>
@@ -346,7 +364,11 @@ export function OperacionEventoPage() {
               </Link>
             </div>
           </Card>
+        </>
+      )}
 
+      {evento && activeTab === "equipo" && (
+        <>
           <Card>
             <h2 className="font-display text-lg font-semibold">Agregar empleado al evento</h2>
             <p className="mt-1 text-sm text-neutral-400">

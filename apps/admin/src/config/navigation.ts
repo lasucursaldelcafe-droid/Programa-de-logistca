@@ -45,7 +45,8 @@ function filterSections(sections: NavSection[], role: UserRole, gates: Record<st
     .map((section) => ({
       ...section,
       items: section.items.filter((item) => {
-        const gate = gates[item.to];
+        const path = item.to.split("?")[0] ?? item.to;
+        const gate = gates[path];
         return gate ? gate(role) : true;
       }),
     }))
@@ -57,8 +58,6 @@ const ADMIN_GATES: Record<string, (r: UserRole) => boolean> = {
   "/personal": can.personal,
   "/cuentas": can.cuentas,
   "/operacion": can.operacion,
-  "/mapa": can.mapa,
-  "/supervision": can.operacion,
   "/turnos": can.operacion,
   "/comunicacion": can.operacion,
   "/reportes": can.reportes,
@@ -85,15 +84,14 @@ export function getAdminNavSections(role: UserRole): NavSection[] {
         { to: "/configuracion", label: "1. Crear evento", icon: "calendar" },
         { to: "/personal", label: "2. Personal", icon: "users" },
         { to: "/cuentas", label: "3. Invitaciones", icon: "mail" },
-        { to: "/operacion", label: "4. Asignar al evento", icon: "calendar" },
+        { to: "/operacion", label: "4. Dashboard del evento", icon: "calendar" },
       ],
     },
     {
       id: "operar",
       title: "Durante el evento",
       items: [
-        { to: "/mapa", label: "Mapa en vivo", icon: "map" },
-        { to: "/supervision", label: "Supervisión GPS", icon: "eye" },
+        { to: "/operacion?tab=supervision", label: "Mapa y supervisión", icon: "map" },
         { to: "/turnos", label: "Turnos", icon: "calendar" },
         { to: "/comunicacion", label: "Comunicación", icon: "message" },
         { to: "/reportes", label: "Reportes", icon: "flag" },

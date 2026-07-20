@@ -1,24 +1,40 @@
 import type { Attendance, Sitio } from "@spe/shared";
-import { collectMapMarkers, toneColor } from "./mapMarkers";
+import { collectMapMarkers, toneColor, type MapMarkerTone } from "./mapMarkers";
 import { MapLegend } from "./MapLegend";
 
 interface LiveMapSchematicProps {
   sites: Sitio[];
   attendances: Attendance[];
+  className?: string;
 }
 
-export function LiveMapSchematic({ sites, attendances }: LiveMapSchematicProps) {
+export function LiveMapSchematic({ sites, attendances, className }: LiveMapSchematicProps) {
   const markers = collectMapMarkers(sites, attendances);
-  if (markers.length === 0) {
+  const heightClass = className ?? "h-80";
+
+  const mapMarkers =
+    markers.length > 0
+      ? markers
+      : sites.map((s) => ({
+          id: `site-${s.id}`,
+          label: s.nombre,
+          lat: s.lat,
+          lng: s.lng,
+          tone: "site" as MapMarkerTone,
+        }));
+
+  if (mapMarkers.length === 0) {
     return (
-      <div className="flex h-72 items-center justify-center rounded-xl border border-border bg-bg text-sm text-neutral-500">
+      <div
+        className={`flex ${heightClass} items-center justify-center rounded-xl border border-border bg-bg text-sm text-neutral-500`}
+      >
         Sin datos de mapa
       </div>
     );
   }
 
-  const lats = markers.map((m) => m.lat);
-  const lngs = markers.map((m) => m.lng);
+  const lats = mapMarkers.map((m) => m.lat);
+  const lngs = mapMarkers.map((m) => m.lng);
   const minLat = Math.min(...lats) - 0.001;
   const maxLat = Math.max(...lats) + 0.001;
   const minLng = Math.min(...lngs) - 0.001;
@@ -28,7 +44,7 @@ export function LiveMapSchematic({ sites, attendances }: LiveMapSchematicProps) 
   const toY = (lat: number) => (1 - (lat - minLat) / (maxLat - minLat)) * 100;
 
   return (
-    <div className="relative h-80 overflow-hidden rounded-xl border border-border bg-[#111]">
+    <div className={`relative ${heightClass} overflow-hidden rounded-xl border border-border bg-[#111]`}>
       <svg viewBox="0 0 100 100" className="h-full w-full">
         {[20, 40, 60, 80].map((n) => (
           <g key={n} className="text-neutral-800">
@@ -48,7 +64,7 @@ export function LiveMapSchematic({ sites, attendances }: LiveMapSchematicProps) 
             strokeDasharray="1 1"
           />
         ))}
-        {markers.map((m) => (
+        {mapMarkers.map((m) => (
           <g key={m.id}>
             <circle cx={toX(m.lng)} cy={toY(m.lat)} r={1.8} fill={toneColor[m.tone]} />
             <text

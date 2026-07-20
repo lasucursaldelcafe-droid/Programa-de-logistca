@@ -14,6 +14,7 @@ interface GoogleLiveMapProps {
   apiKey: string;
   sites: Sitio[];
   attendances: Attendance[];
+  className?: string;
 }
 
 interface BoundsLiteral {
@@ -88,19 +89,20 @@ function GoogleMapContent({ sites, attendances }: Omit<GoogleLiveMapProps, "apiK
   );
 }
 
-export function GoogleLiveMap({ apiKey, sites, attendances }: GoogleLiveMapProps) {
+export function GoogleLiveMap({ apiKey, sites, attendances, className }: GoogleLiveMapProps) {
   const markers = collectMapMarkers(sites, attendances);
+  const heightClass = className ?? "h-80";
 
-  if (markers.length === 0) {
+  if (markers.length === 0 && sites.length === 0) {
     return (
-      <div className="flex h-72 items-center justify-center rounded-xl border border-border bg-bg text-sm text-neutral-500">
+      <div className={`flex ${heightClass} items-center justify-center rounded-xl border border-border bg-bg text-sm text-neutral-500`}>
         Sin datos de mapa
       </div>
     );
   }
 
   return (
-    <div className="relative h-80 overflow-hidden rounded-xl border border-border">
+    <div className={`relative ${heightClass} overflow-hidden rounded-xl border border-border`}>
       <APIProvider apiKey={apiKey} language="es" region="CO">
         <GoogleMapContent sites={sites} attendances={attendances} />
       </APIProvider>
