@@ -18,6 +18,7 @@ import {
   useInvitations,
   useWorkers,
   resetWorkerPassword,
+  sendPasswordReset,
   setWorkerHabilitado,
   changeOwnPassword,
 } from "../hooks/useDataStore";
@@ -41,6 +42,7 @@ export function CuentasPage() {
   const [ownConfirmPassword, setOwnConfirmPassword] = useState("");
   const [ownPasswordMsg, setOwnPasswordMsg] = useState<string | null>(null);
   const [ownPasswordBusy, setOwnPasswordBusy] = useState(false);
+  const [resetSentEmail, setResetSentEmail] = useState<string | null>(null);
 
   const puedeCambiarPropiaClave = !isSheetsBackend();
 
@@ -242,6 +244,13 @@ export function CuentasPage() {
         </Card>
       )}
 
+      {resetSentEmail && (
+        <p className="rounded-lg border border-positive/40 bg-positive/10 px-3 py-2 text-sm text-positive">
+          Enlace de recuperación enviado a {resetSentEmail}. La persona puede crear una nueva
+          contraseña e iniciar sesión.
+        </p>
+      )}
+
       <Card>
         <h2 className="font-display text-lg font-semibold">Personal sin cuenta activa</h2>
         <p className="mt-1 text-sm text-neutral-400">
@@ -264,14 +273,41 @@ export function CuentasPage() {
                     Rol: {ROLE_LABEL[w.rolPlataforma ?? "trabajador"]}
                   </div>
                 </div>
-                <button
-                  type="button"
-                  disabled={busyWorkerId === w.id}
-                  onClick={() => invitar(w.id)}
-                  className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-black disabled:opacity-50"
-                >
-                  {busyWorkerId === w.id ? "Generando…" : "Enviar invitación por correo"}
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={busyWorkerId === w.id}
+                    onClick={() => invitar(w.id)}
+                    className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-black disabled:opacity-50"
+                  >
+                    {busyWorkerId === w.id ? "Generando…" : "Enviar invitación por correo"}
+                  </button>
+                  {!isDemoMode() && (
+                    <button
+                      type="button"
+                      disabled={busyWorkerId === w.id}
+                      onClick={async () => {
+                        setBusyWorkerId(w.id);
+                        setError(null);
+                        try {
+                          await sendPasswordReset(w.email);
+                          setResetSentEmail(w.email);
+                          setTimeout(() => setResetSentEmail(null), 4000);
+                        } catch {
+                          setError(
+                            `No se pudo enviar recuperación a ${w.email}. El correo puede no existir aún en Firebase.`,
+                          );
+                        } finally {
+                          setBusyWorkerId(null);
+                        }
+                      }}
+                      className="rounded-lg border border-border px-3 py-1.5 text-xs hover:border-accent"
+                      title="Si el correo ya tiene cuenta pero la invitación falló, envía enlace para restablecer contraseña"
+                    >
+                      Recuperar contraseña
+                    </button>
+                  )}
+                </div>
               </div>
             ))
           )}
