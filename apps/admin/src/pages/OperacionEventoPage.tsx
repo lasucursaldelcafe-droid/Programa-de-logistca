@@ -9,6 +9,7 @@ import {
 } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
 import { Badge, Card } from "../components/ui";
+import { EventoOperacionSelect } from "../components/EventoOperacionSelect";
 import { MetricCard } from "../components/dashboard/MetricCard";
 import {
   createShift,
@@ -255,20 +256,12 @@ export function OperacionEventoPage() {
             equipo — todo en este panel.
           </p>
         </div>
-        <label className="text-sm">
-          Evento activo
-          <select
-            value={eventId}
-            onChange={(e) => setEventId(e.target.value)}
-            className="mt-1 block min-w-[220px] rounded-lg border border-border bg-bg px-3 py-2"
-          >
-            {events.map((ev) => (
-              <option key={ev.id} value={ev.id}>
-                {ev.nombre}
-              </option>
-            ))}
-          </select>
-        </label>
+        <EventoOperacionSelect
+          events={events}
+          eventId={eventId}
+          onChange={setEventId}
+          className="min-w-[220px]"
+        />
       </div>
 
       {evento && (
@@ -372,8 +365,8 @@ export function OperacionEventoPage() {
           <Card>
             <h2 className="font-display text-lg font-semibold">Agregar empleado al evento</h2>
             <p className="mt-1 text-sm text-neutral-400">
-              Asigna un turno en un sitio del evento. El trabajador recibirá la notificación para
-              aceptar.
+              Asigna un turno en un sitio del evento. El trabajador recibe notificación en la app y
+              correo automático con evento, sitio y horario.
             </p>
             {sitiosEvento.length === 0 ? (
               <p className="mt-4 text-sm text-accent">

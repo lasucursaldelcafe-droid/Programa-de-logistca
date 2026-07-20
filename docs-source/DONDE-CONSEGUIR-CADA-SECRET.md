@@ -119,6 +119,24 @@ dentro del objeto `"firebase": { "apiKey": "...", ... }`.
 
 Si no usas notificaciones push, **puedes omitir** este secret.
 
+### GMAIL_USER + GMAIL_APP_PASSWORD (correos automáticos de invitación y turnos)
+
+| Secret | Ruta exacta |
+|--------|-------------|
+| `GMAIL_USER` | Correo del proyecto: `lasucursaldelcafe@gmail.com` |
+| `GMAIL_APP_PASSWORD` | [Google Account](https://myaccount.google.com/apppasswords) → **Contraseñas de aplicaciones** → crear una para «SPE» → copiar la clave de 16 caracteres (sin espacios) |
+| `SPE_APP_URL` (opcional) | URL pública de la app: `https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/` |
+
+Configúralos como **secrets de Cloud Functions** en Firebase (no solo GitHub Actions):
+
+```bash
+firebase functions:secrets:set GMAIL_USER
+firebase functions:secrets:set GMAIL_APP_PASSWORD
+firebase functions:secrets:set SPE_APP_URL
+```
+
+Sin estos secrets, las invitaciones se crean pero el correo no sale (verás `emailError` en Cuentas → Invitaciones).
+
 ### VITE_GOOGLE_MAPS_API_KEY (opcional — mapa en vivo con Google Maps)
 
 | Secret | Ruta exacta |

@@ -13,11 +13,13 @@ import {
   where,
   getDocs,
 } from "firebase/firestore";
+import { FirebaseError } from "firebase/app";
 import {
   createUserWithEmailAndPassword,
   EmailAuthProvider,
   reauthenticateWithCredential,
   sendPasswordResetEmail,
+  signInWithEmailAndPassword,
   updatePassword,
 } from "firebase/auth";
 import {
@@ -150,11 +152,18 @@ export async function createWorker(
     perfiles: PerfilTrabajo[];
     rolPlataforma?: "trabajador" | "supervisor_sitio";
   },
-  actorNombre?: string,
-): Promise<void> {
+  options?: {
+    actorNombre?: string;
+    creadaPor?: string;
+    creadaPorNombre?: string;
+    /** Envía invitación por correo automáticamente (Firebase producción). Default true. */
+    enviarInvitacion?: boolean;
+  },
+): Promise<string> {
   const rolPlataforma = data.rolPlataforma ?? "trabajador";
+  const actorNombre = options?.actorNombre;
   if (isDemoMode()) {
-    demoStore.addWorker(
+    const id = demoStore.addWorker(
       {
         nombre: data.nombre,
         documento: data.documento,
@@ -173,7 +182,7 @@ export async function createWorker(
       },
       actorNombre,
     );
-    return;
+    return id;
   }
   const id = `worker-${Date.now().toString(36)}`;
   const worker = {
@@ -195,9 +204,9 @@ export async function createWorker(
   };
   if (isSheetsBackend()) {
     await sheetsUpsertRecord("workers", worker);
-    return;
+    return id;
   }
-  await addDoc(collection(getFirestoreDb(), "workers"), {
+  const ref = await addDoc(collection(getFirestoreDb(), "workers"), {
     nombre: data.nombre,
     documento: data.documento,
     telefono: data.telefono,
@@ -213,6 +222,23 @@ export async function createWorker(
     certificaciones: [],
     creadoEn: new Date().toISOString(),
   });
+
+  const creadaPor = options?.creadaPor;
+  const shouldInvite =
+    options?.enviarInvitacion !== false && data.email.trim().length > 0 && Boolean(creadaPor);
+
+  if (shouldInvite && creadaPor) {
+    await createInvitation({
+      workerId: ref.id,
+      workerNombre: data.nombre,
+      email: data.email.trim().toLowerCase(),
+      role: rolPlataforma,
+      creadaPor,
+      creadaPorNombre: options?.creadaPorNombre ?? actorNombre ?? "Administrador",
+    });
+  }
+
+  return ref.id;
 }
 
 export async function updateWorkerEstado(
@@ -517,21 +543,50 @@ export async function activateAccountWithInvitation(
     throw new Error("Código de invitación incorrecto");
   }
 
-  const cred = await createUserWithEmailAndPassword(
-    getFirebaseAuth(),
-    invitation.email,
-    password,
-  );
+  const auth = getFirebaseAuth();
+  let cred;
+  try {
+    cred = await createUserWithEmailAndPassword(auth, invitation.email, password);
+  } catch (err) {
+    if (!(err instanceof FirebaseError) || err.code !== "auth/email-already-in-use") {
+      throw err;
+    }
+    // Reintento: la cuenta Auth pudo crearse en un intento anterior que falló al guardar Firestore.
+    try {
+      cred = await signInWithEmailAndPassword(auth, invitation.email, password);
+    } catch {
+      throw new Error(
+        "Este correo ya tiene cuenta en SPE. Si ya creaste contraseña, usa Iniciar sesión. " +
+          "Si no la recuerdas, en login elige «Olvidé mi contraseña». " +
+          "Si el problema continúa, pide al administrador una nueva invitación.",
+      );
+    }
+  }
 
   const perfilCompleto = (invitation.role ?? "trabajador") === "supervisor_sitio";
 
-  await setDoc(doc(getFirestoreDb(), "users", cred.user.uid), {
-    email: invitation.email,
-    nombre: invitation.workerNombre,
-    role: invitation.role ?? "trabajador",
-    workerId: invitation.workerId,
-    perfilCompleto,
-  });
+  const userRef = doc(getFirestoreDb(), "users", cred.user.uid);
+  const existingUser = await getDoc(userRef);
+  if (existingUser.exists()) {
+    const data = existingUser.data();
+    if (data.workerId && data.workerId !== invitation.workerId) {
+      throw new Error(
+        "Este correo ya está vinculado a otro perfil de personal. Contacta al administrador.",
+      );
+    }
+  }
+
+  await setDoc(
+    userRef,
+    {
+      email: invitation.email,
+      nombre: invitation.workerNombre,
+      role: invitation.role ?? "trabajador",
+      workerId: invitation.workerId,
+      perfilCompleto,
+    },
+    { merge: true },
+  );
 
   await updateDoc(doc(getFirestoreDb(), "workers", invitation.workerId), {
     cuentaCreada: true,

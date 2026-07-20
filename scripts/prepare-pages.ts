@@ -27,23 +27,6 @@ function finalizeSpa(distDir: string, extraRoutes: string[] = []): void {
   if (extraRoutes.length > 0) mirrorSpaRoutes(distDir, extraRoutes);
 }
 
-function writeLegacyRedirect(targetDir: string, redirectTo: string): void {
-  mkdirSync(targetDir, { recursive: true });
-  writeFileSync(
-    resolve(targetDir, "index.html"),
-    `<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta http-equiv="refresh" content="0;url=${redirectTo}" />
-  <script>location.replace(${JSON.stringify(redirectTo)});</script>
-  <title>SPE — redirigiendo…</title>
-</head>
-<body><p>Redirigiendo a la app unificada SPE…</p></body>
-</html>`,
-  );
-}
-
 function appBase(): string {
   return resolvePagesBase();
 }
@@ -97,10 +80,6 @@ mkdirSync(docs, { recursive: true });
 
 cpSync(adminDist, docs, { recursive: true });
 
-// Compatibilidad: URLs antiguas /worker/ y /master/ redirigen a la app unificada
-writeLegacyRedirect(resolve(docs, "worker"), links.pagesUrl);
-writeLegacyRedirect(resolve(docs, "master"), links.pagesUrl);
-
 copyFileSync(resolve(ROOT, "docs-source/GUIA.md"), resolve(docs, "GUIA.md"));
 copyFileSync(
   resolve(ROOT, "apps/admin/public/spe-runtime-config.json"),
@@ -114,4 +93,3 @@ writeFileSync(resolve(docs, ".nojekyll"), "");
 
 console.log(`✓ GitHub Pages listo (${links.pagesUrl})`);
 console.log("  App unificada — login único, panel según rol (Admin / Master / Trabajador)");
-console.log("  Redirecciones legacy: /worker/ y /master/ → raíz");

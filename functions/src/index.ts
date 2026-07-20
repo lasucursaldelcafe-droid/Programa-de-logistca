@@ -2,12 +2,140 @@ import { initializeApp } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getMessaging } from "firebase-admin/messaging";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
+import { defineSecret } from "firebase-functions/params";
 import { logger } from "firebase-functions";
 import { resolveRecipientUids, resolveChatRecipientUids, comunicacionLinkForUid } from "./pushRecipients";
+import { mailConfigured, sendMail } from "./mail";
+import { buildInvitationEmail, buildShiftAssignedEmail, resolveAppUrl } from "./emailTemplates";
 
 initializeApp();
 
 const db = getFirestore();
+
+const gmailUser = defineSecret("GMAIL_USER");
+const gmailAppPassword = defineSecret("GMAIL_APP_PASSWORD");
+const speAppUrl = defineSecret("SPE_APP_URL");
+
+const emailSecrets = [gmailUser, gmailAppPassword, speAppUrl];
+
+function mailCredentials() {
+  return {
+    user: gmailUser.value(),
+    pass: gmailAppPassword.value(),
+    fromName: "SPE Negocio",
+  };
+}
+
+export const onInvitationCreated = onDocumentCreated(
+  {
+    document: "invitations/{token}",
+    region: "us-central1",
+    secrets: emailSecrets,
+  },
+  async (event) => {
+    const snap = event.data;
+    if (!snap) return;
+
+    const token = event.params.token;
+    const data = snap.data();
+    if (data.estado !== "pendiente") return;
+    if (data.emailEnviadoEn) return;
+
+    const creds = mailCredentials();
+    if (!mailConfigured(creds)) {
+      const message = "Correo no configurado (GMAIL_USER / GMAIL_APP_PASSWORD)";
+      logger.warn(message, { token });
+      await snap.ref.update({ emailError: message });
+      return;
+    }
+
+    const email = String(data.email ?? "").trim().toLowerCase();
+    if (!email) {
+      await snap.ref.update({ emailError: "Invitación sin correo destino" });
+      return;
+    }
+
+    try {
+      const appUrl = resolveAppUrl(speAppUrl.value());
+      const { subject, text, html } = buildInvitationEmail(
+        {
+          workerNombre: String(data.workerNombre ?? "Equipo"),
+          email,
+          codigoAcceso: String(data.codigoAcceso ?? ""),
+          expiraEn: String(data.expiraEn ?? ""),
+          role: data.role as string | undefined,
+          token,
+        },
+        appUrl,
+      );
+
+      await sendMail(creds, { to: email, subject, text, html });
+      await snap.ref.update({
+        emailEnviadoEn: new Date().toISOString(),
+        emailError: FieldValue.delete(),
+      });
+      logger.info("Correo de invitación enviado", { token, email });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      logger.error("Correo de invitación falló", { token, message });
+      await snap.ref.update({ emailError: message.slice(0, 500) });
+    }
+  },
+);
+
+export const onShiftCreated = onDocumentCreated(
+  {
+    document: "shifts/{shiftId}",
+    region: "us-central1",
+    secrets: emailSecrets,
+  },
+  async (event) => {
+    const snap = event.data;
+    if (!snap) return;
+
+    const shiftId = event.params.shiftId;
+    const data = snap.data();
+    const workerId = String(data.workerId ?? "");
+    if (!workerId) return;
+
+    const creds = mailCredentials();
+    if (!mailConfigured(creds)) {
+      logger.warn("Turno creado sin correo SMTP configurado", { shiftId });
+      return;
+    }
+
+    try {
+      const workerSnap = await db.collection("workers").doc(workerId).get();
+      const worker = workerSnap.data();
+      const email = String(worker?.email ?? "").trim().toLowerCase();
+      if (!email) {
+        logger.info("Turno sin correo de trabajador", { shiftId, workerId });
+        return;
+      }
+
+      const appUrl = resolveAppUrl(speAppUrl.value());
+      const { subject, text, html } = buildShiftAssignedEmail(
+        {
+          workerNombre: String(data.workerNombre ?? worker?.nombre ?? ""),
+          eventNombre: data.eventNombre as string | undefined,
+          siteNombre: data.siteNombre as string | undefined,
+          inicio: String(data.inicio ?? ""),
+          fin: String(data.fin ?? ""),
+        },
+        appUrl,
+      );
+
+      await sendMail(creds, { to: email, subject, text, html });
+      await snap.ref.update({
+        emailTurnoEnviadoEn: new Date().toISOString(),
+      });
+      logger.info("Correo de turno enviado", { shiftId, email });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      logger.error("Correo de turno falló", { shiftId, message });
+    }
+  },
+);
 
 export const onNotificationCreated = onDocumentCreated(
   {

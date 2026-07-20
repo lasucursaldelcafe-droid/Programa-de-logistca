@@ -66,6 +66,7 @@
     "acceso": "node scripts/print-acceso.mjs",
     "test:smoke": "firebase emulators:exec --only auth,firestore --project demo-personal-eventos \"npm run seed && tsx scripts/ci-smoke.ts\"",
     "check:nav": "tsx scripts/check-nav-routes.ts",
+    "verify:spa": "tsx scripts/verify-spa-routes.ts",
     "verify:flows": "tsx scripts/verify-demo-flows.ts",
     "verify:qr": "tsx scripts/verify-qr-generation.ts",
     "toolkit": "node scripts/run-toolkit.mjs",

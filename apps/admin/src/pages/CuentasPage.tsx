@@ -3,7 +3,6 @@ import {
   INVITATION_LABEL,
   ROLE_LABEL,
   buildInvitationEmailContent,
-  buildInvitationMailtoUrl,
   puedeGestionarCuentas,
 } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
@@ -13,11 +12,11 @@ import { InstruccionesOperacion } from "../components/InstruccionesOperacion";
 import { useDeploymentLinks } from "../hooks/useDeploymentLinks";
 import {
   createInvitation,
-  getInvitationByToken,
   revokeInvitation,
   useInvitations,
   useWorkers,
   resetWorkerPassword,
+  sendPasswordReset,
   setWorkerHabilitado,
   changeOwnPassword,
 } from "../hooks/useDataStore";
@@ -41,6 +40,7 @@ export function CuentasPage() {
   const [ownConfirmPassword, setOwnConfirmPassword] = useState("");
   const [ownPasswordMsg, setOwnPasswordMsg] = useState<string | null>(null);
   const [ownPasswordBusy, setOwnPasswordBusy] = useState(false);
+  const [resetSentEmail, setResetSentEmail] = useState<string | null>(null);
 
   const puedeCambiarPropiaClave = !isSheetsBackend();
 
@@ -83,14 +83,7 @@ export function CuentasPage() {
         creadaPorNombre: currentUser.nombre,
       });
 
-      const links = buildInvitationUrls(token, appBase());
-      const invitation = await getInvitationByToken(token);
-
-      if (invitation) {
-        const mailto = buildInvitationMailtoUrl(invitation, links);
-        window.location.href = mailto;
-        setLastSent({ token, codigo: codigoAcceso });
-      }
+      setLastSent({ token, codigo: codigoAcceso });
     } catch {
       setError("No se pudo crear la invitación.");
     } finally {
@@ -127,7 +120,7 @@ export function CuentasPage() {
     <div className="space-y-5">
       <PageHeader
         title="Cuentas"
-        description="Invitaciones por correo. Cada persona elige su contraseña al activar."
+        description="Invitaciones automáticas por correo (código, enlaces y pasos de activación)."
       />
 
       <Card>
@@ -231,7 +224,8 @@ export function CuentasPage() {
         <Card className="border-accent/30 bg-accent/5">
           <h2 className="font-semibold text-accent">Invitación creada</h2>
           <p className="mt-1 text-sm text-neutral-300">
-            Se abrió tu cliente de correo. Si no se abrió, copia el código y el enlace manualmente.
+            El correo se envía automáticamente con código, enlaces web/app y pasos para activar la
+            cuenta. Si no llega en 1–2 minutos, revisa spam o usa «Copiar correo» abajo.
           </p>
           <p className="mt-2 font-mono text-lg tracking-widest text-white">
             Código: {lastSent.codigo}
@@ -242,11 +236,18 @@ export function CuentasPage() {
         </Card>
       )}
 
+      {resetSentEmail && (
+        <p className="rounded-lg border border-positive/40 bg-positive/10 px-3 py-2 text-sm text-positive">
+          Enlace de recuperación enviado a {resetSentEmail}. La persona puede crear una nueva
+          contraseña e iniciar sesión.
+        </p>
+      )}
+
       <Card>
         <h2 className="font-display text-lg font-semibold">Personal sin cuenta activa</h2>
         <p className="mt-1 text-sm text-neutral-400">
-          Genera invitación con el rol ya asignado en Personal. La persona usa su correo y elige
-          contraseña al activar.
+          Genera invitación con el rol ya asignado en Personal. Al registrar alguien nuevo en
+          Personal, el correo se envía solo. Aquí puedes reenviar invitación manualmente.
         </p>
         <div className="mt-4 space-y-3">
           {sinCuenta.length === 0 ? (
@@ -264,14 +265,41 @@ export function CuentasPage() {
                     Rol: {ROLE_LABEL[w.rolPlataforma ?? "trabajador"]}
                   </div>
                 </div>
-                <button
-                  type="button"
-                  disabled={busyWorkerId === w.id}
-                  onClick={() => invitar(w.id)}
-                  className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-black disabled:opacity-50"
-                >
-                  {busyWorkerId === w.id ? "Generando…" : "Enviar invitación por correo"}
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={busyWorkerId === w.id}
+                    onClick={() => invitar(w.id)}
+                    className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-black disabled:opacity-50"
+                  >
+                    {busyWorkerId === w.id ? "Generando…" : "Enviar invitación por correo"}
+                  </button>
+                  {!isDemoMode() && (
+                    <button
+                      type="button"
+                      disabled={busyWorkerId === w.id}
+                      onClick={async () => {
+                        setBusyWorkerId(w.id);
+                        setError(null);
+                        try {
+                          await sendPasswordReset(w.email);
+                          setResetSentEmail(w.email);
+                          setTimeout(() => setResetSentEmail(null), 4000);
+                        } catch {
+                          setError(
+                            `No se pudo enviar recuperación a ${w.email}. El correo puede no existir aún en Firebase.`,
+                          );
+                        } finally {
+                          setBusyWorkerId(null);
+                        }
+                      }}
+                      className="rounded-lg border border-border px-3 py-1.5 text-xs hover:border-accent"
+                      title="Si el correo ya tiene cuenta pero la invitación falló, envía enlace para restablecer contraseña"
+                    >
+                      Recuperar contraseña
+                    </button>
+                  )}
+                </div>
               </div>
             ))
           )}
@@ -394,6 +422,14 @@ export function CuentasPage() {
                     Creada {new Date(inv.creadaEn).toLocaleString("es-CO")} · Expira{" "}
                     {new Date(inv.expiraEn).toLocaleDateString("es-CO")}
                   </div>
+                  {inv.emailEnviadoEn && (
+                    <div className="mt-1 text-xs text-positive">
+                      Correo enviado {new Date(inv.emailEnviadoEn).toLocaleString("es-CO")}
+                    </div>
+                  )}
+                  {inv.emailError && (
+                    <div className="mt-1 text-xs text-alert">Correo: {inv.emailError}</div>
+                  )}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge
