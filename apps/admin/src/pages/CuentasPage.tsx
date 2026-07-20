@@ -3,7 +3,6 @@ import {
   INVITATION_LABEL,
   ROLE_LABEL,
   buildInvitationEmailContent,
-  buildInvitationMailtoUrl,
   puedeGestionarCuentas,
 } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
@@ -13,7 +12,6 @@ import { InstruccionesOperacion } from "../components/InstruccionesOperacion";
 import { useDeploymentLinks } from "../hooks/useDeploymentLinks";
 import {
   createInvitation,
-  getInvitationByToken,
   revokeInvitation,
   useInvitations,
   useWorkers,
@@ -85,14 +83,7 @@ export function CuentasPage() {
         creadaPorNombre: currentUser.nombre,
       });
 
-      const links = buildInvitationUrls(token, appBase());
-      const invitation = await getInvitationByToken(token);
-
-      if (invitation) {
-        const mailto = buildInvitationMailtoUrl(invitation, links);
-        window.location.href = mailto;
-        setLastSent({ token, codigo: codigoAcceso });
-      }
+      setLastSent({ token, codigo: codigoAcceso });
     } catch {
       setError("No se pudo crear la invitación.");
     } finally {
@@ -129,7 +120,7 @@ export function CuentasPage() {
     <div className="space-y-5">
       <PageHeader
         title="Cuentas"
-        description="Invitaciones por correo. Cada persona elige su contraseña al activar."
+        description="Invitaciones automáticas por correo (código, enlaces y pasos de activación)."
       />
 
       <Card>
@@ -233,7 +224,8 @@ export function CuentasPage() {
         <Card className="border-accent/30 bg-accent/5">
           <h2 className="font-semibold text-accent">Invitación creada</h2>
           <p className="mt-1 text-sm text-neutral-300">
-            Se abrió tu cliente de correo. Si no se abrió, copia el código y el enlace manualmente.
+            El correo se envía automáticamente con código, enlaces web/app y pasos para activar la
+            cuenta. Si no llega en 1–2 minutos, revisa spam o usa «Copiar correo» abajo.
           </p>
           <p className="mt-2 font-mono text-lg tracking-widest text-white">
             Código: {lastSent.codigo}
@@ -254,8 +246,8 @@ export function CuentasPage() {
       <Card>
         <h2 className="font-display text-lg font-semibold">Personal sin cuenta activa</h2>
         <p className="mt-1 text-sm text-neutral-400">
-          Genera invitación con el rol ya asignado en Personal. La persona usa su correo y elige
-          contraseña al activar.
+          Genera invitación con el rol ya asignado en Personal. Al registrar alguien nuevo en
+          Personal, el correo se envía solo. Aquí puedes reenviar invitación manualmente.
         </p>
         <div className="mt-4 space-y-3">
           {sinCuenta.length === 0 ? (
@@ -430,6 +422,14 @@ export function CuentasPage() {
                     Creada {new Date(inv.creadaEn).toLocaleString("es-CO")} · Expira{" "}
                     {new Date(inv.expiraEn).toLocaleDateString("es-CO")}
                   </div>
+                  {inv.emailEnviadoEn && (
+                    <div className="mt-1 text-xs text-positive">
+                      Correo enviado {new Date(inv.emailEnviadoEn).toLocaleString("es-CO")}
+                    </div>
+                  )}
+                  {inv.emailError && (
+                    <div className="mt-1 text-xs text-alert">Correo: {inv.emailError}</div>
+                  )}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge

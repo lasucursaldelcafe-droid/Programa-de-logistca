@@ -152,11 +152,18 @@ export async function createWorker(
     perfiles: PerfilTrabajo[];
     rolPlataforma?: "trabajador" | "supervisor_sitio";
   },
-  actorNombre?: string,
-): Promise<void> {
+  options?: {
+    actorNombre?: string;
+    creadaPor?: string;
+    creadaPorNombre?: string;
+    /** Envía invitación por correo automáticamente (Firebase producción). Default true. */
+    enviarInvitacion?: boolean;
+  },
+): Promise<string> {
   const rolPlataforma = data.rolPlataforma ?? "trabajador";
+  const actorNombre = options?.actorNombre;
   if (isDemoMode()) {
-    demoStore.addWorker(
+    const id = demoStore.addWorker(
       {
         nombre: data.nombre,
         documento: data.documento,
@@ -175,7 +182,7 @@ export async function createWorker(
       },
       actorNombre,
     );
-    return;
+    return id;
   }
   const id = `worker-${Date.now().toString(36)}`;
   const worker = {
@@ -197,9 +204,9 @@ export async function createWorker(
   };
   if (isSheetsBackend()) {
     await sheetsUpsertRecord("workers", worker);
-    return;
+    return id;
   }
-  await addDoc(collection(getFirestoreDb(), "workers"), {
+  const ref = await addDoc(collection(getFirestoreDb(), "workers"), {
     nombre: data.nombre,
     documento: data.documento,
     telefono: data.telefono,
@@ -215,6 +222,23 @@ export async function createWorker(
     certificaciones: [],
     creadoEn: new Date().toISOString(),
   });
+
+  const creadaPor = options?.creadaPor;
+  const shouldInvite =
+    options?.enviarInvitacion !== false && data.email.trim().length > 0 && Boolean(creadaPor);
+
+  if (shouldInvite && creadaPor) {
+    await createInvitation({
+      workerId: ref.id,
+      workerNombre: data.nombre,
+      email: data.email.trim().toLowerCase(),
+      role: rolPlataforma,
+      creadaPor,
+      creadaPorNombre: options?.creadaPorNombre ?? actorNombre ?? "Administrador",
+    });
+  }
+
+  return ref.id;
 }
 
 export async function updateWorkerEstado(
