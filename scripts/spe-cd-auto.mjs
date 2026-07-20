@@ -104,7 +104,8 @@ async function applyAutoFixes(report) {
   if (needsSync || applied.length > 0) {
     run("node", ["scripts/sync-repo-config.mjs"]);
     run("node", ["scripts/write-runtime-config.mjs"]);
-    applied.push("config:sync", "config:runtime");
+    run("npm", ["run", "setup:fcm"]);
+    applied.push("config:sync", "config:runtime", "setup:fcm");
   }
 
   return applied;

@@ -2,9 +2,16 @@ import { useMemo } from "react";
 import {
   getRuntimeGoogleMapsApiKey,
   getRuntimeSetupCompletado,
+  getRuntimeVapidKey,
   resolveSetupStatus,
   type ResolvedSetupStatus,
 } from "@spe/shared";
+
+function resolveVapidKey(): string {
+  const fromEnv = (import.meta.env.VITE_FIREBASE_VAPID_KEY as string | undefined)?.trim();
+  if (fromEnv) return fromEnv;
+  return getRuntimeVapidKey();
+}
 
 /** Estado de configuración infra (Firebase, Maps) para ocultar pendientes ya resueltos. */
 export function useProductionSetupStatus(): ResolvedSetupStatus {
@@ -15,7 +22,7 @@ export function useProductionSetupStatus(): ResolvedSetupStatus {
         demoMode: false,
         setupCompletado: getRuntimeSetupCompletado(),
         firebaseApiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-        vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+        vapidKey: resolveVapidKey(),
       }),
     [],
   );
@@ -24,6 +31,7 @@ export function useProductionSetupStatus(): ResolvedSetupStatus {
 /** Re-evalúa cuando cambia la clave de mapas (bootstrap remoto). */
 export function useProductionSetupStatusLive(): ResolvedSetupStatus {
   const mapsKey = getRuntimeGoogleMapsApiKey();
+  const vapidKey = resolveVapidKey();
   return useMemo(
     () =>
       resolveSetupStatus({
@@ -31,8 +39,8 @@ export function useProductionSetupStatusLive(): ResolvedSetupStatus {
         demoMode: false,
         setupCompletado: getRuntimeSetupCompletado(),
         firebaseApiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-        vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+        vapidKey,
       }),
-    [mapsKey],
+    [mapsKey, vapidKey],
   );
 }
