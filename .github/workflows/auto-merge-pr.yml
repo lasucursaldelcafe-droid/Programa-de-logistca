@@ -17,11 +17,13 @@ jobs:
       github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - name: Obtener PR asociado
+      - name: Obtener PR y mergear a main
         id: pr
         uses: actions/github-script@v7
         with:
           script: |
+            const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
             const runId = context.payload.workflow_run.id;
             const { data: run } = await github.rest.actions.getWorkflowRun({
               owner: context.repo.owner,
@@ -73,32 +75,55 @@ jobs:
                 pull_number: pr.number,
                 draft: false,
               });
+              for (let i = 0; i < 10; i++) {
+                await sleep(2000);
+                const { data: refreshed } = await github.rest.pulls.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pr.number,
+                });
+                if (!refreshed.draft) {
+                  pr = refreshed;
+                  break;
+                }
+              }
+              if (pr.draft) {
+                core.setFailed(`PR #${pr.number} sigue en borrador tras marcarlo listo`);
+                return;
+              }
             }
+
             core.setOutput("number", String(pr.number));
             core.setOutput("branch", branch);
 
-      - name: Merge a main
-        if: steps.pr.outputs.number != '' && steps.pr.outputs.skip != 'already_merged'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const prNumber = Number("${{ steps.pr.outputs.number }}");
-            const branch = "${{ steps.pr.outputs.branch }}";
-            try {
-              await github.rest.pulls.merge({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: prNumber,
-                merge_method: "merge",
-              });
-              core.info(`PR #${prNumber} mergeado a main`);
-            } catch (e) {
-              if (String(e.message || e).includes("Pull Request is not mergeable")) {
-                core.info(`PR #${prNumber} ya mergeado o no mergeable — OK`);
-                return;
+            const mergeableMsg = (e) => String(e.message || e);
+            for (let attempt = 1; attempt <= 5; attempt++) {
+              try {
+                await github.rest.pulls.merge({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pr.number,
+                  merge_method: "merge",
+                });
+                core.info(`PR #${pr.number} mergeado a main`);
+                core.setOutput("merged", "true");
+                break;
+              } catch (e) {
+                const msg = mergeableMsg(e);
+                if (msg.includes("Pull Request is not mergeable") || msg.includes("Merged")) {
+                  core.info(`PR #${pr.number} ya mergeado o no mergeable — OK`);
+                  core.setOutput("skip", "not_mergeable");
+                  return;
+                }
+                if (msg.includes("Pull Request is still a draft") && attempt < 5) {
+                  core.info(`PR #${pr.number} aún borrador — reintento ${attempt}/5`);
+                  await sleep(3000);
+                  continue;
+                }
+                throw e;
               }
-              throw e;
             }
+
             try {
               await github.rest.git.deleteRef({
                 owner: context.repo.owner,
@@ -115,8 +140,11 @@ jobs:
         run: |
           SKIP="${{ steps.pr.outputs.skip }}"
           NUM="${{ steps.pr.outputs.number }}"
+          MERGED="${{ steps.pr.outputs.merged }}"
           if [ -n "$SKIP" ]; then
             echo "○ Auto-merge omitido: $SKIP"
+          elif [ "$MERGED" = "true" ] && [ -n "$NUM" ]; then
+            echo "✓ PR #$NUM mergeado a main"
           elif [ -n "$NUM" ]; then
             echo "✓ PR #$NUM procesado"
           else
