@@ -128,12 +128,16 @@ export async function runDiagnostic(opts = {}) {
     fix: "Restaura config/proyecto.json desde el repo",
   });
 
+  const prodCuentas = cuentas?.produccion?.cuentas?.length ?? 0;
+  const demoCuentas = cuentas?.modoDemo?.cuentas?.length ?? 0;
   checks.push({
     id: "config.cuentas",
-    status: cuentas?.modoDemo?.cuentas?.length ? "ok" : "warn",
-    message: cuentas?.modoDemo?.cuentas?.length
-      ? `${cuentas.modoDemo.cuentas.length} cuentas demo documentadas`
-      : "Falta config/cuentas-app.json o cuentas demo",
+    status: prodCuentas || demoCuentas ? "ok" : "warn",
+    message: prodCuentas
+      ? `${prodCuentas} cuenta(s) producción documentadas`
+      : demoCuentas
+        ? `${demoCuentas} cuentas demo documentadas`
+        : "Falta config/cuentas-app.json o cuentas",
     fix: "Usa admin@eventos.test / Admin123! — ver config/cuentas-app.json",
   });
 

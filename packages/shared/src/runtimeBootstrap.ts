@@ -312,16 +312,18 @@ export function getEffectiveBackend(
   buildEnv: { demoMode?: boolean; dataBackend?: string } = {},
 ): EffectiveBackend {
   if (runtime.backend === "sheets" && !isSheetsBackendConfigured()) {
-    return buildEnv.demoMode === true ? "demo" : "firebase";
+    if (buildEnv.demoMode === true || !isFirebaseConfigured()) return "demo";
+    return "firebase";
   }
   if (runtime.backend === "firebase" && !isFirebaseConfigured()) {
     return buildEnv.demoMode === true ? "demo" : "firebase";
   }
   if (runtime.backend) return runtime.backend;
   if (buildEnv.demoMode === true || buildEnv.dataBackend === "demo") return "demo";
-  if (buildEnv.dataBackend === "sheets" && isSheetsBackendConfigured()) return "sheets";
-  if (buildEnv.dataBackend === "sheets" && !isFirebaseConfigured()) return "demo";
-  if (buildEnv.dataBackend === "sheets") return "firebase";
+  if (buildEnv.dataBackend === "sheets") {
+    if (isSheetsBackendConfigured()) return "sheets";
+    return !isFirebaseConfigured() ? "demo" : "firebase";
+  }
   if (!isFirebaseConfigured()) return "demo";
   return "firebase";
 }

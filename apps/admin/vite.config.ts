@@ -18,6 +18,19 @@ export default defineConfig({
     port: 5173,
     host: true,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          if (id.includes("react-dom") || id.includes("/react/")) return "vendor-react";
+          if (id.includes("react-router")) return "vendor-router";
+          if (id.includes("@googlemaps") || id.includes("google-maps")) return "vendor-maps";
+          if (id.includes("firebase")) return "vendor-firebase";
+        },
+      },
+    },
+  },
   define: {
     "import.meta.env.DEV": JSON.stringify(process.env.NODE_ENV !== "production"),
   },

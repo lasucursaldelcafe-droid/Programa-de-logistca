@@ -5,15 +5,30 @@
     "cuentas": [
       {
         "email": "lasucursaldelcafe@gmail.com",
-        "password": "SpeLaSucursal2026!",
+        "password": "(configurada en Google Sheets — contacta al administrador)",
         "nombre": "La Sucursal del Café",
         "role": "administrador",
         "panel": "/panel"
+      },
+      {
+        "email": "admin@eventos.test",
+        "password": "Admin123!",
+        "nombre": "Administrador demo Sheets",
+        "role": "administrador",
+        "panel": "/panel"
+      },
+      {
+        "email": "master@eventos.test",
+        "password": "Master123!",
+        "nombre": "Master Plataforma",
+        "role": "super_admin",
+        "panel": "/master"
       }
     ],
     "instrucciones": [
       "Abre /login sin ?spe_backend=demo.",
-      "Usa el correo y contraseña de arriba.",
+      "Usa las credenciales de tu cuenta (no compartas contraseñas en el repositorio).",
+      "Sincronizar cuentas: SPE_PROD_PASSWORD='…' node scripts/sync-sheets-users.mjs",
       "Trabajadores nuevos: Admin → Personal → Invitar."
     ]
   },

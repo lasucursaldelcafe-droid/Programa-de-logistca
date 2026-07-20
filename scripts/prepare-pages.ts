@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { execSync } from "node:child_process";
 import { getDeploymentLinks, updateReadme, updateRootIndex, writeDeploymentJson } from "./sync-links";
 import { resolvePagesBase } from "./resolve-pages-base";
+import { SPA_MIRROR_ROUTES } from "./spa-routes";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const docs = resolve(ROOT, "docs");
@@ -75,37 +76,7 @@ run("npm run build -w @spe/shared && npm run build -w @spe/admin", {
 
 const adminDist = resolve(ROOT, "apps/admin/dist");
 
-finalizeSpa(adminDist, [
-  "login",
-  "configurar",
-  "ayuda",
-  "unirse",
-  "completar-perfil",
-  "panel",
-  "personal",
-  "turnos",
-  "cuentas",
-  "qr-sitios",
-  "mapa",
-  "reportes",
-  "nomina",
-  "configuracion",
-  "clientes",
-  "facturacion",
-  "inventario",
-  "integraciones",
-  "descargas",
-  "pendientes",
-  "supervision",
-  "master",
-  "master/administradores",
-  "master/informes",
-  "master/auditoria",
-  "worker",
-  "worker/turnos",
-  "worker/entrada",
-  "worker/reportar",
-]);
+finalizeSpa(adminDist, [...SPA_MIRROR_ROUTES]);
 
 mkdirSync(docs, { recursive: true });
 rmSync(docs, { recursive: true, force: true });

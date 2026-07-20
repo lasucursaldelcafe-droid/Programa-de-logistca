@@ -16,6 +16,23 @@ export interface SheetsLoginResult {
 let webAppUrl = "";
 let apiToken = "";
 
+const SHEETS_FETCH_TIMEOUT_MS = 12_000;
+
+async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), SHEETS_FETCH_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error("Google Sheets no respondió a tiempo. Reintenta en unos segundos.");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export function configureSheetsClient(url: string, token: string): void {
   webAppUrl = url.replace(/\/$/, "");
   apiToken = token;
@@ -40,7 +57,7 @@ async function sheetsPost(payload: Record<string, unknown>): Promise<Response> {
     throw new Error("Backend Sheets no configurado");
   }
   try {
-    return await fetch(webAppUrl, {
+    return await fetchWithTimeout(webAppUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token: apiToken, ...payload }),
@@ -60,7 +77,7 @@ async function sheetsPost(payload: Record<string, unknown>): Promise<Response> {
 
 async function sheetsFetch(url: string): Promise<Response> {
   try {
-    return await fetch(url, {
+    return await fetchWithTimeout(url, {
       method: "GET",
       redirect: "follow",
       credentials: "omit",
