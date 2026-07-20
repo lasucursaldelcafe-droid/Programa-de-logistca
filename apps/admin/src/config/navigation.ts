@@ -1,11 +1,16 @@
 import type { UserRole } from "@spe/shared";
 import {
   puedeConfigurarIntegraciones,
+  puedeCrearCuentasPlataforma,
+  puedeGestionarClientes,
   puedeGestionarConfiguracion,
   puedeGestionarCuentas,
+  puedeGestionarFacturacion,
   puedeGestionarPersonal,
   puedeGestionarQr,
   puedeGestionarTurnos,
+  puedeVerInventario,
+  puedeVerIntegraciones,
   puedeVerMapaEnVivo,
   puedeVerInformesEvento,
   puedeVerNomina,
@@ -17,7 +22,6 @@ export interface NavLinkItem {
   label: string;
   icon: string;
   end?: boolean;
-  /** Abre en pestaña nueva (p. ej. descargas públicas) */
   external?: boolean;
 }
 
@@ -27,21 +31,28 @@ export interface NavSection {
   items: NavLinkItem[];
 }
 
-type NavFilter = (role: UserRole) => NavSection[];
-
 const can = {
   personal: (r: UserRole) => puedeGestionarPersonal(r),
   cuentas: (r: UserRole) => puedeGestionarCuentas(r),
+  equipoAdmin: (r: UserRole) => puedeCrearCuentasPlataforma(r),
   qr: (r: UserRole) => puedeGestionarQr(r),
   operacion: (r: UserRole) => puedeGestionarTurnos(r),
   mapa: (r: UserRole) => puedeVerMapaEnVivo(r),
   reportes: (r: UserRole) => puedeVerReportesTrabajadores(r),
   nomina: (r: UserRole) => puedeVerNomina(r),
   config: (r: UserRole) => puedeGestionarConfiguracion(r),
-  apis: () => true,
+  clientes: (r: UserRole) => puedeGestionarClientes(r),
+  facturacion: (r: UserRole) => puedeGestionarFacturacion(r),
+  inventario: (r: UserRole) => puedeVerInventario(r),
+  integraciones: (r: UserRole) =>
+    puedeConfigurarIntegraciones(r) || puedeVerIntegraciones(r),
 };
 
-function filterSections(sections: NavSection[], role: UserRole, gates: Record<string, (r: UserRole) => boolean>): NavSection[] {
+function filterSections(
+  sections: NavSection[],
+  role: UserRole,
+  gates: Record<string, (r: UserRole) => boolean>,
+): NavSection[] {
   return sections
     .map((section) => ({
       ...section,
@@ -56,6 +67,7 @@ function filterSections(sections: NavSection[], role: UserRole, gates: Record<st
 
 const ADMIN_GATES: Record<string, (r: UserRole) => boolean> = {
   "/configuracion": can.config,
+  "/equipo-admin": can.equipoAdmin,
   "/personal": can.personal,
   "/cuentas": can.cuentas,
   "/operacion": can.operacion,
@@ -65,12 +77,13 @@ const ADMIN_GATES: Record<string, (r: UserRole) => boolean> = {
   "/informes": can.reportes,
   "/qr-sitios": can.qr,
   "/nomina": can.nomina,
-  "/clientes": can.personal,
-  "/facturacion": can.personal,
-  "/inventario": can.personal,
+  "/negocio": (r) => can.clientes(r) || can.facturacion(r) || can.inventario(r),
+  "/clientes": can.clientes,
+  "/facturacion": can.facturacion,
+  "/inventario": can.inventario,
   "/mapa": can.mapa,
   "/supervision": can.mapa,
-  "/integraciones": can.apis,
+  "/integraciones": can.integraciones,
   "/pendientes": can.config,
 };
 
@@ -86,9 +99,10 @@ export function getAdminNavSections(role: UserRole): NavSection[] {
       title: "Preparar evento",
       items: [
         { to: "/configuracion", label: "1. Crear evento", icon: "calendar" },
-        { to: "/personal", label: "2. Personal", icon: "users" },
-        { to: "/cuentas", label: "3. Invitaciones", icon: "mail" },
-        { to: "/operacion", label: "4. Dashboard del evento", icon: "calendar" },
+        { to: "/equipo-admin", label: "2. Equipo administrativo", icon: "shield" },
+        { to: "/personal", label: "3. Personal de campo", icon: "users" },
+        { to: "/cuentas", label: "4. Invitaciones", icon: "mail" },
+        { to: "/operacion", label: "5. Dashboard del evento", icon: "calendar" },
       ],
     },
     {
@@ -111,11 +125,7 @@ export function getAdminNavSections(role: UserRole): NavSection[] {
     {
       id: "negocio",
       title: "Negocio",
-      items: [
-        { to: "/clientes", label: "Clientes", icon: "building" },
-        { to: "/facturacion", label: "Facturación", icon: "receipt" },
-        { to: "/inventario", label: "Inventario", icon: "box" },
-      ],
+      items: [{ to: "/negocio", label: "Clientes e inventario", icon: "building" }],
     },
     {
       id: "sistema",
@@ -123,7 +133,11 @@ export function getAdminNavSections(role: UserRole): NavSection[] {
       items: [
         { to: "/notificaciones", label: "Notificaciones", icon: "mail" },
         { to: "/pendientes", label: "Config. pendiente", icon: "list" },
-        { to: "/integraciones", label: puedeConfigurarIntegraciones(role) ? "APIs" : "Integraciones", icon: "plug" },
+        {
+          to: "/integraciones",
+          label: puedeConfigurarIntegraciones(role) ? "APIs" : "Integraciones",
+          icon: "plug",
+        },
         { to: "/descargas", label: "Descargas", icon: "download" },
         { to: "/ayuda", label: "Ayuda", icon: "help" },
       ],
@@ -140,8 +154,8 @@ export function getMasterNavSections(): NavSection[] {
       title: "Plataforma",
       items: [
         { to: "/master", label: "Resumen", icon: "grid", end: true },
-        { to: "/master/administradores", label: "Administradores", icon: "shield" },
-        { to: "/master/roles", label: "Roles", icon: "users" },
+        { to: "/master/administradores", label: "Equipo administrativo", icon: "shield" },
+        { to: "/master/roles", label: "Roles y puestos", icon: "users" },
         { to: "/master/informes", label: "Informes", icon: "chart" },
         { to: "/master/auditoria", label: "Auditoría", icon: "audit" },
         { to: "/master/ayuda", label: "Ayuda", icon: "help" },
@@ -150,7 +164,6 @@ export function getMasterNavSections(): NavSection[] {
   ];
 }
 
-/** Rutas accesibles en la app trabajador (incluye enlaces fuera del bottom nav). */
 export function getWorkerNavItems(): NavLinkItem[] {
   return [
     ...getWorkerBottomNavItems(),
@@ -159,7 +172,6 @@ export function getWorkerNavItems(): NavLinkItem[] {
   ];
 }
 
-/** Barra inferior móvil — máximo 5 acciones principales. */
 export function getWorkerBottomNavItems(): NavLinkItem[] {
   return [
     { to: "/worker", label: "Inicio", icon: "grid", end: true },

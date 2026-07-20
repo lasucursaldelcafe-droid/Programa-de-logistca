@@ -1,21 +1,28 @@
 import type { UserRole } from "./types";
+import { esRolMaster, normalizeUserRole } from "./accounts";
 
 export type AppPlatform = "master" | "admin" | "worker";
 
 export const PLATFORM_LABEL: Record<AppPlatform, string> = {
-  master: "Master Console",
-  admin: "Admin Console",
-  worker: "App Trabajador",
+  master: "Consola Master",
+  admin: "Consola Administrativa",
+  worker: "App de Campo",
 };
 
 export function puedeAccederPlataforma(role: UserRole, platform: AppPlatform): boolean {
+  const normalized = normalizeUserRole(role);
   switch (platform) {
     case "master":
-      return role === "super_admin";
+      return esRolMaster(role);
     case "admin":
-      return role === "administrador" || role === "supervisor_sitio";
+      return (
+        normalized === "administrador" ||
+        normalized === "recursos_humanos" ||
+        normalized === "contador" ||
+        normalized === "supervisor_sitio"
+      );
     case "worker":
-      return role === "trabajador";
+      return normalized === "trabajador";
     default: {
       const _exhaustive: never = platform;
       return _exhaustive;
@@ -25,8 +32,8 @@ export function puedeAccederPlataforma(role: UserRole, platform: AppPlatform): b
 
 /** Panel principal según rol del usuario autenticado. */
 export function plataformaParaRol(role: UserRole): AppPlatform {
-  if (role === "super_admin") return "master";
-  if (role === "trabajador") return "worker";
+  if (esRolMaster(role)) return "master";
+  if (normalizeUserRole(role) === "trabajador") return "worker";
   return "admin";
 }
 
@@ -47,28 +54,39 @@ export function rutaHomePorRol(role: UserRole): string {
   }
 }
 
-/** Master: gestión global de la plataforma y administradores */
+/** Master: gestión global de la plataforma */
 export function puedeGestionarPlataforma(role: UserRole): boolean {
-  return role === "super_admin";
+  return esRolMaster(role);
 }
 
-/** Admin operativo: eventos, turnos, personal (sin tocar la plataforma entera) */
+/** Admin operativo: eventos, turnos, personal */
 export function puedeOperarEventos(role: UserRole): boolean {
-  return role === "administrador" || role === "supervisor_sitio";
-}
-
-export function puedeCrearAdministradores(role: UserRole): boolean {
-  return role === "super_admin";
+  const r = normalizeUserRole(role);
+  return (
+    r === "administrador" ||
+    r === "recursos_humanos" ||
+    r === "contador" ||
+    r === "supervisor_sitio"
+  );
 }
 
 export function puedeVerInformesGlobales(role: UserRole): boolean {
-  return role === "super_admin";
+  return esRolMaster(role);
 }
 
 export function puedeVerAuditoriaGlobal(role: UserRole): boolean {
-  return role === "super_admin";
+  return esRolMaster(role);
 }
 
 export function puedeReportarASupervisor(role: UserRole): boolean {
-  return role === "trabajador";
+  return normalizeUserRole(role) === "trabajador";
 }
+
+// Re-export desde accounts para compatibilidad
+export {
+  puedeCrearAdministradores,
+  puedeCrearCuentasPlataforma,
+  rolesAsignablesPor,
+  rolesCuentaPlataforma,
+  rolesPersonalCampo,
+} from "./accounts";

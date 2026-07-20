@@ -11,10 +11,16 @@ service cloud.firestore {
       return userDoc().data.role;
     }
     function isMaster() {
-      return signedIn() && role() == 'super_admin';
+      return signedIn() && role() in ['ceo', 'master_app', 'super_admin'];
     }
     function isPlatformAdmin() {
-      return signedIn() && role() in ['administrador', 'supervisor_sitio'];
+      return signedIn() && role() in ['administrador', 'recursos_humanos', 'contador', 'supervisor_sitio'];
+    }
+    function isFinanceAdmin() {
+      return signedIn() && role() in ['contador', 'administrador'];
+    }
+    function isHrAdmin() {
+      return signedIn() && role() in ['recursos_humanos', 'administrador'];
     }
     function isAdmin() {
       return isMaster() || isPlatformAdmin();
@@ -144,8 +150,8 @@ service cloud.firestore {
       allow read: if signedIn()
         && (isAdmin() || isSupervisor()
           || (isWorker() && resource.data.workerId == currentWorkerId()));
-      allow create: if isAdmin();
-      allow update: if isAdmin()
+      allow create: if isAdmin() || isFinanceAdmin();
+      allow update: if isAdmin() || isFinanceAdmin()
         && request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['estado', 'pagadoEn']);
       allow delete: if isAdmin();

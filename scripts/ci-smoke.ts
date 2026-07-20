@@ -26,8 +26,8 @@ async function expectEmpty(collection: string): Promise<number> {
 }
 
 async function main(): Promise<void> {
-  const admin = await auth.getUserByEmail("admin@eventos.test");
-  if (!admin) throw new Error("Usuario admin no encontrado");
+  const ceo = await auth.getUserByEmail("ceo@eventos.test");
+  if (!ceo) throw new Error("Usuario CEO no encontrado");
 
   const master = await auth.getUserByEmail("master@eventos.test");
   if (!master) throw new Error("Usuario master no encontrado");
@@ -51,7 +51,7 @@ async function main(): Promise<void> {
   }
 
   console.log("✓ Smoke test OK (plataforma vacía):", {
-    admin: admin.email,
+    ceo: ceo.email,
     master: master.email,
     workers,
     events,

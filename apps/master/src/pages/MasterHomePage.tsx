@@ -1,4 +1,9 @@
-import { formatCurrencyCOP } from "@spe/shared";
+import { Link } from "react-router-dom";
+import {
+  formatCurrencyCOP,
+  ROLES_PERSONAL_ADMIN,
+  rolesCuentaPlataforma,
+} from "@spe/shared";
 import { Card } from "@core/components/ui";
 import { MetricCard } from "@core/components/dashboard/MetricCard";
 import {
@@ -9,6 +14,7 @@ import {
   useWorkers,
 } from "@core/hooks/useDataStore";
 import { usePayrollEntries } from "@core/hooks/usePayroll";
+import { useCustomRoles } from "@core/hooks/useCustomRoles";
 import { PageHeader } from "@core/components/nav/PageHeader";
 
 export function MasterHomePage() {
@@ -18,20 +24,53 @@ export function MasterHomePage() {
   const attendances = useAttendances();
   const reportes = useReportes();
   const payroll = usePayrollEntries();
+  const customRoles = useCustomRoles();
 
   const activos = attendances.filter((a) => a.estado !== "cerrado").length;
   const reportesAbiertos = reportes.filter((r) => r.estado !== "resuelto").length;
   const nominaTotal = payroll.reduce((s, p) => s + p.total, 0);
-  const admins = users.filter(
-    (u) => u.role === "administrador" || u.role === "supervisor_sitio",
-  );
+  const equipoAdmin = users.filter((u) => rolesCuentaPlataforma("ceo").includes(u.role));
 
   return (
     <div className="space-y-8">
       <PageHeader
         title="Resumen"
-        description="Vista global de eventos y operación"
+        description="Vista global — empieza creando el equipo administrativo y los roles"
       />
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Link to="/master/administradores" className="block transition hover:opacity-90">
+          <Card className="h-full border-accent/30 bg-accent/5">
+            <h2 className="font-display text-lg font-semibold text-accent">Equipo administrativo</h2>
+            <p className="mt-2 text-3xl font-bold">{equipoAdmin.length}</p>
+            <p className="mt-1 text-sm text-neutral-400">
+              {equipoAdmin.length === 0
+                ? "Crea Administrador, RH y Contador"
+                : "Administrador, RH, Contador…"}
+            </p>
+            <span className="mt-3 inline-block text-sm text-accent underline">Crear cuentas →</span>
+          </Card>
+        </Link>
+        <Link to="/master/roles" className="block transition hover:opacity-90">
+          <Card className="h-full">
+            <h2 className="font-display text-lg font-semibold">Roles y puestos</h2>
+            <p className="mt-2 text-3xl font-bold">{customRoles.length}</p>
+            <p className="mt-1 text-sm text-neutral-400">
+              {customRoles.length === 0
+                ? "Importa plantillas para asignar puestos al personal"
+                : "Plantillas listas para asignar en Personal"}
+            </p>
+            <span className="mt-3 inline-block text-sm text-accent underline">Gestionar roles →</span>
+          </Card>
+        </Link>
+        <Card className="h-full">
+          <h2 className="font-display text-lg font-semibold">Personal de campo</h2>
+          <p className="mt-2 text-3xl font-bold">{workers.length}</p>
+          <p className="mt-1 text-sm text-neutral-400">
+            Supervisores y empleados (los crea el equipo admin en consola operativa)
+          </p>
+        </Card>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard label="Eventos" value={String(events.length)} />
@@ -42,9 +81,11 @@ export function MasterHomePage() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <h2 className="font-display text-lg font-semibold">Equipo operativo</h2>
-          <p className="mt-2 text-3xl font-bold">{admins.length}</p>
-          <p className="text-sm text-neutral-400">Administradores y supervisores</p>
+          <h2 className="font-display text-lg font-semibold">Cuentas administrativas</h2>
+          <p className="mt-2 text-3xl font-bold">{equipoAdmin.length}</p>
+          <p className="text-sm text-neutral-400">
+            {ROLES_PERSONAL_ADMIN.map((r) => r.replace("_", " ")).join(", ")}
+          </p>
         </Card>
         <Card>
           <h2 className="font-display text-lg font-semibold">Nómina acumulada</h2>
@@ -62,9 +103,7 @@ export function MasterHomePage() {
               className="flex justify-between rounded-lg border border-border bg-bg px-4 py-3 text-sm"
             >
               <span>{e.nombre}</span>
-              <span className="text-neutral-500">
-                {e.sitioIds.length} sitio(s)
-              </span>
+              <span className="text-neutral-500">{e.sitioIds.length} sitio(s)</span>
             </li>
           ))}
         </ul>

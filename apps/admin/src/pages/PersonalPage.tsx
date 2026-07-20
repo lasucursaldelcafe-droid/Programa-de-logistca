@@ -4,17 +4,18 @@ import {
   PERFILES_LABEL,
   ROLE_ACCESS_MODE_LABEL,
   ROLE_LABEL,
-  ROLES_ASIGNABLES_ADMIN,
   buildWorkerImportTemplateCsv,
   downloadTextFile,
   parseWorkerImportCsv,
-  puedeAsignarRoles,
   puedeGestionarPersonal,
+  rolesPersonalCampo,
   type PerfilTrabajo,
-  type RolAsignablePorAdmin,
+  type UserRole,
   type WorkerBulkImportResult,
   type WorkerEstado,
 } from "@spe/shared";
+
+type RolCampo = Extract<UserRole, "supervisor_sitio" | "trabajador">;
 import { useAuth } from "../contexts/AuthContext";
 import { Badge, Card, PerfilTag } from "../components/ui";
 import {
@@ -49,7 +50,7 @@ export function PersonalPage() {
     telefono: "",
     email: "",
     perfiles: ["logistica"] as PerfilTrabajo[],
-    rolPlataforma: "trabajador" as RolAsignablePorAdmin,
+    rolPlataforma: "trabajador" as RolCampo,
     customRoleId: "",
   });
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +62,8 @@ export function PersonalPage() {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<WorkerBulkImportResult | null>(null);
 
-  const adminAsignaRoles = user ? puedeAsignarRoles(user.role) : false;
+  const rolesAsignables = user ? rolesPersonalCampo(user.role) : [];
+  const adminAsignaRoles = rolesAsignables.length > 0;
 
   const rolesParaBase = useMemo(
     () => getCustomRolesForBase(customRoles, form.rolPlataforma),
@@ -114,7 +116,7 @@ export function PersonalPage() {
       await createWorker(
         {
           ...form,
-          rolPlataforma: adminAsignaRoles ? form.rolPlataforma : "trabajador",
+          rolPlataforma: adminAsignaRoles ? (form.rolPlataforma as RolCampo) : "trabajador",
           customRoleId: form.customRoleId || undefined,
         },
         {
@@ -209,8 +211,8 @@ export function PersonalPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        title="Personal"
-        description="Registra trabajadores con correo como usuario y documento como contraseña inicial. También puedes cargar una plantilla CSV."
+        title="Personal de campo"
+        description="Supervisores y empleados de campo. Credenciales: correo = usuario, documento = contraseña inicial. Las cuentas administrativas se crean en Equipo administrativo."
       />
 
       {error && (
@@ -269,13 +271,13 @@ export function PersonalPage() {
                 onChange={(e) =>
                   setForm((f) => ({
                     ...f,
-                    rolPlataforma: e.target.value as RolAsignablePorAdmin,
+                    rolPlataforma: e.target.value as RolCampo,
                     customRoleId: "",
                   }))
                 }
                 className="w-full rounded-lg border border-border bg-bg px-3 py-2"
               >
-                {ROLES_ASIGNABLES_ADMIN.map((rol) => (
+                {rolesAsignables.map((rol) => (
                   <option key={rol} value={rol}>
                     {ROLE_LABEL[rol]}
                   </option>

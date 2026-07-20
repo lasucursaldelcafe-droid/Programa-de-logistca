@@ -19,6 +19,7 @@ import {
   getFirebaseAuth,
   getFirestoreDb,
   isFirebaseConfigured,
+  normalizeUserRole,
   PLATFORM_ADMIN_EMAIL,
   sheetsLogin,
   saveSheetsSession,
@@ -123,7 +124,7 @@ async function loadAppUser(firebaseUser: User): Promise<AppUser | null> {
   return {
     uid: firebaseUser.uid,
     email: firebaseUser.email ?? data.email ?? "",
-    role: data.role as UserRole,
+    role: normalizeUserRole(String(data.role ?? "trabajador")),
     workerId: data.workerId as string | undefined,
     customRoleId: data.customRoleId as string | undefined,
     nombre: (data.nombre as string) ?? firebaseUser.email ?? "Usuario",

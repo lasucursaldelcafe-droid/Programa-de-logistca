@@ -14,7 +14,19 @@ const speAppUrl = defineSecret("SPE_APP_URL");
 
 const emailSecrets = [gmailUser, gmailAppPassword, speAppUrl];
 
-const ADMIN_ROLES = new Set(["super_admin", "administrador", "supervisor_sitio"]);
+const ADMIN_ROLES = new Set([
+  "ceo",
+  "master_app",
+  "super_admin",
+  "administrador",
+  "recursos_humanos",
+  "contador",
+  "supervisor_sitio",
+]);
+
+const PLATFORM_CREATOR_ROLES = new Set(["ceo", "master_app", "super_admin", "administrador"]);
+
+const PLATFORM_ACCOUNT_ROLES = new Set(["administrador", "recursos_humanos", "contador"]);
 
 function normalizeDocumentPassword(documento: string): string {
   const normalized = documento.replace(/[\s.\-]/g, "").trim();
@@ -168,6 +180,63 @@ export const provisionWorkerAccount = onCall(
 
     const sendEmail = request.data?.sendEmail !== false;
     return provisionOneWorker(workerId, { sendEmail });
+  },
+);
+
+/** Crea cuenta Auth para personal administrativo (sin ficha de trabajador). */
+export const createPlatformAccountFn = onCall(
+  { region: "us-central1" },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Debes iniciar sesión.");
+    }
+
+    const callerSnap = await db.collection("users").doc(request.auth.uid).get();
+    const callerRole = callerSnap.data()?.role as string | undefined;
+    if (!callerRole || !PLATFORM_CREATOR_ROLES.has(callerRole)) {
+      throw new HttpsError("permission-denied", "No puedes crear cuentas administrativas.");
+    }
+
+    const email = String(request.data?.email ?? "").trim().toLowerCase();
+    const nombre = String(request.data?.nombre ?? "").trim();
+    const password = String(request.data?.password ?? "");
+    const role = String(request.data?.role ?? "").trim();
+
+    if (!email || !nombre || password.length < 6) {
+      throw new HttpsError("invalid-argument", "Nombre, correo y contraseña (mín. 6) requeridos.");
+    }
+    if (!PLATFORM_ACCOUNT_ROLES.has(role)) {
+      throw new HttpsError("invalid-argument", "Rol administrativo no válido.");
+    }
+    if (callerRole === "administrador" && role === "administrador") {
+      throw new HttpsError("permission-denied", "Solo CEO o Master App pueden crear otro Administrador.");
+    }
+
+    const auth = getAuth();
+    let uid: string;
+    try {
+      const created = await auth.createUser({ email, password, displayName: nombre });
+      uid = created.uid;
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code;
+      if (code === "auth/email-already-exists") {
+        throw new HttpsError("already-exists", "Ya existe una cuenta con ese correo.");
+      }
+      throw new HttpsError("internal", err instanceof Error ? err.message : String(err));
+    }
+
+    await db.collection("users").doc(uid).set({
+      email,
+      nombre,
+      role,
+      workerId: null,
+      perfilCompleto: true,
+      habilitado: true,
+      creadoPor: request.auth.uid,
+      creadoPorNombre: callerSnap.data()?.nombre ?? "",
+    });
+
+    return { uid };
   },
 );
 

@@ -1,6 +1,5 @@
 import { useSyncExternalStore } from "react";
 import type { Cliente, Factura, PosicionTrabajador, Producto } from "@spe/shared";
-import { DEMO_MODE } from "../lib/mode";
 import { demoStore } from "../demo/store";
 
 function useDemoSnapshot<T>(selector: () => T): T {
@@ -35,4 +34,20 @@ export function useBusinessKpis() {
   const stockBajo = productos.filter((p) => p.stock < 30).length;
 
   return { ventasMes, cartera, clientes: clientes.length, stockBajo, facturas: facturas.length };
+}
+
+export function addCliente(data: Omit<Cliente, "id" | "creadoEn">): string {
+  return demoStore.addCliente(data);
+}
+
+export function removeCliente(id: string): void {
+  demoStore.removeCliente(id);
+}
+
+export function addProducto(data: Omit<Producto, "id">): string {
+  return demoStore.addProducto(data);
+}
+
+export function removeProducto(id: string): void {
+  demoStore.removeProducto(id);
 }
