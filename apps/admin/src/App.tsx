@@ -22,6 +22,7 @@ import { AyudaPage } from "./pages/AyudaPage";
 import { ClientesPage } from "./pages/ClientesPage";
 import { FacturacionPage } from "./pages/FacturacionPage";
 import { InventarioPage } from "./pages/InventarioPage";
+import { NegocioPage } from "./pages/NegocioPage";
 import { IntegracionesPage } from "./pages/IntegracionesPage";
 import { SupervisionPage } from "./pages/SupervisionPage";
 import { ActivarCuentaPage } from "./pages/ActivarCuentaPage";
@@ -82,6 +83,7 @@ export function App() {
         }
       >
         <Route path="panel" element={<HomePage />} />
+        <Route path="negocio" element={<NegocioPage />} />
         <Route path="clientes" element={<ClientesPage />} />
         <Route path="facturacion" element={<FacturacionPage />} />
         <Route path="inventario" element={<InventarioPage />} />

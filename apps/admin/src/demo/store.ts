@@ -5,6 +5,7 @@ import type {
   AttendanceEstado,
   BreakSchedule,
   ChatConversation,
+  Cliente,
   ConversationMessage,
   CredencialesIntegracion,
   CustomRole,
@@ -14,6 +15,7 @@ import type {
   PayrollAuditEntry,
   PayrollEntry,
   PayrollRate,
+  Producto,
   QrCode,
   Reporte,
   SetupConfig,
@@ -722,6 +724,36 @@ class DemoStore {
       [id]: { id },
     };
     saveCredencialesToStorage(this.credencialesIntegraciones);
+    this.notify();
+  }
+
+  addCliente(data: Omit<Cliente, "id" | "creadoEn">): string {
+    const id = `cli-${Date.now()}`;
+    this.clientes = [
+      ...this.clientes,
+      { ...data, id, creadoEn: new Date().toISOString() },
+    ].sort((a, b) => a.nombre.localeCompare(b.nombre));
+    this.notify();
+    return id;
+  }
+
+  removeCliente(id: string): void {
+    this.clientes = this.clientes.filter((c) => c.id !== id);
+    this.notify();
+  }
+
+  addProducto(data: Omit<Producto, "id">): string {
+    const id = `prod-${Date.now()}`;
+    this.productos = [
+      ...this.productos,
+      { ...data, id },
+    ].sort((a, b) => a.nombre.localeCompare(b.nombre));
+    this.notify();
+    return id;
+  }
+
+  removeProducto(id: string): void {
+    this.productos = this.productos.filter((p) => p.id !== id);
     this.notify();
   }
 
