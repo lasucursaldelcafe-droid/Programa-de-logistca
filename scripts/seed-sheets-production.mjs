@@ -24,18 +24,15 @@ const PRODUCTION_USERS = [
 ];
 
 async function upsertUser(webAppUrl, token, user) {
-  const res = await fetch(webAppUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "upsert",
-      token,
-      collection: "users",
-      idField: "uid",
-      record: user,
-    }),
-    redirect: "follow",
+  const base = webAppUrl.replace(/\/$/, "");
+  const qs = new URLSearchParams({
+    action: "upsert",
+    token,
+    collection: "users",
+    idField: "uid",
+    record: JSON.stringify(user),
   });
+  const res = await fetch(`${base}?${qs.toString()}`, { redirect: "follow" });
   const data = await res.json().catch(() => ({}));
   if (!res.ok || data.error) {
     throw new Error(data.error ?? `HTTP ${res.status}`);

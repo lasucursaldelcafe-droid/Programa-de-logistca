@@ -22,6 +22,8 @@ import {
   saveSheetsSession,
   clearSheetsSession,
   loadSheetsSession,
+  esCuentaPlataforma,
+  resetToDemoMode,
   type AppUser,
   type UserRole,
 } from "@spe/shared";
@@ -116,6 +118,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<AppUser> => {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (esCuentaPlataforma(normalizedEmail) && !isSheetsBackend()) {
+      if (!isDemoMode()) {
+        resetToDemoMode();
+      }
+      try {
+        const appUser = demoLogin(email, password);
+        setUser(appUser);
+        return appUser;
+      } catch (err) {
+        throw err instanceof Error ? err : new Error("Credenciales inválidas");
+      }
+    }
+
     if (isDemoMode()) {
       try {
         const appUser = demoLogin(email, password);
@@ -140,7 +157,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(appUser);
         return appUser;
       } catch (err) {
-        throw err instanceof Error ? err : new Error("Credenciales inválidas (Sheets)");
+        const message = err instanceof Error ? err.message : "Credenciales inválidas (Sheets)";
+        if (esCuentaPlataforma(normalizedEmail)) {
+          resetToDemoMode();
+          try {
+            const appUser = demoLogin(email, password);
+            setUser(appUser);
+            return appUser;
+          } catch {
+            /* sigue con error original */
+          }
+        }
+        throw new Error(message);
       }
     }
     if (!isFirebaseConfigured()) {

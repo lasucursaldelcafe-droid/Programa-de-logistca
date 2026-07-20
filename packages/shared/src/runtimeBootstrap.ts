@@ -260,14 +260,14 @@ export async function bootstrapRuntimeConfig(
     try {
       const health = await sheetsHealth();
       if (!health.ok) {
-        if (buildEnv.demoMode === true) {
+        if (buildEnv.demoMode === true || !isFirebaseConfigured()) {
           persistDemoMode();
         } else {
           clearRuntimeConfig();
         }
       }
     } catch {
-      if (buildEnv.demoMode === true) {
+      if (buildEnv.demoMode === true || !isFirebaseConfigured()) {
         persistDemoMode();
       } else {
         clearRuntimeConfig();
