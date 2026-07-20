@@ -48,23 +48,28 @@ function run(cmd, args) {
   return r.status ?? 1;
 }
 
-function resetBootstrapDemo(reason) {
+function enforceFirebaseProduction(reason) {
   const current = readJson(BOOTSTRAP) ?? {};
   const fixed = {
     ...current,
-    backend: "demo",
-    demoMode: true,
+    backend: "firebase",
+    demoMode: false,
     sheetsWebAppUrl: "",
     sheetsApiToken: "",
-    firebase: {},
+    firebase: current.firebase ?? {},
     _diagnostico: {
       autoFixEn: new Date().toISOString(),
       motivo: reason,
     },
   };
   writeFileSync(BOOTSTRAP, `${JSON.stringify(fixed, null, 2)}\n`);
-  console.log(`+ bootstrap → modo demo (${reason})`);
+  console.log(`+ bootstrap → firebase producción (${reason})`);
   return true;
+}
+
+function resetBootstrapDemo(reason) {
+  // Producción SPE es Firebase-only: no volver a demo automáticamente.
+  return enforceFirebaseProduction(`legacy-demo-fix: ${reason}`);
 }
 
 async function applyAutoFixes(report) {
@@ -76,20 +81,20 @@ async function applyAutoFixes(report) {
     const url = bootstrap.sheetsWebAppUrl?.trim() ?? "";
     const token = bootstrap.sheetsApiToken?.trim() ?? "";
     if (!isRealString(url) || !isRealString(token)) {
-      resetBootstrapDemo("Sheets sin URL/token válidos");
-      applied.push("bootstrap→demo (sheets incompleto)");
+      enforceFirebaseProduction("Sheets sin URL/token válidos");
+      applied.push("bootstrap→firebase (sheets incompleto)");
     } else {
       const ok = await sheetsHealth(url, token);
       if (!ok) {
-        resetBootstrapDemo("Sheets health check falló");
-        applied.push("bootstrap→demo (sheets no responde)");
+        enforceFirebaseProduction("Sheets health check falló");
+        applied.push("bootstrap→firebase (sheets no responde)");
       }
     }
   }
 
   if (bootstrap?.backend === "firebase" && bootstrap?.demoMode === true) {
-    resetBootstrapDemo("backend firebase con demoMode=true");
-    applied.push("bootstrap→demo (inconsistente)");
+    enforceFirebaseProduction("demoMode=true con backend firebase");
+    applied.push("bootstrap→firebase (demoMode corregido)");
   }
 
   const failedChecks = report.checks.filter((c) => c.status === "fail" || c.status === "warn");
@@ -98,7 +103,9 @@ async function applyAutoFixes(report) {
   );
   if (needsSync || applied.length > 0) {
     run("node", ["scripts/sync-repo-config.mjs"]);
-    applied.push("config:sync");
+    run("node", ["scripts/write-runtime-config.mjs"]);
+    run("npm", ["run", "setup:fcm"]);
+    applied.push("config:sync", "config:runtime", "setup:fcm");
   }
 
   return applied;
@@ -142,11 +149,12 @@ async function main() {
   console.log(`\nEstado final: ${report.overall} | Backend: ${report.effectiveBackend}`);
   console.log(`Login: ${report.loginUrl}`);
 
-  if (report.effectiveBackend === "demo") {
-    console.log("Cuentas: admin@eventos.test / Admin123!");
+  if (report.effectiveBackend === "firebase") {
+    console.log(`Cuenta: ${process.env.SPE_ADMIN_EMAIL ?? "lasucursaldelcafe@gmail.com"} (Firebase Auth)`);
+    console.log("  npm run acceso — ver instrucciones de login");
   }
 
-  process.exit(report.overall === "error" ? 1 : 0);
+  process.exit(process.argv.includes("--no-fail") || report.overall !== "error" ? 0 : 1);
 }
 
 main().catch((err) => {

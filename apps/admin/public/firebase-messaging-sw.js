@@ -1,14 +1,15 @@
 /* eslint-disable no-undef */
+/* Generado por scripts/update-fcm-sw.ts — no editar a mano */
 importScripts("https://www.gstatic.com/firebasejs/11.6.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/11.6.0/firebase-messaging-compat.js");
 
 firebase.initializeApp({
-  apiKey: "demo-api-key",
-  authDomain: "demo-personal-eventos.firebaseapp.com",
-  projectId: "demo-personal-eventos",
-  storageBucket: "demo-personal-eventos.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "1:000000000000:web:demo",
+  apiKey: "AIzaSyAyjhGqnXqB9SPszb3BsOlQBDvs44gLKzo",
+  authDomain: "programalog-ccc12.firebaseapp.com",
+  projectId: "programalog-ccc12",
+  storageBucket: "programalog-ccc12.firebasestorage.app",
+  messagingSenderId: "617377686574",
+  appId: "1:617377686574:web:f783b32f31d29e6f1e6bbf",
 });
 
 const messaging = firebase.messaging();

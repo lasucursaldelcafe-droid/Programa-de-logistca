@@ -5,7 +5,7 @@ import type {
   AttendanceEstado,
   BreakSchedule,
   ChatConversation,
-  ChatMessage,
+  ConversationMessage,
   CredencialesIntegracion,
   CustomRole,
   Evento,
@@ -36,30 +36,13 @@ import {
 } from "./integrations";
 import { loadDemoPersistedState, saveDemoPersistedState } from "./persist";
 import { appendChangeLog, type DemoChangeAction, type DemoChangeEntry } from "./changeLog";
-import { PLATFORM_SEED_ACCOUNTS } from "@spe/shared";
-import {
-  DEMO_MAP_ATTENDANCES,
-  DEMO_MAP_EVENT,
-  DEMO_MAP_SHIFTS,
-  DEMO_MAP_SITES,
-  hasDemoMapData,
-} from "./mapSeed";
+import { isDemoEntityId, isDemoEvent } from "./demoPurge";
 
 export const DEMO_ACCOUNTS: Array<{
   email: string;
   password: string;
   user: AppUser;
-}> = PLATFORM_SEED_ACCOUNTS.map((a) => ({
-  email: a.email,
-  password: a.password,
-  user: {
-    uid: a.role === "super_admin" ? "demo-master" : "demo-admin",
-    email: a.email,
-    nombre: a.nombre,
-    role: a.role,
-    perfilCompleto: true,
-  },
-}));
+}> = [];
 
 export const INITIAL_WORKERS: Worker[] = [];
 
@@ -116,7 +99,7 @@ class DemoStore {
   setupConfig: SetupConfig | null = { ...INITIAL_SETUP_CONFIG };
   reportes = [...INITIAL_REPORTES];
   conversations: ChatConversation[] = [];
-  messages: ChatMessage[] = [];
+  messages: ConversationMessage[] = [];
   videoRooms: VideoRoom[] = [];
   customRoles: CustomRole[] = [];
   clientes = [...INITIAL_CLIENTES];
@@ -203,18 +186,48 @@ class DemoStore {
     if (saved.changeLog) this.changeLog = saved.changeLog;
   }
 
-  /** Sitios + jornadas activas de ejemplo para /mapa en modo demo (primer uso). */
-  seedMapPreviewIfEmpty(): void {
-    if (hasDemoMapData(this.sites)) return;
-    const hasActiveGps = this.attendances.some(
-      (a) => a.estado !== "cerrado" && a.ubicacionActual,
+  /** Elimina eventos de prueba y datos relacionados persistidos en localStorage. */
+  purgeDemoEvents(): void {
+    const demoEventIds = new Set(
+      this.events.filter(isDemoEvent).map((event) => event.id),
     );
-    if (hasActiveGps) return;
-    this.events = [DEMO_MAP_EVENT];
-    this.sites = [...DEMO_MAP_SITES];
-    this.shifts = [...DEMO_MAP_SHIFTS];
-    this.attendances = [...DEMO_MAP_ATTENDANCES];
+    if (demoEventIds.size === 0 && !this.hasDemoEntityData()) return;
+
+    this.events = this.events.filter((event) => !isDemoEvent(event));
+
+    this.sites = this.sites.filter(
+      (site) =>
+        !demoEventIds.has(site.eventId) && !isDemoEntityId(site.id),
+    );
+
+    this.shifts = this.shifts.filter(
+      (shift) =>
+        !demoEventIds.has(shift.eventId) && !isDemoEntityId(shift.id),
+    );
+
+    this.attendances = this.attendances.filter(
+      (attendance) =>
+        !demoEventIds.has(attendance.eventId) && !isDemoEntityId(attendance.id),
+    );
+
+    this.qrCodes = this.qrCodes.filter(
+      (qr) => !demoEventIds.has(qr.eventId) && !isDemoEntityId(qr.id),
+    );
+
+    this.workers = this.workers.filter((worker) => !isDemoEntityId(worker.id));
+
     this.notify();
+  }
+
+  private hasDemoEntityData(): boolean {
+    return (
+      this.events.some(isDemoEvent) ||
+      this.sites.some((site) => isDemoEntityId(site.id)) ||
+      this.shifts.some((shift) => isDemoEntityId(shift.id)) ||
+      this.attendances.some((attendance) => isDemoEntityId(attendance.id)) ||
+      this.qrCodes.some((qr) => isDemoEntityId(qr.id)) ||
+      this.workers.some((worker) => isDemoEntityId(worker.id))
+    );
   }
 
   private recordChange(
@@ -231,7 +244,7 @@ class DemoStore {
     });
   }
 
-  addWorker(worker: Omit<Worker, "id">, actorNombre?: string): void {
+  addWorker(worker: Omit<Worker, "id">, actorNombre?: string): string {
     const id = `worker-${Date.now()}`;
     this.workers = [...this.workers, { ...worker, id }].sort((a, b) =>
       a.nombre.localeCompare(b.nombre),
@@ -241,6 +254,7 @@ class DemoStore {
       actorNombre,
     });
     this.notify();
+    return id;
   }
 
   updateWorker(id: string, patch: Partial<Worker>, actorNombre?: string): void {
@@ -294,6 +308,11 @@ class DemoStore {
 
   updateShift(id: string, patch: Partial<Turno>): void {
     this.shifts = this.shifts.map((s) => (s.id === id ? { ...s, ...patch } : s));
+    this.notify();
+  }
+
+  removeShift(id: string): void {
+    this.shifts = this.shifts.filter((s) => s.id !== id);
     this.notify();
   }
 
@@ -585,7 +604,7 @@ class DemoStore {
     this.notify();
   }
 
-  addMessage(msg: Omit<ChatMessage, "id">): void {
+  addMessage(msg: Omit<ConversationMessage, "id">): void {
     const id = `msg-${Date.now()}`;
     this.messages = [...this.messages, { ...msg, id }];
     this.conversations = this.conversations.map((c) =>
@@ -600,7 +619,7 @@ class DemoStore {
     this.notify();
   }
 
-  getMessages(conversationId: string): ChatMessage[] {
+  getMessages(conversationId: string): ConversationMessage[] {
     return this.messages
       .filter((m) => m.conversationId === conversationId)
       .sort((a, b) => a.creadoEn.localeCompare(b.creadoEn));
@@ -697,7 +716,7 @@ class DemoStore {
 
 export const demoStore = new DemoStore();
 demoStore.hydrateFromStorage();
-demoStore.seedMapPreviewIfEmpty();
+demoStore.purgeDemoEvents();
 
 const SESSION_KEY = "spe-demo-user";
 
@@ -738,7 +757,7 @@ export function demoLogin(email: string, password: string): AppUser {
   }
 
   saveDemoSession(email);
-  demoStore.seedMapPreviewIfEmpty();
+  demoStore.purgeDemoEvents();
   return account.user;
 }
 

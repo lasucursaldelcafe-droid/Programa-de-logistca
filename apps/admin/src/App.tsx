@@ -13,6 +13,7 @@ import { QrSitiosPage } from "./pages/QrSitiosPage";
 import { MapaEnVivoPage } from "./pages/MapaEnVivoPage";
 import { NotificacionesPage } from "./pages/NotificacionesPage";
 import { NominaPage } from "./pages/NominaPage";
+import { ComunicacionPage } from "./pages/ComunicacionPage";
 import { ConfiguracionPage } from "./pages/ConfiguracionPage";
 import { ReportesPage } from "./pages/ReportesPage";
 import { AyudaPage } from "./pages/AyudaPage";
@@ -21,12 +22,14 @@ import { FacturacionPage } from "./pages/FacturacionPage";
 import { InventarioPage } from "./pages/InventarioPage";
 import { IntegracionesPage } from "./pages/IntegracionesPage";
 import { SupervisionPage } from "./pages/SupervisionPage";
-import { ComunicacionPage } from "./pages/ComunicacionPage";
 import { InformesEventoPage } from "./pages/InformesEventoPage";
 import { ActivarCuentaPage } from "./pages/ActivarCuentaPage";
 import { UnirseEmpresaPage } from "./pages/UnirseEmpresaPage";
 import { CompletarPerfilPage } from "./pages/CompletarPerfilPage";
 import { ConfigurarDesdeMovilPage } from "./pages/ConfigurarDesdeMovilPage";
+import { DescargasPage } from "./pages/DescargasPage";
+import { OperacionEventoPage } from "./pages/OperacionEventoPage";
+import { PendientesPage } from "./pages/PendientesPage";
 import { MasterRoutes } from "./routes/MasterRoutes";
 import { WorkerRoutes } from "./routes/WorkerRoutes";
 
@@ -63,6 +66,7 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/descargas" element={<DescargasPage />} />
       <Route path="/configurar" element={<ConfigurarDesdeMovilPage />} />
       <Route path="/ayuda" element={<AyudaPage platform="admin" />} />
       <Route path="/unirse" element={<UnirseEmpresaPage />} />
@@ -94,17 +98,19 @@ export function App() {
         <Route path="inventario" element={<InventarioPage />} />
         <Route path="integraciones" element={<IntegracionesPage />} />
         <Route path="supervision" element={<SupervisionPage />} />
+        <Route path="comunicacion" element={<ComunicacionPage />} />
         <Route path="personal" element={<PersonalPage />} />
         <Route path="turnos" element={<TurnosPage />} />
         <Route path="cuentas" element={<CuentasPage />} />
         <Route path="qr-sitios" element={<QrSitiosPage />} />
         <Route path="mapa" element={<MapaEnVivoPage />} />
-        <Route path="comunicacion" element={<ComunicacionPage />} />
         <Route path="informes" element={<InformesEventoPage />} />
         <Route path="reportes" element={<ReportesPage />} />
         <Route path="notificaciones" element={<NotificacionesPage />} />
         <Route path="nomina" element={<NominaPage />} />
         <Route path="configuracion" element={<ConfiguracionPage />} />
+        <Route path="operacion" element={<OperacionEventoPage />} />
+        <Route path="pendientes" element={<PendientesPage />} />
         <Route path="ayuda" element={<AyudaPage platform="admin" />} />
       </Route>
 

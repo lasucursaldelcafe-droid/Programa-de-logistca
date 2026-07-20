@@ -20,7 +20,7 @@ import type {
   TipoIntegracion,
   Turno,
   ChatConversation,
-  ChatMessage,
+  ConversationMessage,
   CustomRole,
   VideoRoom,
   Worker,
@@ -52,7 +52,7 @@ export interface DemoPersistedState {
   setupConfig: SetupConfig | null;
   reportes: Reporte[];
   conversations: ChatConversation[];
-  messages: ChatMessage[];
+  messages: ConversationMessage[];
   videoRooms: VideoRoom[];
   customRoles: CustomRole[];
   clientes: Cliente[];

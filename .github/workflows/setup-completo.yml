@@ -1,0 +1,108 @@
+name: Setup completo SPE
+
+# Configura Firebase en CI: sync, seed admin, Firestore, deploy Pages.
+# Secrets: VITE_FIREBASE_*, FIREBASE_SERVICE_ACCOUNT_JSON, SPE_PROD_PASSWORD
+on:
+  workflow_dispatch:
+    inputs:
+      run_seed:
+        description: "Crear/actualizar lasucursaldelcafe@gmail.com"
+        type: boolean
+        default: true
+      deploy_firestore:
+        description: "Desplegar reglas e índices Firestore"
+        type: boolean
+        default: true
+      deploy_pages:
+        description: "Disparar deploy GitHub Pages"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    env:
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+      SPE_PROD_PASSWORD: ${{ secrets.SPE_PROD_PASSWORD }}
+      VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+      VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+      VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+      VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+      VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+      VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Generar firebase-web-config.json desde secrets
+        run: |
+          if [ -z "$VITE_FIREBASE_PROJECT_ID" ] || [ "$VITE_FIREBASE_PROJECT_ID" = "demo-personal-eventos" ]; then
+            echo "::warning::Faltan secrets VITE_FIREBASE_* — completa GitHub Secrets"
+            exit 0
+          fi
+          node -e "
+          const fs=require('fs');
+          const cfg={
+            apiKey: process.env.VITE_FIREBASE_API_KEY,
+            authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
+            projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+            storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+            messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+            appId: process.env.VITE_FIREBASE_APP_ID,
+          };
+          fs.writeFileSync('firebase-web-config.json', JSON.stringify(cfg,null,2)+'\n');
+          fs.writeFileSync('.firebaserc', JSON.stringify({projects:{default:cfg.projectId}},null,2)+'\n');
+          "
+
+      - name: Sincronizar config
+        run: node scripts/sync-repo-config.mjs
+
+      - name: Seed cuenta admin
+        if: inputs.run_seed == true
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ] || [ -z "$SPE_PROD_PASSWORD" ]; then
+            echo "::warning::Omitiendo seed — faltan FIREBASE_SERVICE_ACCOUNT_JSON o SPE_PROD_PASSWORD"
+            exit 0
+          fi
+          npm run seed:production
+
+      - name: Desplegar Firestore
+        if: inputs.deploy_firestore == true
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ] || [ -z "$VITE_FIREBASE_PROJECT_ID" ]; then
+            echo "::warning::Omitiendo Firestore — faltan credenciales"
+            exit 0
+          fi
+          echo "$FIREBASE_SERVICE_ACCOUNT_JSON" > /tmp/firebase-sa.json
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/firebase-sa.json
+          npx firebase-tools deploy --only firestore:rules,firestore:indexes --project "$VITE_FIREBASE_PROJECT_ID"
+
+      - name: Diagnóstico
+        run: node scripts/spe-diagnostico.mjs --ci
+
+      - name: Resumen
+        run: |
+          echo "## Setup completo SPE" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Proyecto: \`${{ secrets.VITE_FIREBASE_PROJECT_ID }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Login: https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/login" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Admin: \`lasucursaldelcafe@gmail.com\` + SPE_PROD_PASSWORD" >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-pages:
+    needs: setup
+    if: inputs.deploy_pages == true
+    uses: ./.github/workflows/deploy-github-pages.yml
+    with:
+      backend: firebase
+    secrets: inherit

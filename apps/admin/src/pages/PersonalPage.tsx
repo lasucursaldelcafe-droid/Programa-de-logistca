@@ -22,6 +22,8 @@ import {
 } from "../hooks/useDataStore";
 import { getCustomRolesForBase, useCustomRoles } from "../hooks/useCustomRoles";
 import { PageHeader } from "../components/nav/PageHeader";
+import { isDemoMode } from "../lib/mode";
+import { isSheetsBackend } from "../lib/backend";
 
 const PERFILES: PerfilTrabajo[] = [
   "logistica",
@@ -47,6 +49,7 @@ export function PersonalPage() {
     customRoleId: "",
   });
   const [error, setError] = useState<string | null>(null);
+  const [mensaje, setMensaje] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -76,23 +79,39 @@ export function PersonalPage() {
   async function crearTrabajador(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    await createWorker(
-      {
-        ...form,
-        rolPlataforma: adminAsignaRoles ? form.rolPlataforma : "trabajador",
-        customRoleId: form.customRoleId || undefined,
-      },
-      currentUser.nombre,
-    );
-    setForm({
-      nombre: "",
-      documento: "",
-      telefono: "",
-      email: "",
-      perfiles: ["logistica"],
-      rolPlataforma: "trabajador",
-      customRoleId: "",
-    });
+    setMensaje(null);
+    try {
+      const nombreGuardado = form.nombre;
+      await createWorker(
+        {
+          ...form,
+          rolPlataforma: adminAsignaRoles ? form.rolPlataforma : "trabajador",
+          customRoleId: form.customRoleId || undefined,
+        },
+        {
+          actorNombre: currentUser.nombre,
+          creadaPor: currentUser.uid,
+          creadaPorNombre: currentUser.nombre,
+          enviarInvitacion: !isDemoMode() && !isSheetsBackend(),
+        },
+      );
+      setForm({
+        nombre: "",
+        documento: "",
+        telefono: "",
+        email: "",
+        perfiles: ["logistica"],
+        rolPlataforma: "trabajador",
+        customRoleId: "",
+      });
+      if (!isDemoMode() && !isSheetsBackend()) {
+        setMensaje(
+          `${nombreGuardado} registrado/a. Se envió invitación automática al correo con código y enlace de activación.`,
+        );
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo registrar la persona.");
+    }
   }
 
   async function cambiarEstado(id: string, estado: WorkerEstado) {
@@ -120,11 +139,16 @@ export function PersonalPage() {
     <div className="space-y-5">
       <PageHeader
         title="Personal"
-        description="Registra personas y asigna roles. Los cambios se guardan automáticamente."
+        description="Registra personas y asigna roles. En producción se envía invitación automática al correo."
       />
 
       {error && (
         <p className="rounded-lg bg-alert/10 px-3 py-2 text-sm text-alert">{error}</p>
+      )}
+      {mensaje && (
+        <p className="rounded-lg border border-positive/40 bg-positive/10 px-3 py-2 text-sm text-positive">
+          {mensaje}
+        </p>
       )}
 
       <Card>

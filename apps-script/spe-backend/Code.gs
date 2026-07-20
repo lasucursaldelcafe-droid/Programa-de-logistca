@@ -43,13 +43,13 @@ function doPost(e) {
 
 function handleRequest(e) {
   try {
-    const body = e.postData ? JSON.parse(e.postData.contents || "{}") : {};
-    const token = (e.parameter && e.parameter.token) || body.token;
+    const body = mergeRequestPayload(e);
+    const token = body.token;
     if (!isAuthorizedToken(token)) {
       return jsonResponse({ error: "Unauthorized" }, 401);
     }
 
-    const action = (e.parameter && e.parameter.action) || body.action;
+    const action = body.action;
     if (!action) return jsonResponse({ error: "Missing action" }, 400);
 
     switch (action) {
@@ -60,7 +60,7 @@ function handleRequest(e) {
       case "login":
         return loginUser(body);
       case "list":
-        return listRows((e.parameter && e.parameter.collection) || body.collection);
+        return listRows(body.collection);
       case "upsert":
         return upsertRow(body);
       case "delete":
@@ -73,11 +73,63 @@ function handleRequest(e) {
   }
 }
 
+/** Une parámetros GET y cuerpo POST para que login/upsert funcionen desde el navegador. */
+function mergeRequestPayload(e) {
+  var body = {};
+  if (e.postData && e.postData.contents) {
+    try {
+      body = JSON.parse(e.postData.contents);
+    } catch (parseErr) {
+      body = {};
+    }
+  }
+  if (e.parameter) {
+    for (var key in e.parameter) {
+      if (e.parameter.hasOwnProperty(key) && e.parameter[key] !== undefined && e.parameter[key] !== "") {
+        body[key] = e.parameter[key];
+      }
+    }
+  }
+  if (typeof body.record === "string") {
+    try {
+      body.record = JSON.parse(body.record);
+    } catch (recordErr) {
+      /* record queda como string */
+    }
+  }
+  return body;
+}
+
 function bootstrapBackend() {
   Object.keys(SHEET_NAMES).forEach(function (k) {
     getSheet(SHEET_NAMES[k]);
   });
+  ensureDefaultUsers();
   return jsonResponse({ ok: true, message: "Hojas SPE creadas", collections: Object.keys(SHEET_NAMES) });
+}
+
+function ensureDefaultUsers() {
+  var defaults = [
+    ["sheets-admin", "admin@eventos.test", "Admin123!", "Administrador", "administrador", "", "true"],
+    ["sheets-master", "master@eventos.test", "Master123!", "Master Plataforma", "super_admin", "", "true"],
+    ["prod-admin-lsc", "lasucursaldelcafe@gmail.com", "SpeLaSucursal2026!", "La Sucursal del Café", "administrador", "", "true"],
+  ];
+  var sheet = getSheet(SHEET_NAMES.users);
+  var data = sheet.getDataRange().getValues();
+  var headers = data[0];
+  var emailCol = headers.indexOf("email");
+  if (emailCol < 0) return;
+  var existing = {};
+  for (var i = 1; i < data.length; i++) {
+    var em = String(data[i][emailCol] || "").toLowerCase().trim();
+    if (em) existing[em] = true;
+  }
+  defaults.forEach(function (row) {
+    var email = String(row[1]).toLowerCase();
+    if (existing[email]) return;
+    sheet.appendRow(row);
+    existing[email] = true;
+  });
 }
 
 function loginUser(body) {
@@ -134,7 +186,7 @@ function upsertRow(body) {
     return record[h] !== undefined && record[h] !== null ? record[h] : "";
   });
   if (rowIndex > 0) {
-    sheet.getRange(rowIndex, 1, rowIndex, row.length).setValues([row]);
+    sheet.getRange(rowIndex, 1, 1, row.length).setValues([row]);
   } else {
     sheet.appendRow(row);
   }

@@ -16,7 +16,7 @@ import {
   getFirestoreDb,
   type AppUser,
   type ChatConversation,
-  type ChatMessage,
+  type ConversationMessage,
   type VideoRoom,
 } from "@spe/shared";
 import { isDemoMode } from "../lib/mode";
@@ -66,7 +66,7 @@ function parseConversation(raw: Record<string, unknown>): ChatConversation {
   };
 }
 
-function parseMessage(raw: Record<string, unknown>): ChatMessage {
+function parseMessage(raw: Record<string, unknown>): ConversationMessage {
   return {
     id: String(raw.id ?? ""),
     conversationId: String(raw.conversationId ?? ""),
@@ -122,8 +122,8 @@ export function useConversations(user: AppUser | null, eventId?: string): ChatCo
   }, [demoConversations, conversations, user, eventId]);
 }
 
-export function useMessages(conversationId: string | null): ChatMessage[] {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+export function useMessages(conversationId: string | null): ConversationMessage[] {
+  const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const sheetsMessages = useSheetsPoll<Record<string, unknown>>("messages", 5000);
 
   useEffect(() => {
@@ -169,7 +169,7 @@ export async function sendChatMessage(data: {
   const texto = data.texto.trim();
   if (!texto) return;
 
-  const message: Omit<ChatMessage, "id"> = {
+  const message: Omit<ConversationMessage, "id"> = {
     conversationId: data.conversationId,
     senderUid: data.sender.uid,
     senderNombre: data.sender.nombre,

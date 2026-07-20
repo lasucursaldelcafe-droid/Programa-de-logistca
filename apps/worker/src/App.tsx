@@ -11,6 +11,8 @@ import { LoginPage } from "./pages/LoginPage";
 import { WorkerHomePage } from "./pages/WorkerHomePage";
 import { ReportarPage } from "./pages/ReportarPage";
 import { AyudaPage } from "@core/pages/AyudaPage";
+import { ComunicacionPage } from "@core/pages/ComunicacionPage";
+import { NotificacionesPage } from "@core/pages/NotificacionesPage";
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -68,6 +70,8 @@ export function App() {
         <Route path="turnos" element={<TurnosPage />} />
         <Route path="entrada" element={<MarcarEntradaPage />} />
         <Route path="reportar" element={<ReportarPage />} />
+        <Route path="comunicacion" element={<ComunicacionPage />} />
+        <Route path="notificaciones" element={<NotificacionesPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

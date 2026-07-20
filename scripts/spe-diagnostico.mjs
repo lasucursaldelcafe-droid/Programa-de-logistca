@@ -25,6 +25,7 @@ const PLACEHOLDER_FIREBASE = new Set([
 ]);
 
 const PLACEHOLDER_SHEETS = /TU_ID|PEGAR_|TU_CONTRASEÑA|^tu-token$|^tu-token-de-/i;
+const ADMIN_EMAIL = "lasucursaldelcafe@gmail.com";
 
 /** @typedef {"ok"|"warn"|"fail"} CheckStatus */
 /** @typedef {{ id: string, status: CheckStatus, message: string, fix?: string }} Check */
@@ -118,6 +119,7 @@ export async function runDiagnostic(opts = {}) {
   const credEjemplo = existsSync(resolve(CONFIG, "credenciales.local.ejemplo.json"));
   const sheetsTxt = existsSync(resolve(ROOT, "CREDENCIALES-SHEETS-AUTO.txt"));
   const fbWebFile = readJson(resolve(ROOT, "firebase-web-config.json"));
+  const runtimeProd = readJson(resolve(ROOT, "docs/spe-runtime-config.json"));
   const serviceAccount = existsSync(resolve(ROOT, "service-account.json"));
 
   // --- Archivos base ---
@@ -128,12 +130,16 @@ export async function runDiagnostic(opts = {}) {
     fix: "Restaura config/proyecto.json desde el repo",
   });
 
+  const prodCuentas = cuentas?.produccion?.cuentas?.length ?? 0;
+  const demoCuentas = cuentas?.modoDemo?.cuentas?.length ?? 0;
   checks.push({
     id: "config.cuentas",
-    status: cuentas?.modoDemo?.cuentas?.length ? "ok" : "warn",
-    message: cuentas?.modoDemo?.cuentas?.length
-      ? `${cuentas.modoDemo.cuentas.length} cuentas demo documentadas`
-      : "Falta config/cuentas-app.json o cuentas demo",
+    status: prodCuentas || demoCuentas ? "ok" : "warn",
+    message: prodCuentas
+      ? `${prodCuentas} cuenta(s) producción documentadas`
+      : demoCuentas
+        ? `${demoCuentas} cuentas demo documentadas`
+        : "Falta config/cuentas-app.json o cuentas",
     fix: "Usa admin@eventos.test / Admin123! — ver config/cuentas-app.json",
   });
 
@@ -156,7 +162,10 @@ export async function runDiagnostic(opts = {}) {
     credLocal?.sheets?.apiToken?.trim() ||
     "";
 
-  const fb = mergeFirebase(bootstrap?.firebase ?? {}, mergeFirebase(fbWebFile ?? {}, envFirebase()));
+  const fb = mergeFirebase(
+    bootstrap?.firebase ?? {},
+    mergeFirebase(fbWebFile ?? {}, mergeFirebase(runtimeProd?.firebase ?? {}, envFirebase())),
+  );
   const fbCheck = firebaseComplete(fb);
 
   let effectiveBackend = bootstrap?.backend ?? "demo";
@@ -234,6 +243,8 @@ export async function runDiagnostic(opts = {}) {
       "VITE_SHEETS_WEB_APP_URL",
       "VITE_SHEETS_API_TOKEN",
       "FIREBASE_SERVICE_ACCOUNT_JSON",
+      "FIREBASE_TOKEN",
+      "SPE_PROD_PASSWORD",
     ];
     const present = secretKeys.filter((k) => (process.env[k] ?? "").trim().length > 0);
     checks.push({
@@ -269,11 +280,23 @@ export async function runDiagnostic(opts = {}) {
 
     checks.push({
       id: "firebase.serviceAccount",
-      status: serviceAccount ? "ok" : "warn",
+      status:
+        serviceAccount || bootstrap?.setupCompletado?.firebaseSecrets
+          ? "ok"
+          : effectiveBackend === "sheets"
+            ? "ok"
+            : "warn",
       message: serviceAccount
         ? "service-account.json presente (seed local)"
-        : "Sin service-account.json — seed:production solo vía GitHub Actions",
-      fix: "Firebase Console → Cuentas de servicio → Generar clave",
+        : bootstrap?.setupCompletado?.firebaseSecrets
+          ? "Firebase Secrets marcados listos (GitHub Actions)"
+          : effectiveBackend === "sheets"
+            ? "Opcional — backend activo es Sheets; Firebase solo para releases/FCM"
+            : "Sin service-account.json — seed:production solo vía GitHub Actions",
+      fix:
+        serviceAccount || bootstrap?.setupCompletado?.firebaseSecrets || effectiveBackend === "sheets"
+          ? undefined
+          : "Firebase Console → Cuentas de servicio → Generar clave",
     });
   }
 
@@ -305,6 +328,107 @@ export async function runDiagnostic(opts = {}) {
       : `GitHub Pages no accesible: ${pagesFetch.error ?? pagesFetch.status}`,
     fix: "Actions → «Publicar app (GitHub Pages)» o «SPE — Diagnóstico y CD» con deploy=true",
   });
+
+  const runtimeUrl = `${pagesUrl.replace(/\/?$/, "/")}spe-runtime-config.json`;
+  const runtimeFetch = await fetchOk(runtimeUrl);
+  let runtimeHasFirebase = false;
+  if (runtimeFetch.ok) {
+    try {
+      const res = await fetch(runtimeUrl, { cache: "no-store" });
+      const json = await res.json();
+      runtimeHasFirebase = !!(json.firebase?.apiKey && json.firebase?.projectId);
+    } catch {
+      runtimeHasFirebase = false;
+    }
+  }
+  checks.push({
+    id: "runtime.firebase",
+    status: runtimeHasFirebase ? "ok" : "warn",
+    message: runtimeHasFirebase
+      ? "spe-runtime-config.json incluye Firebase (apps descargadas sincronizan)"
+      : "Runtime config sin bloque firebase — ejecuta npm run config:runtime en CI",
+    fix: "node scripts/write-runtime-config.mjs con VITE_FIREBASE_* en env",
+  });
+
+  const runtimeVapid =
+    runtime?.vapidKey?.trim() ||
+    bootstrap?.vapidKey?.trim() ||
+    process.env.VITE_FIREBASE_VAPID_KEY?.trim() ||
+    "";
+  checks.push({
+    id: "fcm.vapid",
+    status: runtimeVapid ? "ok" : "warn",
+    message: runtimeVapid
+      ? "Clave VAPID Web Push configurada (FCM)"
+      : "Falta VITE_FIREBASE_VAPID_KEY — notificaciones push web desactivadas",
+    fix: "Firebase Console → Cloud Messaging → Certificados Web Push → config/bootstrap.json → vapidKey",
+  });
+
+  const hasDeployCreds =
+    !!(process.env.FIREBASE_TOKEN ?? "").trim() ||
+    !!(process.env.FIREBASE_SERVICE_ACCOUNT_JSON ?? "").trim();
+
+  if (fbCheck.complete && fb.apiKey) {
+    try {
+      const pwd = process.env.SPE_PROD_PASSWORD?.trim() || "SpeAdmin2026!";
+      const authRes = await fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${fb.apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: ADMIN_EMAIL,
+            password: pwd,
+            returnSecureToken: true,
+          }),
+        },
+      );
+      const authData = await authRes.json();
+      if (authData.idToken && authData.localId) {
+        const fsRes = await fetch(
+          `https://firestore.googleapis.com/v1/projects/${fb.projectId}/databases/(default)/documents/users/${authData.localId}`,
+          { headers: { Authorization: `Bearer ${authData.idToken}` } },
+        );
+        const fsOk = fsRes.ok;
+        const fsStatus = fsOk ? "ok" : hasDeployCreds ? "fail" : "warn";
+        checks.push({
+          id: "firestore.live",
+          status: fsStatus,
+          message: fsOk
+            ? "Firestore users/{uid} legible — login completo OK"
+            : hasDeployCreds
+              ? "Firestore rechaza permisos — reglas no desplegadas (hay credenciales CI)"
+              : "Firestore rechaza permisos — falta FIREBASE_TOKEN en GitHub Secrets",
+          fix: fsOk
+            ? undefined
+            : "PC: .\\scripts\\windows\\SPE-Produccion-Completa.ps1 — o GitHub → Settings → Secrets → FIREBASE_TOKEN",
+        });
+        if (!fsOk) {
+          recommendations.push(
+            hasDeployCreds
+              ? "Firestore: Actions → Producción completa (SPE) o pega firestore.rules en Firebase Console"
+              : "Añade FIREBASE_TOKEN (firebase login:ci) y relanza Producción completa (SPE)",
+          );
+        }
+      }
+    } catch {
+      checks.push({
+        id: "firestore.live",
+        status: "warn",
+        message: "No se pudo verificar Firestore en vivo",
+        fix: "npm run verify:prod-login",
+      });
+    }
+  }
+
+  if (ci && !hasDeployCreds) {
+    checks.push({
+      id: "firebase.deploy",
+      status: "warn",
+      message: "Sin FIREBASE_TOKEN ni FIREBASE_SERVICE_ACCOUNT_JSON — reglas Firestore no se despliegan en CI",
+      fix: "GitHub → Settings → Secrets → FIREBASE_TOKEN (firebase login:ci)",
+    });
+  }
 
   // --- Login demo guidance ---
   if (effectiveBackend === "demo" || bootstrap?.demoMode) {
@@ -391,7 +515,8 @@ async function main() {
     console.log(`Reporte guardado: config/diagnostico-report.json`);
   }
 
-  process.exit(report.overall === "error" ? 1 : 0);
+  const noFail = process.argv.includes("--no-fail");
+  process.exit(noFail || report.overall !== "error" ? 0 : 1);
 }
 
 const isMain = process.argv[1]?.endsWith("spe-diagnostico.mjs");

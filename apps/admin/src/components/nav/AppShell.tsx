@@ -21,10 +21,10 @@ export function AppShell({ user, brand, brandSub, sections, onLogout }: AppShell
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-bg lg:flex">
+    <div className="min-h-screen spe-app-bg lg:flex">
       <WelcomeModal user={user} />
-      {/* Sidebar — desktop */}
-      <aside className="hidden w-52 shrink-0 flex-col border-r border-border bg-gradient-to-b from-surface to-bg lg:flex">
+      {/* Sidebar — desktop: siempre visible */}
+      <aside className="hidden w-56 shrink-0 flex-col border-r border-border/80 bg-gradient-to-b from-surface-elevated via-surface to-bg lg:flex">
         <BrandBlock brand={brand} brandSub={brandSub} />
         <div className="flex-1 overflow-y-auto px-3 py-4">
           <SidebarNav sections={sections} />
@@ -55,14 +55,15 @@ export function AppShell({ user, brand, brandSub, sections, onLogout }: AppShell
 
       {/* Main */}
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-bg/90 px-4 py-3 backdrop-blur lg:px-8">
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border/80 bg-bg/85 px-4 py-3 backdrop-blur-md lg:px-8">
           <button
             type="button"
-            className="rounded-lg p-2 text-neutral-400 hover:bg-neutral-800 lg:hidden"
+            className="flex items-center gap-1.5 rounded-lg px-2 py-2 text-sm text-neutral-300 hover:bg-neutral-800 lg:hidden"
             onClick={() => setMobileOpen(true)}
             aria-label="Abrir menú"
           >
             <NavIcon name="menu" />
+            <span className="font-medium">Menú</span>
           </button>
           <div className="min-w-0 flex-1 lg:hidden">
             <p className="truncate font-display text-sm font-semibold">{brand}</p>
@@ -82,7 +83,7 @@ export function AppShell({ user, brand, brandSub, sections, onLogout }: AppShell
             </button>
           </div>
         </header>
-        <main className="flex-1 px-3 py-4 lg:px-6 lg:py-5">
+        <main className="spe-animate-in flex-1 px-3 py-4 lg:px-6 lg:py-5">
           <Outlet />
         </main>
       </div>

@@ -1,0 +1,81 @@
+name: Configurar Firebase (SPE)
+
+# Guía + despliegue automático si FIREBASE_TOKEN o FIREBASE_SERVICE_ACCOUNT_JSON ya están en Secrets.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  desplegar:
+    runs-on: ubuntu-latest
+    env:
+      FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+      SPE_PROD_PASSWORD: ${{ secrets.SPE_PROD_PASSWORD }}
+      VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+      VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+      VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+      VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+      VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+      VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+    steps:
+      - name: Instrucciones si faltan credenciales
+        if: env.FIREBASE_TOKEN == '' && env.FIREBASE_SERVICE_ACCOUNT_JSON == ''
+        run: |
+          echo "## Configurar Firebase para SPE" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Paso 1 — Token (PC, una vez)" >> "$GITHUB_STEP_SUMMARY"
+          echo '```powershell' >> "$GITHUB_STEP_SUMMARY"
+          echo "firebase login:ci" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Paso 2 — GitHub Secret" >> "$GITHUB_STEP_SUMMARY"
+          echo "Settings → Secrets → Actions → **FIREBASE_TOKEN**" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Paso 3 — Relanzar este workflow" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Atajo:** \`.\scripts\windows\SPE-Produccion-Completa.ps1\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "::warning::Falta FIREBASE_TOKEN — sigue los pasos del resumen"
+
+      - uses: actions/checkout@v4
+        if: env.FIREBASE_TOKEN != '' || env.FIREBASE_SERVICE_ACCOUNT_JSON != ''
+
+      - uses: actions/setup-node@v4
+        if: env.FIREBASE_TOKEN != '' || env.FIREBASE_SERVICE_ACCOUNT_JSON != ''
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Instalar dependencias
+        if: env.FIREBASE_TOKEN != '' || env.FIREBASE_SERVICE_ACCOUNT_JSON != ''
+        run: npm ci
+
+      - name: Runtime config
+        if: env.FIREBASE_TOKEN != '' || env.FIREBASE_SERVICE_ACCOUNT_JSON != ''
+        run: |
+          node scripts/write-runtime-config.mjs
+          npm run setup:fcm
+
+      - name: Desplegar reglas Firestore
+        if: env.FIREBASE_TOKEN != '' || env.FIREBASE_SERVICE_ACCOUNT_JSON != ''
+        run: node scripts/deploy-firestore.mjs
+
+      - name: Bootstrap Firestore
+        if: env.FIREBASE_TOKEN != '' || env.FIREBASE_SERVICE_ACCOUNT_JSON != ''
+        continue-on-error: true
+        run: |
+          SPE_PROD_PASSWORD="${SPE_PROD_PASSWORD:-SpeAdmin2026!}" \
+            npm run firestore:bootstrap -- --uid 8kJ9xnbXwlNVQerimF088JXo8Ql1 --skip-auth
+
+      - name: Verificar login
+        if: env.FIREBASE_TOKEN != '' || env.FIREBASE_SERVICE_ACCOUNT_JSON != ''
+        run: SPE_PROD_PASSWORD="${SPE_PROD_PASSWORD:-SpeAdmin2026!}" node scripts/verify-prod-login.mjs
+
+      - name: Resumen OK
+        if: env.FIREBASE_TOKEN != '' || env.FIREBASE_SERVICE_ACCOUNT_JSON != ''
+        run: |
+          echo "## Firebase configurado" >> "$GITHUB_STEP_SUMMARY"
+          echo "Login: https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/login" >> "$GITHUB_STEP_SUMMARY"
+          echo "Cuenta: lasucursaldelcafe@gmail.com / SpeAdmin2026!" >> "$GITHUB_STEP_SUMMARY"

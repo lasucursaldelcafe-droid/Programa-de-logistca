@@ -1,25 +1,27 @@
 {
   "produccion": {
-    "descripcion": "Cuentas reales — backend Google Sheets en ejecución.",
-    "backend": "sheets",
+    "descripcion": "Cuenta real — backend Firebase Auth + Firestore.",
+    "backend": "firebase",
+    "url": "https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/login",
     "cuentas": [
       {
         "email": "lasucursaldelcafe@gmail.com",
-        "password": "SpeLaSucursal2026!",
+        "password": "Defínela con SPE_PROD_PASSWORD al ejecutar npm run seed:production",
         "nombre": "La Sucursal del Café",
         "role": "administrador",
         "panel": "/panel"
       }
     ],
     "instrucciones": [
-      "Abre /login sin ?spe_backend=demo.",
-      "Usa el correo y contraseña de arriba.",
+      "npm run acceso — muestra URL y cómo crear la contraseña",
+      "docs-source/ACCESO-PRODUCCION.md — guía completa",
+      "SPE_PROD_PASSWORD='…' npm run seed:production -- --service-account ./service-account.json",
       "Trabajadores nuevos: Admin → Personal → Invitar."
     ]
   },
-  "modoDemo": {
-    "descripcion": "Desactivado en producción. Solo desarrollo local con emuladores.",
-    "activo": false,
-    "cuentas": []
+  "local_emuladores": {
+    "admin@eventos.test": "Admin123!",
+    "master@eventos.test": "Master123!",
+    "nota": "Solo npm run dev:full — no producción web"
   }
 }

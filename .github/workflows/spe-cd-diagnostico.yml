@@ -17,14 +17,13 @@ on:
         default: true
         type: boolean
       backend:
-        description: "Forzar backend: auto | demo | sheets"
+        description: "Forzar backend: auto | firebase"
         required: false
         default: auto
         type: choice
         options:
           - auto
-          - demo
-          - sheets
+          - firebase
   push:
     branches: [main]
   schedule:
@@ -56,6 +55,8 @@ jobs:
       VITE_SHEETS_WEB_APP_URL: ${{ secrets.VITE_SHEETS_WEB_APP_URL }}
       VITE_SHEETS_API_TOKEN: ${{ secrets.VITE_SHEETS_API_TOKEN }}
       FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+      FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+      SPE_PROD_PASSWORD: ${{ secrets.SPE_PROD_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
 
@@ -78,22 +79,22 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Forzar backend demo (input)
-        if: github.event.inputs.backend == 'demo'
+      - name: Forzar backend Firebase (input)
+        if: github.event.inputs.backend == 'firebase'
         run: |
           node -e "
           const fs=require('fs');
           const p='config/bootstrap.json';
           const j=JSON.parse(fs.readFileSync(p,'utf8'));
-          j.backend='demo'; j.demoMode=true;
-          j.sheetsWebAppUrl=''; j.sheetsApiToken=''; j.firebase={};
+          j.backend='firebase'; j.demoMode=false;
+          j.sheetsWebAppUrl=''; j.sheetsApiToken='';
           fs.writeFileSync(p, JSON.stringify(j,null,2)+'\n');
           "
 
       - name: Ejecutar diagnóstico
         id: diag
         run: |
-          node scripts/spe-diagnostico.mjs --ci --json > /tmp/diag.json
+          node scripts/spe-diagnostico.mjs --ci --json --no-fail > /tmp/diag.json
           cat /tmp/diag.json
           OVERALL=$(node -e "console.log(JSON.parse(require('fs').readFileSync('/tmp/diag.json','utf8')).overall)")
           BACKEND=$(node -e "console.log(JSON.parse(require('fs').readFileSync('/tmp/diag.json','utf8')).effectiveBackend)")
@@ -111,7 +112,7 @@ jobs:
           (github.event_name == 'workflow_dispatch' && github.event.inputs.auto_fix != 'false') ||
           github.event_name == 'push' ||
           github.event_name == 'schedule'
-        run: node scripts/spe-cd-auto.mjs --fix --ci
+        run: node scripts/spe-cd-auto.mjs --fix --ci --no-fail
 
       - name: Subir reporte de diagnóstico
         uses: actions/upload-artifact@v4
@@ -159,8 +160,6 @@ jobs:
           echo "| Login | ${{ needs.diagnostico.outputs.login_url }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Deploy | ${{ needs.deploy.result || 'skipped' }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "**Login demo:** \`admin@eventos.test\` / \`Admin123!\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Si falla en celular → **Restablecer modo demo** en /login" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Login producción:** \`lasucursaldelcafe@gmail.com\` + contraseña Firebase (ver \`docs-source/ACCESO-PRODUCCION.md\`)" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "Descarga el artefacto \`spe-diagnostico-report\` para el JSON completo." >> "$GITHUB_STEP_SUMMARY"

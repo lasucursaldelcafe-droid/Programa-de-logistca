@@ -16,5 +16,9 @@
     "messagingSenderId": "",
     "appId": ""
   },
-  "firebaseServiceAccountPath": "service-account.json"
+  "firebaseServiceAccountPath": "service-account.json",
+  "speProdPassword": "TU_CONTRASEÑA_FIREBASE_AUTH",
+  "firebaseToken": "TOKEN_DE_firebase_login_ci_SIN_JSON",
+  "vapidKey": "CLAVE_PUBLICA_FCM_WEB_PUSH",
+  "cursorApiKey": "TU_CURSOR_API_KEY_DESDE_cursor.com_settings"
 }

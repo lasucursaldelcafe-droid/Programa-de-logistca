@@ -42,6 +42,7 @@ apps/desktop/release/
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+functions/lib/
 
 # debug
 npm-debug.log*
@@ -73,9 +74,12 @@ sheets-web-app-url.txt
 CREDENCIALES-SHEETS-AUTO.txt
 CREDENCIALES-SPE-GENERADAS.txt
 CREDENCIALES-PRODUCCION.txt
+SETUP-RESULTADO.txt
+.tmp-service-account.json
 config/pendientes-setup.json
 apps-script/spe-backend/.clasp.json
 config/credenciales.local.json
+config/acceso.local.json
 config/diagnostico-report.json
 __pycache__/
 *.pyc

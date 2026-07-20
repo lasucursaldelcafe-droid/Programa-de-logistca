@@ -10,7 +10,7 @@ export const WIZARD_STEPS: Array<{ id: SetupPaso; titulo: string; descripcion: s
   {
     id: "sitios",
     titulo: "Sitios",
-    descripcion: "Ubicaciones con geocerca GPS",
+    descripcion: "Dirección, ubicación en mapa y área de trabajo",
   },
   {
     id: "tarifas",
@@ -69,17 +69,19 @@ export function validateEventoStep(data: {
 
 export function validateSitioStep(data: {
   nombre: string;
+  direccion: string;
   lat: string;
   lng: string;
   radioGeocerca: string;
 }): string | null {
   if (!data.nombre.trim()) return "El nombre del sitio es obligatorio";
+  if (!data.direccion.trim()) return "Indica la dirección del sitio";
   const lat = Number(data.lat);
   const lng = Number(data.lng);
   const radio = Number(data.radioGeocerca);
   if (Number.isNaN(lat) || lat < -90 || lat > 90) return "Latitud inválida";
   if (Number.isNaN(lng) || lng < -180 || lng > 180) return "Longitud inválida";
-  if (Number.isNaN(radio) || radio < 10) return "El radio de geocerca debe ser ≥ 10 m";
+  if (Number.isNaN(radio) || radio < 10) return "El área de trabajo debe ser ≥ 10 m de radio";
   return null;
 }
 

@@ -1,4 +1,5 @@
 import { Capacitor } from "@capacitor/core";
+import { isEmbeddedAppShell } from "@spe/shared";
 
 export type AppPlatform = "web" | "android" | "electron";
 
@@ -21,6 +22,9 @@ export function getAppPlatform(): AppPlatform {
   if (Capacitor.getPlatform() === "android") return "android";
   return "web";
 }
+
+/** Re-export para componentes que detectan shell embebido vs web remota. */
+export { isEmbeddedAppShell };
 
 export const PLATFORM_LABEL: Record<AppPlatform, string> = {
   web: "Web",

@@ -34,8 +34,8 @@ export function SiteBreakdown({ rows }: { rows: SiteDashboardRow[] }) {
           ))}
         </tbody>
       </table>
-      <Link to="/mapa" className="mt-4 inline-block text-sm text-accent hover:underline">
-        Abrir mapa en vivo →
+      <Link to="/operacion?tab=supervision" className="mt-4 inline-block text-sm text-accent hover:underline">
+        Abrir mapa del evento →
       </Link>
     </div>
   );

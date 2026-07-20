@@ -12,6 +12,8 @@ export interface DeploymentLinks {
   repoUrl: string;
   actionsUrl: string;
   guiaUrl: string;
+  descargasUrl?: string;
+  releasesUrl?: string;
 }
 
 export function useDeploymentLinks(): DeploymentLinks | null {

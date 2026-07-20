@@ -4,6 +4,9 @@
  */
 const PAGES_MODE =
   process.argv.includes("--pages") || process.env.PAGES_DEPLOY_ALLOW_MISSING_FIREBASE === "true";
+const NATIVE_MODE =
+  process.argv.includes("--native") ||
+  process.env.NATIVE_BUILD_ALLOW_MISSING_FIREBASE === "true";
 const DEMO_MODE = process.env.VITE_DEMO_MODE === "true";
 
 const REQUIRED = [
@@ -46,10 +49,11 @@ function main(): void {
       .filter(Boolean)
       .join("; ");
 
-    if (PAGES_MODE) {
-      console.warn("⚠ GitHub Pages: Firebase sin configurar — el workflow usará VITE_DEMO_MODE=true.");
+    if (PAGES_MODE || NATIVE_MODE) {
+      const target = PAGES_MODE ? "GitHub Pages" : "instaladores nativos";
+      console.warn(`⚠ ${target}: Firebase sin configurar — el build continúa pero login fallará.`);
       console.warn(`  (${detail})`);
-      console.warn("  Login demo en el navegador hasta configurar Secrets; ver docs-source/PRODUCCION-FIREBASE.md");
+      console.warn("  Configura GitHub Secrets VITE_FIREBASE_*; ver docs-source/PRODUCCION-FIREBASE.md");
       return;
     }
 

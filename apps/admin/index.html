@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#f09040" />
+    <link rel="manifest" href="/manifest.json" />
     <title>Admin Console — Personal Eventos</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -14,6 +17,32 @@
     />
   </head>
   <body>
+    <script>
+      (function () {
+        var BUILD = "firebase-2026-07-03-v2";
+        var keys = [
+          "spe-runtime-config-v1",
+          "spe-runtime-config-v2",
+          "spe-demo-store-v1",
+          "spe-demo-integrations-v1",
+          "spe-demo-user",
+          "spe-sheets-session",
+        ];
+        try {
+          if (localStorage.getItem("spe-build-id") !== BUILD) {
+            keys.forEach(function (k) {
+              localStorage.removeItem(k);
+            });
+            sessionStorage.removeItem("spe-sheets-session");
+            localStorage.setItem("spe-build-id", BUILD);
+            if (!sessionStorage.getItem("spe-build-reloaded")) {
+              sessionStorage.setItem("spe-build-reloaded", "1");
+              location.reload();
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

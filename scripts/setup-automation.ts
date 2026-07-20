@@ -206,15 +206,20 @@ function tryPushGithubSecrets(): void {
 
 function trySeedProduction(): void {
   const sa = resolve(ROOT, "service-account.json");
-  if (!existsSync(sa)) {
-    log("Seed producción: omite (coloca service-account.json en la raíz)", "warn");
+  if (!existsSync(sa) && !process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim()) {
+    log("Seed producción: omite (service-account.json o FIREBASE_SERVICE_ACCOUNT_JSON)", "warn");
+    return;
+  }
+  if (!process.env.SPE_PROD_PASSWORD?.trim()) {
+    log("Seed producción: omite (define SPE_PROD_PASSWORD)", "warn");
     return;
   }
   try {
-    run(`npm run seed:production -- --service-account ${sa}`);
-    log("Cuentas admin/master creadas en Firebase Auth", "ok");
+    const saArg = existsSync(sa) ? `--service-account ${sa}` : "";
+    run(`npm run seed:production ${saArg}`.trim());
+    log("Cuenta admin creada en Firebase Auth", "ok");
   } catch {
-    log("Seed producción falló — revisa service-account.json", "warn");
+    log("Seed producción falló — revisa credenciales", "warn");
   }
 }
 

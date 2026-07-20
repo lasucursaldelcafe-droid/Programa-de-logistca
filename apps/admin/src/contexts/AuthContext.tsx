@@ -13,11 +13,13 @@ import {
   signOut,
   type User,
 } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { FirebaseError } from "firebase/app";
 import {
   getFirebaseAuth,
   getFirestoreDb,
   isFirebaseConfigured,
+  PLATFORM_ADMIN_EMAIL,
   sheetsLogin,
   saveSheetsSession,
   clearSheetsSession,
@@ -45,8 +47,77 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function isFirestorePermissionDenied(error: unknown): boolean {
+  if (error instanceof FirebaseError && error.code === "permission-denied") return true;
+  if (error instanceof Error) {
+    return (
+      error.message.includes("Missing or insufficient permissions") ||
+      error.message.includes("permission-denied")
+    );
+  }
+  return false;
+}
+
+/** Acceso provisional cuando Auth OK pero faltan reglas Firestore desplegadas. */
+function provisionalPlatformAdmin(firebaseUser: User): AppUser | null {
+  const email = firebaseUser.email?.trim().toLowerCase();
+  if (email !== PLATFORM_ADMIN_EMAIL.toLowerCase()) return null;
+  return {
+    uid: firebaseUser.uid,
+    email: firebaseUser.email ?? PLATFORM_ADMIN_EMAIL,
+    role: "administrador",
+    nombre: "La Sucursal del Café",
+    perfilCompleto: true,
+  };
+}
+
+async function ensurePlatformAdminProfile(firebaseUser: User): Promise<boolean> {
+  const email = firebaseUser.email?.trim().toLowerCase();
+  if (email !== PLATFORM_ADMIN_EMAIL.toLowerCase()) return false;
+  try {
+    await setDoc(doc(getFirestoreDb(), "users", firebaseUser.uid), {
+      email: firebaseUser.email ?? PLATFORM_ADMIN_EMAIL,
+      nombre: "La Sucursal del Café",
+      role: "administrador",
+      workerId: null,
+      perfilCompleto: true,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function resolveAppUser(firebaseUser: User): Promise<AppUser | null> {
+  let appUser = await loadAppUser(firebaseUser);
+  if (appUser) return appUser;
+
+  if (firebaseUser.email?.trim().toLowerCase() === PLATFORM_ADMIN_EMAIL.toLowerCase()) {
+    const created = await ensurePlatformAdminProfile(firebaseUser);
+    if (created) {
+      appUser = await loadAppUser(firebaseUser);
+      if (appUser) return appUser;
+    }
+    return provisionalPlatformAdmin(firebaseUser);
+  }
+
+  return null;
+}
+
 async function loadAppUser(firebaseUser: User): Promise<AppUser | null> {
-  const snap = await getDoc(doc(getFirestoreDb(), "users", firebaseUser.uid));
+  let snap;
+  try {
+    snap = await getDoc(doc(getFirestoreDb(), "users", firebaseUser.uid));
+  } catch (err) {
+    const fallback = isFirestorePermissionDenied(err)
+      ? provisionalPlatformAdmin(firebaseUser)
+      : null;
+    if (fallback) {
+      console.warn("[SPE] Firestore sin reglas — sesión admin provisional");
+      return fallback;
+    }
+    throw new Error(formatAuthError(err));
+  }
   if (!snap.exists()) return null;
   const data = snap.data();
   return {
@@ -90,7 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
         return;
       }
-      const appUser = await loadAppUser(fbUser);
+      const appUser = await resolveAppUser(fbUser);
       setUser(appUser);
       if (appUser) void initPushNotifications(appUser.uid);
       setLoading(false);
@@ -112,7 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       return;
     }
-    const appUser = await loadAppUser(fbUser);
+    const appUser = await resolveAppUser(fbUser);
     setUser(appUser);
   }, []);
 
@@ -157,9 +228,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const fbUser = getFirebaseAuth().currentUser;
     if (!fbUser) throw new Error("No se pudo iniciar sesión");
-    if (fbUser) void initPushNotifications(fbUser.uid);
-    const appUser = await loadAppUser(fbUser);
-    if (!appUser) throw new Error("Usuario no registrado en el sistema");
+    void initPushNotifications(fbUser.uid);
+    let appUser: AppUser | null;
+    try {
+      appUser = await resolveAppUser(fbUser);
+    } catch (err) {
+      throw new Error(formatAuthError(err));
+    }
+    if (!appUser) {
+      throw new Error(
+        "Usuario autenticado pero sin perfil en Firestore (users/" +
+          fbUser.uid +
+          "). Ejecuta Bootstrap Firestore o crea el documento en Firebase Console.",
+      );
+    }
     setUser(appUser);
     return appUser;
   }, []);
@@ -176,6 +258,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     await signOut(getFirebaseAuth());
+    setUser(null);
   }, []);
 
   const value = useMemo(

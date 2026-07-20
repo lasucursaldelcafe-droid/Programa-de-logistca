@@ -8,35 +8,20 @@ on:
   workflow_dispatch:
     inputs:
       backend:
-        description: "Backend: auto | sheets | demo"
+        description: "Backend: auto | firebase"
         required: false
         default: auto
         type: choice
         options:
           - auto
-          - sheets
-          - demo
-      sheets_web_app_url:
-        description: "Google Sheets Web App URL (/exec)"
-        required: false
-        type: string
-      sheets_api_token:
-        description: "Token API Sheets (SPE_API_TOKEN)"
-        required: false
-        type: string
+          - firebase
   workflow_call:
     inputs:
       backend:
-        description: "Backend: auto | sheets | demo"
+        description: "Backend: auto | firebase"
         required: false
         type: string
         default: auto
-      sheets_web_app_url:
-        required: false
-        type: string
-      sheets_api_token:
-        required: false
-        type: string
 
 permissions:
   contents: write
@@ -54,8 +39,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       INPUT_BACKEND: ${{ inputs.backend || github.event.inputs.backend || 'auto' }}
-      INPUT_SHEETS_URL: ${{ inputs.sheets_web_app_url || github.event.inputs.sheets_web_app_url }}
-      INPUT_SHEETS_TOKEN: ${{ inputs.sheets_api_token || github.event.inputs.sheets_api_token }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -70,10 +53,6 @@ jobs:
         run: npm ci && npm run sync:links
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
-
-      - name: Alinear token Sheets con Apps Script (auto)
-        run: npm run fix:sheets-token
-        continue-on-error: true
 
       - name: Cargar config/bootstrap.json (configuración desde celular)
         run: |
@@ -91,13 +70,10 @@ jobs:
             done < <(node scripts/read-bootstrap-config.mjs --export)
           fi
 
-      - name: Detectar backend (Firebase, Sheets o demo)
+      - name: Detectar backend Firebase
         id: firebase_mode
         shell: bash
         env:
-          VITE_DATA_BACKEND: ${{ secrets.VITE_DATA_BACKEND }}
-          VITE_SHEETS_WEB_APP_URL: ${{ secrets.VITE_SHEETS_WEB_APP_URL }}
-          VITE_SHEETS_API_TOKEN: ${{ secrets.VITE_SHEETS_API_TOKEN }}
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
           VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
@@ -105,64 +81,9 @@ jobs:
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
         run: |
-          SHEETS_URL="${INPUT_SHEETS_URL:-$VITE_SHEETS_WEB_APP_URL}"
-          SHEETS_TOKEN="${INPUT_SHEETS_TOKEN:-$VITE_SHEETS_API_TOKEN}"
+          echo "demo_mode=false" >> "$GITHUB_OUTPUT"
+          echo "data_backend=firebase" >> "$GITHUB_OUTPUT"
 
-          if [ -f config/bootstrap.json ]; then
-            BOOT_DEMO=$(node -p "JSON.parse(require('fs').readFileSync('config/bootstrap.json','utf8')).demoMode===true")
-            BOOT_BACKEND=$(node -p "JSON.parse(require('fs').readFileSync('config/bootstrap.json','utf8')).backend||''")
-            BOOT_SHEETS_URL=$(node -p "JSON.parse(require('fs').readFileSync('config/bootstrap.json','utf8')).sheetsWebAppUrl||''")
-            BOOT_SHEETS_TOKEN=$(node -p "JSON.parse(require('fs').readFileSync('config/bootstrap.json','utf8')).sheetsApiToken||''")
-            if [ "$BOOT_DEMO" = "true" ] || [ "$BOOT_BACKEND" = "demo" ]; then
-              echo "demo_mode=true" >> "$GITHUB_OUTPUT"
-              echo "data_backend=demo" >> "$GITHUB_OUTPUT"
-              echo "use_sheets=false" >> "$GITHUB_OUTPUT"
-              echo "✓ Modo demo desde config/bootstrap.json (ignora Secrets de Firebase/Sheets)"
-              exit 0
-            fi
-          fi
-
-          if [ "$INPUT_BACKEND" = "demo" ]; then
-            echo "demo_mode=true" >> "$GITHUB_OUTPUT"
-            echo "data_backend=demo" >> "$GITHUB_OUTPUT"
-            echo "use_sheets=false" >> "$GITHUB_OUTPUT"
-            echo "○ Modo demo forzado por workflow_dispatch"
-            exit 0
-          fi
-
-          if [ "$INPUT_BACKEND" = "sheets" ] || { [ -n "$SHEETS_URL" ] && [ -n "$SHEETS_TOKEN" ]; }; then
-            if [ -z "$SHEETS_URL" ] || [ -z "$SHEETS_TOKEN" ]; then
-              echo "✗ backend=sheets pero faltan sheets_web_app_url o sheets_api_token"
-              exit 1
-            fi
-            echo "demo_mode=false" >> "$GITHUB_OUTPUT"
-            echo "data_backend=sheets" >> "$GITHUB_OUTPUT"
-            echo "use_sheets=true" >> "$GITHUB_OUTPUT"
-            echo "sheets_url=$SHEETS_URL" >> "$GITHUB_OUTPUT"
-            echo "sheets_token=$SHEETS_TOKEN" >> "$GITHUB_OUTPUT"
-            echo "✓ Backend Google Sheets — build producción"
-            exit 0
-          fi
-
-          if [ "$BOOT_BACKEND" = "sheets" ] && [ -n "$BOOT_SHEETS_URL" ] && [ -n "$BOOT_SHEETS_TOKEN" ]; then
-            echo "demo_mode=false" >> "$GITHUB_OUTPUT"
-            echo "data_backend=sheets" >> "$GITHUB_OUTPUT"
-            echo "use_sheets=true" >> "$GITHUB_OUTPUT"
-            echo "sheets_url=$BOOT_SHEETS_URL" >> "$GITHUB_OUTPUT"
-            echo "sheets_token=$BOOT_SHEETS_TOKEN" >> "$GITHUB_OUTPUT"
-            echo "✓ Backend Google Sheets desde config/bootstrap.json"
-            exit 0
-          fi
-
-          if [ "$VITE_DATA_BACKEND" = "sheets" ] && [ -n "$VITE_SHEETS_WEB_APP_URL" ] && [ -n "$VITE_SHEETS_API_TOKEN" ]; then
-            echo "demo_mode=false" >> "$GITHUB_OUTPUT"
-            echo "data_backend=sheets" >> "$GITHUB_OUTPUT"
-            echo "use_sheets=true" >> "$GITHUB_OUTPUT"
-            echo "sheets_url=$VITE_SHEETS_WEB_APP_URL" >> "$GITHUB_OUTPUT"
-            echo "sheets_token=$VITE_SHEETS_API_TOKEN" >> "$GITHUB_OUTPUT"
-            echo "✓ Backend Google Sheets (Secrets) — build producción"
-            exit 0
-          fi
           PLACEHOLDERS="demo-api-key demo-personal-eventos 000000000000 1:000000000000:web:demo"
           missing=()
           for key in VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_STORAGE_BUCKET VITE_FIREBASE_MESSAGING_SENDER_ID VITE_FIREBASE_APP_ID; do
@@ -173,15 +94,12 @@ jobs:
               missing+=("$key (valor de prueba)")
             fi
           done
-          echo "data_backend=firebase" >> "$GITHUB_OUTPUT"
+
           if [ ${#missing[@]} -eq 0 ]; then
-            echo "demo_mode=false" >> "$GITHUB_OUTPUT"
-            echo "✓ Los 6 Secrets Firebase están completos — build con backend real"
+            echo "✓ Los 6 Secrets Firebase están completos — build con backend Firebase"
           else
-            echo "demo_mode=true" >> "$GITHUB_OUTPUT"
-            echo "○ Secrets incompletos — GitHub Pages en modo demo hasta corregir:"
+            echo "⚠ Secrets Firebase incompletos — el build continúa pero login fallará hasta corregir:"
             printf '  - %s\n' "${missing[@]}"
-            echo "  Alternativa sin JSON: Secrets VITE_DATA_BACKEND=sheets + VITE_SHEETS_*"
           fi
 
       - name: Construir app unificada
@@ -190,11 +108,9 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_PAGES_BASE: ${{ format('/{0}/', github.event.repository.name) }}
           PAGES_DEPLOY_ALLOW_MISSING_FIREBASE: "true"
-          VITE_DEMO_MODE: ${{ steps.firebase_mode.outputs.demo_mode }}
+          VITE_DEMO_MODE: "false"
           VITE_USE_FIREBASE_EMULATORS: "false"
-          VITE_DATA_BACKEND: ${{ steps.firebase_mode.outputs.use_sheets == 'true' && 'sheets' || secrets.VITE_DATA_BACKEND }}
-          VITE_SHEETS_WEB_APP_URL: ${{ steps.firebase_mode.outputs.sheets_url || secrets.VITE_SHEETS_WEB_APP_URL }}
-          VITE_SHEETS_API_TOKEN: ${{ steps.firebase_mode.outputs.sheets_token || secrets.VITE_SHEETS_API_TOKEN }}
+          VITE_DATA_BACKEND: firebase
           VITE_BLOQUEAR_INTEGRACIONES: ${{ secrets.VITE_BLOQUEAR_INTEGRACIONES || 'true' }}
           VITE_INTEGRACIONES_CLAVE: ${{ secrets.VITE_INTEGRACIONES_CLAVE || 'spe-desbloquear' }}
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
@@ -203,16 +119,15 @@ jobs:
           VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
-          VITE_FIREBASE_VAPID_KEY: ${{ secrets.VITE_FIREBASE_VAPID_KEY }}
+          VITE_FIREBASE_VAPID_KEY: ${{ secrets.VITE_FIREBASE_VAPID_KEY || env.VITE_FIREBASE_VAPID_KEY }}
           VITE_GOOGLE_MAPS_API_KEY: ${{ env.VITE_GOOGLE_MAPS_API_KEY || secrets.VITE_GOOGLE_MAPS_API_KEY }}
+          VITE_SPE_CANONICAL_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
 
       - name: Verificar artefactos
         run: |
           test -f docs/index.html
           test -f docs/.nojekyll
-          test -f docs/worker/index.html
-          test -f docs/master/index.html
-          echo "✓ docs/ listo (app unificada + redirecciones /worker/ y /master/)"
+          npm run verify:spa
 
       - name: Publicar en gh-pages/docs
         uses: JamesIves/github-pages-deploy-action@v4

@@ -128,6 +128,10 @@ export interface Invitation {
   customRoleId?: string;
   usadaEn?: string;
   uid?: string;
+  /** ISO timestamp cuando Cloud Functions envió el correo de invitación. */
+  emailEnviadoEn?: string;
+  /** Error al enviar correo automático (SMTP no configurado, etc.). */
+  emailError?: string;
 }
 
 export interface Worker {
@@ -173,8 +177,11 @@ export interface Sitio {
   id: string;
   eventId: string;
   nombre: string;
+  /** Dirección legible del punto de trabajo (geocodificada o ingresada manualmente). */
+  direccion?: string;
   lat: number;
   lng: number;
+  /** Radio en metros del área de trabajo (geocerca GPS). */
   radioGeocerca: number;
 }
 
@@ -189,6 +196,8 @@ export interface Turno {
   inicio: string;
   fin: string;
   estado: ShiftEstado;
+  /** ISO timestamp cuando se envió correo automático de turno asignado. */
+  emailTurnoEnviadoEn?: string;
 }
 
 export type NotificationTipo =
@@ -249,6 +258,10 @@ export interface AppNotification {
   actorNombre?: string;
   leidaPor: string[];
   accionTurno?: boolean;
+  /** Rellenado por Cloud Function al enviar FCM */
+  pushEnviadoEn?: string;
+  pushTokensEnviados?: number;
+  pushError?: string;
 }
 
 export interface BreakSchedule {
@@ -260,6 +273,19 @@ export interface BreakSchedule {
   inicio: string;
   fin: string;
   notificado: boolean;
+}
+
+/** Mensaje del chat interno del equipo (Firestore). */
+export interface ChatMessage {
+  id: string;
+  channelId: string;
+  channelLabel: string;
+  text: string;
+  senderUid: string;
+  senderNombre: string;
+  senderRole: UserRole | string;
+  eventId?: string | null;
+  createdAt: string;
 }
 
 export const REPORTE_TIPO_LABEL: Record<ReporteTipo, string> = {
@@ -307,7 +333,7 @@ export const ROLE_LABEL: Record<UserRole, string> = {
   trabajador: "Trabajador",
 };
 
-export {
+import {
   puedeGestionarPersonal,
   puedeGestionarTurnos,
   puedeConfigurarIntegraciones,
@@ -323,6 +349,28 @@ export {
   puedeVerInformesEvento,
   puedeGestionarRolesCustom,
 } from "./permissions";
+
+export {
+  puedeGestionarPersonal,
+  puedeGestionarTurnos,
+  puedeConfigurarIntegraciones,
+  puedeGestionarCuentas,
+  puedeGestionarQr,
+  puedeVerMapaEnVivo,
+  puedeEnviarEmergencia,
+  puedeGestionarNomina,
+  puedeVerNomina,
+  puedeGestionarConfiguracion,
+  puedeVerReportesTrabajadores,
+  puedeUsarComunicacion,
+  puedeVerInformesEvento,
+  puedeGestionarRolesCustom,
+};
+
+/** Admin/supervisor puede enviar notificaciones manuales y push. */
+export function puedeEnviarNotificacion(role: UserRole): boolean {
+  return puedeEnviarEmergencia(role);
+}
 
 export const NOTIFICATION_TIPO_LABEL: Record<NotificationTipo, string> = {
   turno_asignado: "Turno asignado",
@@ -476,7 +524,7 @@ export interface ChatConversation {
   creadoPor: string;
 }
 
-export interface ChatMessage {
+export interface ConversationMessage {
   id: string;
   conversationId: string;
   senderUid: string;

@@ -5,9 +5,9 @@ import { getAdminNavSections, getMasterNavSections, getWorkerNavItems } from "..
 
 const ADMIN_ROUTES = new Set([
   "/panel", "/clientes", "/facturacion", "/inventario", "/integraciones",
-  "/supervision", "/personal", "/turnos", "/cuentas", "/qr-sitios", "/mapa",
-  "/reportes", "/notificaciones", "/comunicacion", "/informes", "/nomina",
-  "/configuracion", "/ayuda",
+  "/supervision", "/personal", "/operacion", "/turnos", "/cuentas", "/qr-sitios", "/mapa",
+  "/reportes", "/notificaciones", "/nomina", "/configuracion", "/pendientes",
+  "/comunicacion", "/informes", "/descargas", "/ayuda",
 ]);
 
 const MASTER_ROUTES = new Set([
@@ -29,7 +29,8 @@ function checkSections(
   const broken: string[] = [];
   for (const section of sections) {
     for (const item of section.items) {
-      if (!allowed.has(item.to) && !REDIRECTS.has(item.to)) {
+      const path = item.to.split("?")[0] ?? item.to;
+      if (!allowed.has(path) && !REDIRECTS.has(path)) {
         broken.push(`${label}: ${item.to}`);
       }
     }

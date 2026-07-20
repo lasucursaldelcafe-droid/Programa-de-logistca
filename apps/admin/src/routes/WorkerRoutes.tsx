@@ -7,8 +7,8 @@ import { AyudaPage } from "../pages/AyudaPage";
 import { NotificacionesPage } from "../pages/NotificacionesPage";
 import { WorkerLayout } from "@worker/components/WorkerLayout";
 import { WorkerHomePage } from "@worker/pages/WorkerHomePage";
+import { ComunicacionPage } from "../pages/ComunicacionPage";
 import { ReportarPage } from "@worker/pages/ReportarPage";
-import { ComunicacionPage } from "@core/pages/ComunicacionPage";
 
 function WorkerProtected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();

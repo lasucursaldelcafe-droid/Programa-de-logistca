@@ -13,9 +13,14 @@ import {
   where,
   getDocs,
 } from "firebase/firestore";
+import { FirebaseError } from "firebase/app";
 import {
   createUserWithEmailAndPassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
   sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  updatePassword,
 } from "firebase/auth";
 import {
   getFirebaseAuth,
@@ -25,6 +30,10 @@ import {
   isInsideGeofence,
   isWithinTimeWindow,
   parseQrPayload,
+  buildQrCodeDocument,
+  buildQrCodeId,
+  buildQrCodeToken,
+  type CreateQrCodeInput,
   type Attendance,
   type AttendanceEstado,
   type Evento,
@@ -155,11 +164,18 @@ export async function createWorker(
     rolPlataforma?: "trabajador" | "supervisor_sitio";
     customRoleId?: string;
   },
-  actorNombre?: string,
-): Promise<void> {
+  options?: {
+    actorNombre?: string;
+    creadaPor?: string;
+    creadaPorNombre?: string;
+    /** Envía invitación por correo automáticamente (Firebase producción). Default true. */
+    enviarInvitacion?: boolean;
+  },
+): Promise<string> {
   const rolPlataforma = data.rolPlataforma ?? "trabajador";
+  const actorNombre = options?.actorNombre;
   if (isDemoMode()) {
-    demoStore.addWorker(
+    const id = demoStore.addWorker(
       {
         nombre: data.nombre,
         documento: data.documento,
@@ -179,7 +195,7 @@ export async function createWorker(
       },
       actorNombre,
     );
-    return;
+    return id;
   }
   const id = `worker-${Date.now().toString(36)}`;
   const worker = {
@@ -202,9 +218,9 @@ export async function createWorker(
   };
   if (isSheetsBackend()) {
     await sheetsUpsertRecord("workers", worker);
-    return;
+    return id;
   }
-  await addDoc(collection(getFirestoreDb(), "workers"), {
+  const ref = await addDoc(collection(getFirestoreDb(), "workers"), {
     nombre: data.nombre,
     documento: data.documento,
     telefono: data.telefono,
@@ -220,6 +236,23 @@ export async function createWorker(
     certificaciones: [],
     creadoEn: new Date().toISOString(),
   });
+
+  const creadaPor = options?.creadaPor;
+  const shouldInvite =
+    options?.enviarInvitacion !== false && data.email.trim().length > 0 && Boolean(creadaPor);
+
+  if (shouldInvite && creadaPor) {
+    await createInvitation({
+      workerId: ref.id,
+      workerNombre: data.nombre,
+      email: data.email.trim().toLowerCase(),
+      role: rolPlataforma,
+      creadaPor,
+      creadaPorNombre: options?.creadaPorNombre ?? actorNombre ?? "Administrador",
+    });
+  }
+
+  return ref.id;
 }
 
 export async function updateWorkerEstado(
@@ -342,6 +375,38 @@ export async function updateShiftEstado(id: string, estado: ShiftEstado): Promis
       siteNombre: shift.siteNombre,
     });
   }
+}
+
+export async function deleteShift(id: string): Promise<void> {
+  if (isDemoMode()) {
+    const active = demoStore.attendances.find(
+      (a) => a.shiftId === id && a.estado !== "cerrado",
+    );
+    if (active) {
+      throw new Error("No se puede quitar: el trabajador tiene jornada activa en este turno.");
+    }
+    demoStore.removeShift(id);
+    return;
+  }
+  if (isSheetsBackend()) {
+    throw new Error("Quitar del evento no está disponible con backend Google Sheets.");
+  }
+
+  const attSnap = await getDocs(
+    query(
+      collection(getFirestoreDb(), "attendance"),
+      where("shiftId", "==", id),
+    ),
+  );
+  const hasActive = attSnap.docs.some((d) => {
+    const estado = d.data().estado as string | undefined;
+    return estado !== "cerrado";
+  });
+  if (hasActive) {
+    throw new Error("No se puede quitar: el trabajador tiene jornada activa en este turno.");
+  }
+
+  await deleteDoc(doc(getFirestoreDb(), "shifts", id));
 }
 
 export function useInvitations(): Invitation[] {
@@ -569,22 +634,51 @@ export async function activateAccountWithInvitation(
     };
   }
 
-  const cred = await createUserWithEmailAndPassword(
-    getFirebaseAuth(),
-    invitation.email,
-    password,
-  );
+  const auth = getFirebaseAuth();
+  let cred;
+  try {
+    cred = await createUserWithEmailAndPassword(auth, invitation.email, password);
+  } catch (err) {
+    if (!(err instanceof FirebaseError) || err.code !== "auth/email-already-in-use") {
+      throw err;
+    }
+    // Reintento: la cuenta Auth pudo crearse en un intento anterior que falló al guardar Firestore.
+    try {
+      cred = await signInWithEmailAndPassword(auth, invitation.email, password);
+    } catch {
+      throw new Error(
+        "Este correo ya tiene cuenta en SPE. Si ya creaste contraseña, usa Iniciar sesión. " +
+          "Si no la recuerdas, en login elige «Olvidé mi contraseña». " +
+          "Si el problema continúa, pide al administrador una nueva invitación.",
+      );
+    }
+  }
 
   const perfilCompleto = (invitation.role ?? "trabajador") === "supervisor_sitio";
 
-  await setDoc(doc(getFirestoreDb(), "users", cred.user.uid), {
-    email: invitation.email,
-    nombre: invitation.workerNombre,
-    role: invitation.role ?? "trabajador",
-    workerId: invitation.workerId,
-    customRoleId: invitation.customRoleId,
-    perfilCompleto,
-  });
+  const userRef = doc(getFirestoreDb(), "users", cred.user.uid);
+  const existingUser = await getDoc(userRef);
+  if (existingUser.exists()) {
+    const data = existingUser.data();
+    if (data.workerId && data.workerId !== invitation.workerId) {
+      throw new Error(
+        "Este correo ya está vinculado a otro perfil de personal. Contacta al administrador.",
+      );
+    }
+  }
+
+  await setDoc(
+    userRef,
+    {
+      email: invitation.email,
+      nombre: invitation.workerNombre,
+      role: invitation.role ?? "trabajador",
+      workerId: invitation.workerId,
+      customRoleId: invitation.customRoleId,
+      perfilCompleto,
+    },
+    { merge: true },
+  );
 
   await updateDoc(doc(getFirestoreDb(), "workers", invitation.workerId), {
     cuentaCreada: true,
@@ -602,6 +696,7 @@ export async function activateAccountWithInvitation(
     nombre: invitation.workerNombre,
     role: invitation.role ?? "trabajador",
     workerId: invitation.workerId,
+    customRoleId: invitation.customRoleId,
     perfilCompleto,
   };
 }
@@ -657,6 +752,32 @@ export async function sendPasswordReset(email: string): Promise<void> {
     return;
   }
   await sendPasswordResetEmail(getFirebaseAuth(), email);
+}
+
+/** Cambiar la contraseña del usuario con sesión activa (Firebase producción). */
+export async function changeOwnPassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  if (isDemoMode()) {
+    const auth = getFirebaseAuth();
+    const fbUser = auth.currentUser;
+    if (!fbUser?.email) throw new Error("No hay sesión activa");
+    setDemoAccountPassword(fbUser.email, newPassword);
+    return;
+  }
+  if (isSheetsBackend()) {
+    throw new Error("Cambio de contraseña en Sheets: contacta al administrador del sistema.");
+  }
+  if (newPassword.length < 8) {
+    throw new Error("La nueva contraseña debe tener al menos 8 caracteres.");
+  }
+  const auth = getFirebaseAuth();
+  const fbUser = auth.currentUser;
+  if (!fbUser?.email) throw new Error("No hay sesión activa");
+  const cred = EmailAuthProvider.credential(fbUser.email, currentPassword);
+  await reauthenticateWithCredential(fbUser, cred);
+  await updatePassword(fbUser, newPassword);
 }
 
 export async function getWorkerById(workerId: string): Promise<Worker | null> {
@@ -735,40 +856,12 @@ function resolveToken(qr: QrCode, token: string): boolean {
   return token === qr.token;
 }
 
-export async function createQrCode(data: {
-  eventId: string;
-  eventNombre: string;
-  siteId: string;
-  siteNombre: string;
-  modo: QrModo;
-  ventanaInicio: string;
-  ventanaFin: string;
-  radioGeocerca: number;
-  descripcionDatos: string;
-  intervaloRotacionSegundos?: number;
-  creadoPor: string;
-}): Promise<string> {
-  const id = `qr-${data.siteId}-${Date.now().toString(36)}`;
-  const token = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+export async function createQrCode(data: CreateQrCodeInput): Promise<string> {
+  const id = buildQrCodeId(data.siteId);
+  const token = buildQrCodeToken(crypto.randomUUID());
   const secret = data.modo === "rotativo" ? crypto.randomUUID().slice(0, 8) : undefined;
 
-  const qr: Omit<QrCode, "id"> = {
-    eventId: data.eventId,
-    eventNombre: data.eventNombre,
-    siteId: data.siteId,
-    siteNombre: data.siteNombre,
-    token,
-    secret,
-    modo: data.modo,
-    intervaloRotacionSegundos: data.intervaloRotacionSegundos,
-    ventanaInicio: data.ventanaInicio,
-    ventanaFin: data.ventanaFin,
-    radioGeocerca: data.radioGeocerca,
-    descripcionDatos: data.descripcionDatos,
-    activo: true,
-    creadoEn: new Date().toISOString(),
-    creadoPor: data.creadoPor,
-  };
+  const qr = buildQrCodeDocument(data, { token, secret });
 
   if (isDemoMode()) {
     demoStore.addQrCode({ ...qr, id });
@@ -1292,6 +1385,7 @@ export async function updateEvento(
 export async function createSite(data: {
   eventId: string;
   nombre: string;
+  direccion?: string;
   lat: number;
   lng: number;
   radioGeocerca: number;
@@ -1300,6 +1394,7 @@ export async function createSite(data: {
   const site = {
     eventId: data.eventId,
     nombre: data.nombre,
+    ...(data.direccion?.trim() ? { direccion: data.direccion.trim() } : {}),
     lat: data.lat,
     lng: data.lng,
     radioGeocerca: data.radioGeocerca,

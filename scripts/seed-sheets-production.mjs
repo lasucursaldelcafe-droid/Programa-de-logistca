@@ -36,18 +36,15 @@ const DEFAULT_PAYROLL_RATES = [
 ];
 
 async function upsertRecord(webAppUrl, token, collection, record, idField = "id") {
-  const res = await fetch(webAppUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "upsert",
-      token,
-      collection,
-      idField,
-      record,
-    }),
-    redirect: "follow",
+  const base = webAppUrl.replace(/\/$/, "");
+  const qs = new URLSearchParams({
+    action: "upsert",
+    token,
+    collection,
+    idField,
+    record: JSON.stringify(record),
   });
+  const res = await fetch(`${base}?${qs.toString()}`, { redirect: "follow" });
   const data = await res.json().catch(() => ({}));
   if (!res.ok || data.error) {
     throw new Error(data.error ?? `HTTP ${res.status}`);

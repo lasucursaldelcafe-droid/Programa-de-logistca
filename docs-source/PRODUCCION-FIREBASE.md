@@ -6,6 +6,29 @@ La app opera con **Firebase Auth + Firestore** en producción. No hay modo demo 
 
 **Si Google no te deja descargar JSON:** ver [`GUIA-SIN-DESCARGAR-JSON.md`](./GUIA-SIN-DESCARGAR-JSON.md) → `npm run setup:sheets-auto`.
 
+## Admin SDK vs SDK web (importante)
+
+Son **dos credenciales distintas**:
+
+| Uso | Qué es | Dónde va |
+|-----|--------|----------|
+| **Login en el navegador / app** | SDK web (`apiKey`, `authDomain`, `projectId`, …) | GitHub Secrets `VITE_FIREBASE_*` o `/configurar` |
+| **Crear usuarios en el servidor** | Cuenta de servicio JSON (`serviceAccountKey.json`) | `npm run seed:production` o workflow **Crear usuarios Firebase (producción)** |
+
+El código de Admin SDK (`firebase-admin` + `admin.credential.cert(serviceAccount)`) **solo corre en Node/scripts/CI**. **No** lo pegues en la app React ni en GitHub Pages.
+
+Para crear la cuenta de producción `lasucursaldelcafe@gmail.com`:
+
+```bash
+# Con archivo (PC)
+SPE_PROD_PASSWORD='…' npm run seed:production -- --service-account ./service-account.json
+
+# Con variables (CI, sin guardar archivo en disco)
+FIREBASE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}' SPE_PROD_PASSWORD='…' npm run seed:production
+```
+
+En GitHub: Settings → Secrets → `FIREBASE_SERVICE_ACCOUNT_JSON` + `SPE_PROD_PASSWORD` → Actions → **Crear usuarios Firebase (producción)** → Run workflow.
+
 Comando rápido:
 
 ```bash

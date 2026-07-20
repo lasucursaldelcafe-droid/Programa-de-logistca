@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { execSync } from "node:child_process";
 import { getDeploymentLinks, updateReadme, updateRootIndex, writeDeploymentJson } from "./sync-links";
 import { resolvePagesBase } from "./resolve-pages-base";
+import { SPA_MIRROR_ROUTES } from "./spa-routes";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const docs = resolve(ROOT, "docs");
@@ -26,23 +27,6 @@ function finalizeSpa(distDir: string, extraRoutes: string[] = []): void {
   if (extraRoutes.length > 0) mirrorSpaRoutes(distDir, extraRoutes);
 }
 
-function writeLegacyRedirect(targetDir: string, redirectTo: string): void {
-  mkdirSync(targetDir, { recursive: true });
-  writeFileSync(
-    resolve(targetDir, "index.html"),
-    `<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta http-equiv="refresh" content="0;url=${redirectTo}" />
-  <script>location.replace(${JSON.stringify(redirectTo)});</script>
-  <title>SPE — redirigiendo…</title>
-</head>
-<body><p>Redirigiendo a la app unificada SPE…</p></body>
-</html>`,
-  );
-}
-
 function appBase(): string {
   return resolvePagesBase();
 }
@@ -54,8 +38,21 @@ updateRootIndex(links);
 
 console.log("→ Build app unificada (Admin + Master + Trabajador)…");
 run("node scripts/sync-repo-config.mjs", {});
+run("node scripts/write-runtime-config.mjs", {
+  VITE_SPE_CANONICAL_URL: process.env.VITE_SPE_CANONICAL_URL ?? "",
+  VITE_FIREBASE_API_KEY: process.env.VITE_FIREBASE_API_KEY ?? "",
+  VITE_FIREBASE_AUTH_DOMAIN: process.env.VITE_FIREBASE_AUTH_DOMAIN ?? "",
+  VITE_FIREBASE_PROJECT_ID: process.env.VITE_FIREBASE_PROJECT_ID ?? "",
+  VITE_FIREBASE_STORAGE_BUCKET: process.env.VITE_FIREBASE_STORAGE_BUCKET ?? "",
+  VITE_FIREBASE_MESSAGING_SENDER_ID: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? "",
+  VITE_FIREBASE_APP_ID: process.env.VITE_FIREBASE_APP_ID ?? "",
+  VITE_FIREBASE_VAPID_KEY: process.env.VITE_FIREBASE_VAPID_KEY ?? "",
+  VITE_GOOGLE_MAPS_API_KEY: process.env.VITE_GOOGLE_MAPS_API_KEY ?? "",
+});
+run("npm run setup:fcm", {});
 run("npm run build -w @spe/shared && npm run build -w @spe/admin", {
   GITHUB_PAGES_BASE: appBase(),
+  VITE_SPE_CANONICAL_URL: process.env.VITE_SPE_CANONICAL_URL ?? links.pagesUrl,
   VITE_DEMO_MODE: process.env.VITE_DEMO_MODE ?? "false",
   VITE_USE_FIREBASE_EMULATORS: process.env.VITE_USE_FIREBASE_EMULATORS ?? "false",
   VITE_DATA_BACKEND: process.env.VITE_DATA_BACKEND ?? "",
@@ -75,45 +72,13 @@ run("npm run build -w @spe/shared && npm run build -w @spe/admin", {
 
 const adminDist = resolve(ROOT, "apps/admin/dist");
 
-finalizeSpa(adminDist, [
-  "login",
-  "configurar",
-  "ayuda",
-  "unirse",
-  "completar-perfil",
-  "panel",
-  "personal",
-  "turnos",
-  "cuentas",
-  "qr-sitios",
-  "mapa",
-  "reportes",
-  "nomina",
-  "configuracion",
-  "clientes",
-  "facturacion",
-  "inventario",
-  "integraciones",
-  "supervision",
-  "master",
-  "master/administradores",
-  "master/informes",
-  "master/auditoria",
-  "worker",
-  "worker/turnos",
-  "worker/entrada",
-  "worker/reportar",
-]);
+finalizeSpa(adminDist, [...SPA_MIRROR_ROUTES]);
 
 mkdirSync(docs, { recursive: true });
 rmSync(docs, { recursive: true, force: true });
 mkdirSync(docs, { recursive: true });
 
 cpSync(adminDist, docs, { recursive: true });
-
-// Compatibilidad: URLs antiguas /worker/ y /master/ redirigen a la app unificada
-writeLegacyRedirect(resolve(docs, "worker"), links.pagesUrl);
-writeLegacyRedirect(resolve(docs, "master"), links.pagesUrl);
 
 copyFileSync(resolve(ROOT, "docs-source/GUIA.md"), resolve(docs, "GUIA.md"));
 copyFileSync(
@@ -128,4 +93,3 @@ writeFileSync(resolve(docs, ".nojekyll"), "");
 
 console.log(`✓ GitHub Pages listo (${links.pagesUrl})`);
 console.log("  App unificada — login único, panel según rol (Admin / Master / Trabajador)");
-console.log("  Redirecciones legacy: /worker/ y /master/ → raíz");
