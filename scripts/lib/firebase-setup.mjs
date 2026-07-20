@@ -120,6 +120,27 @@ export function getProdPassword() {
   return "";
 }
 
+/** Cursor CLI / GitHub Actions — CURSOR_API_KEY */
+export function getCursorApiKey() {
+  const fromEnv = process.env.CURSOR_API_KEY?.trim();
+  if (fromEnv) return fromEnv;
+  const local = readJson(resolve(ROOT, "config/credenciales.local.json"));
+  const key =
+    local?.cursorApiKey?.trim() ??
+    local?.cursor?.apiKey?.trim();
+  if (key && !key.includes("PON_AQUI") && !key.includes("TU_") && key.length > 8) {
+    return key;
+  }
+  return "";
+}
+
+export function pushCursorApiKeySecret() {
+  const key = getCursorApiKey();
+  if (!key) return false;
+  if (!ghAvailable()) return false;
+  return pushGhSecret("CURSOR_API_KEY", key);
+}
+
 export function pushGhSecret(name, value) {
   if (!value) return false;
   return run("gh", ["secret", "set", name, "--body", value, "--repo", REPO], { stdio: "pipe" }) === 0;

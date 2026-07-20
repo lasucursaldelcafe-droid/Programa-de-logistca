@@ -38,4 +38,31 @@ if (localPassword) {
 console.log("\nLocal emuladores (npm run dev:full):");
 console.log("  admin@eventos.test / Admin123!");
 console.log("  master@eventos.test / Master123!");
+
+function cursorKeyHint() {
+  const fromEnv = process.env.CURSOR_API_KEY?.trim();
+  if (fromEnv) return "env CURSOR_API_KEY";
+  try {
+    const cred = JSON.parse(
+      readFileSync(resolve(ROOT, "config/credenciales.local.json"), "utf-8"),
+    );
+    const key = cred?.cursorApiKey?.trim();
+    if (key && !key.includes("PON_AQUI") && key.length > 8) {
+      return "config/credenciales.local.json";
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+const cursorSrc = cursorKeyHint();
+console.log("\nCursor Agent (GitHub Actions):");
+if (cursorSrc) {
+  console.log(`  CURSOR_API_KEY: definida (${cursorSrc}) → npm run setup:cursor-key`);
+} else {
+  console.log("  CURSOR_API_KEY: pendiente — cursor.com/settings → cursorApiKey en credenciales.local.json");
+  console.log("  npm run setup:cursor-key");
+}
+
 console.log("\nDocs: docs-source/ACCESO-PRODUCCION.md\n");

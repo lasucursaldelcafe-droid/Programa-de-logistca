@@ -5,7 +5,7 @@
  * Uso:
  *   npm run setup:cli                    # sync + diagnóstico + build
  *   npm run setup:cli -- --full          # + secrets gh + seed + firestore + deploy CI
- *   npm run setup:cli -- --push-secrets  # sube VITE_FIREBASE_* a GitHub
+ *   npm run setup:cli -- --push-secrets  # sube VITE_FIREBASE_* + CURSOR_API_KEY a GitHub
  *   npm run setup:cli -- --seed          # crea lasucursaldelcafe@gmail.com
  *   npm run setup:cli -- --firestore     # deploy rules + indexes
  */
@@ -15,9 +15,11 @@ import {
   ADMIN_EMAIL,
   REPO,
   deployFirestoreWithServiceAccount,
+  getCursorApiKey,
   getProdPassword,
   getServiceAccountSource,
   ghAvailable,
+  pushCursorApiKeySecret,
   isFirebaseConfigComplete,
   loadFirebaseWebConfig,
   pushFirebaseSecrets,
@@ -117,7 +119,17 @@ async function main() {
       } else if (doSeed) {
         console.log("  ! SPE_PROD_PASSWORD no definida (env o config/acceso.local.json)");
       }
-      log.push(`- GitHub Secrets: ${ok} OK, ${fail} fallos`);
+      if (pushCursorApiKeySecret()) {
+        console.log("  + secret CURSOR_API_KEY");
+        log.push("- CURSOR_API_KEY subida a GitHub Secrets");
+      } else if (getCursorApiKey()) {
+        console.log("  ! CURSOR_API_KEY definida pero gh secret falló");
+        log.push("- CURSOR_API_KEY: falló gh secret set");
+      } else {
+        console.log("  · CURSOR_API_KEY omitida (env o config/credenciales.local.json → cursorApiKey)");
+        log.push("- CURSOR_API_KEY: omitida (opcional)");
+      }
+      log.push(`- GitHub Secrets Firebase: ${ok} OK, ${fail} fallos`);
     });
   } else if (pushSecrets) {
     console.log("\n=== 5. GitHub Secrets — omitido (Firebase incompleto) ===");

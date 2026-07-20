@@ -49,6 +49,7 @@
     "auto:max": "node scripts/spe-max-auto.mjs",
     "setup:cli": "node scripts/spe-setup-cli.mjs",
     "setup:cli:full": "node scripts/spe-setup-cli.mjs --full",
+    "setup:cursor-key": "node scripts/push-cursor-secret.mjs",
     "fix:sheets-token": "node scripts/fix-sheets-token.mjs",
     "setup:fcm": "tsx scripts/update-fcm-sw.ts",
     "firebase:deploy-rules": "firebase deploy --only firestore:rules",
