@@ -53,6 +53,8 @@
     "setup:firebase-token": "node scripts/push-firebase-token.mjs",
     "firestore:bootstrap": "node scripts/firestore-bootstrap.mjs",
     "config:runtime": "node scripts/write-runtime-config.mjs",
+    "produccion:completa": "node scripts/produccion-completa.mjs",
+    "deploy:firestore-rules": "node scripts/deploy-firestore-rules-api.mjs",
     "verify:prod-login": "node scripts/verify-prod-login.mjs",
     "fix:sheets-token": "node scripts/fix-sheets-token.mjs",
     "setup:fcm": "tsx scripts/update-fcm-sw.ts",

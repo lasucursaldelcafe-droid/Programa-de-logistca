@@ -25,6 +25,7 @@ const PLACEHOLDER_FIREBASE = new Set([
 ]);
 
 const PLACEHOLDER_SHEETS = /TU_ID|PEGAR_|TU_CONTRASEÑA|^tu-token$|^tu-token-de-/i;
+const ADMIN_EMAIL = "lasucursaldelcafe@gmail.com";
 
 /** @typedef {"ok"|"warn"|"fail"} CheckStatus */
 /** @typedef {{ id: string, status: CheckStatus, message: string, fix?: string }} Check */
@@ -238,6 +239,8 @@ export async function runDiagnostic(opts = {}) {
       "VITE_SHEETS_WEB_APP_URL",
       "VITE_SHEETS_API_TOKEN",
       "FIREBASE_SERVICE_ACCOUNT_JSON",
+      "FIREBASE_TOKEN",
+      "SPE_PROD_PASSWORD",
     ];
     const present = secretKeys.filter((k) => (process.env[k] ?? "").trim().length > 0);
     checks.push({
@@ -321,6 +324,73 @@ export async function runDiagnostic(opts = {}) {
       : `GitHub Pages no accesible: ${pagesFetch.error ?? pagesFetch.status}`,
     fix: "Actions → «Publicar app (GitHub Pages)» o «SPE — Diagnóstico y CD» con deploy=true",
   });
+
+  const runtimeUrl = `${pagesUrl.replace(/\/?$/, "/")}spe-runtime-config.json`;
+  const runtimeFetch = await fetchOk(runtimeUrl);
+  let runtimeHasFirebase = false;
+  if (runtimeFetch.ok) {
+    try {
+      const res = await fetch(runtimeUrl, { cache: "no-store" });
+      const json = await res.json();
+      runtimeHasFirebase = !!(json.firebase?.apiKey && json.firebase?.projectId);
+    } catch {
+      runtimeHasFirebase = false;
+    }
+  }
+  checks.push({
+    id: "runtime.firebase",
+    status: runtimeHasFirebase ? "ok" : "warn",
+    message: runtimeHasFirebase
+      ? "spe-runtime-config.json incluye Firebase (apps descargadas sincronizan)"
+      : "Runtime config sin bloque firebase — ejecuta npm run config:runtime en CI",
+    fix: "node scripts/write-runtime-config.mjs con VITE_FIREBASE_* en env",
+  });
+
+  if (fbCheck.complete && fb.apiKey) {
+    try {
+      const pwd = process.env.SPE_PROD_PASSWORD?.trim() || "SpeAdmin2026!";
+      const authRes = await fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${fb.apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: ADMIN_EMAIL,
+            password: pwd,
+            returnSecureToken: true,
+          }),
+        },
+      );
+      const authData = await authRes.json();
+      if (authData.idToken && authData.localId) {
+        const fsRes = await fetch(
+          `https://firestore.googleapis.com/v1/projects/${fb.projectId}/databases/(default)/documents/users/${authData.localId}`,
+          { headers: { Authorization: `Bearer ${authData.idToken}` } },
+        );
+        const fsOk = fsRes.ok;
+        checks.push({
+          id: "firestore.live",
+          status: fsOk ? "ok" : "fail",
+          message: fsOk
+            ? "Firestore users/{uid} legible — login completo OK"
+            : "Firestore rechaza permisos — faltan reglas desplegadas",
+          fix: "firebase login:ci → npm run setup:firebase-token → Actions → Producción completa (SPE)",
+        });
+        if (!fsOk) {
+          recommendations.push(
+            "Firestore: ejecuta «Producción completa (SPE)» o pega firestore.rules en Firebase Console",
+          );
+        }
+      }
+    } catch {
+      checks.push({
+        id: "firestore.live",
+        status: "warn",
+        message: "No se pudo verificar Firestore en vivo",
+        fix: "npm run verify:prod-login",
+      });
+    }
+  }
 
   // --- Login demo guidance ---
   if (effectiveBackend === "demo" || bootstrap?.demoMode) {

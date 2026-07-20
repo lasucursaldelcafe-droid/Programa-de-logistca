@@ -30,8 +30,22 @@ https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/cuentas
 
 ## Si sale "Missing or insufficient permissions"
 
+**Automático (PC, una vez):**
+
+```powershell
+.\scripts\windows\SPE-Produccion-Completa.ps1
+```
+
+O:
+
+```bash
+firebase login:ci
+npm run produccion:completa
+```
+
+**Manual:** Firebase Console → Firestore → Reglas → pegar `firestore.rules` → Publicar
+
 1. Firebase Console → **Firestore** → **Reglas** → **Publicar** (o pega `firestore.rules` del repo)
-2. Firestore → colección **`users`** → documento **`8kJ9xnbXwlNVQerimF088JXo8Ql1`** con `role: administrador`
-3. GitHub Actions → **Bootstrap Firestore (SPE)** o **Desplegar reglas Firestore**
+2. GitHub Actions → **Producción completa (SPE)** o **Bootstrap Firestore (SPE)**
 
 Proyecto Firebase: `programalog-ccc12`

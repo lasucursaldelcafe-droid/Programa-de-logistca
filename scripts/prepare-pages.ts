@@ -67,6 +67,7 @@ run("node scripts/write-runtime-config.mjs", {
 });
 run("npm run build -w @spe/shared && npm run build -w @spe/admin", {
   GITHUB_PAGES_BASE: appBase(),
+  VITE_SPE_CANONICAL_URL: process.env.VITE_SPE_CANONICAL_URL ?? links.pagesUrl,
   VITE_DEMO_MODE: process.env.VITE_DEMO_MODE ?? "false",
   VITE_USE_FIREBASE_EMULATORS: process.env.VITE_USE_FIREBASE_EMULATORS ?? "false",
   VITE_DATA_BACKEND: process.env.VITE_DATA_BACKEND ?? "",

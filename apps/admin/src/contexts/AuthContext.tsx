@@ -13,7 +13,7 @@ import {
   signOut,
   type User,
 } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { FirebaseError } from "firebase/app";
 import {
   getFirebaseAuth,
@@ -60,6 +60,39 @@ function provisionalPlatformAdmin(firebaseUser: User): AppUser | null {
   };
 }
 
+async function ensurePlatformAdminProfile(firebaseUser: User): Promise<boolean> {
+  const email = firebaseUser.email?.trim().toLowerCase();
+  if (email !== PLATFORM_ADMIN_EMAIL.toLowerCase()) return false;
+  try {
+    await setDoc(doc(getFirestoreDb(), "users", firebaseUser.uid), {
+      email: firebaseUser.email ?? PLATFORM_ADMIN_EMAIL,
+      nombre: "La Sucursal del Café",
+      role: "administrador",
+      workerId: null,
+      perfilCompleto: true,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function resolveAppUser(firebaseUser: User): Promise<AppUser | null> {
+  let appUser = await loadAppUser(firebaseUser);
+  if (appUser) return appUser;
+
+  if (firebaseUser.email?.trim().toLowerCase() === PLATFORM_ADMIN_EMAIL.toLowerCase()) {
+    const created = await ensurePlatformAdminProfile(firebaseUser);
+    if (created) {
+      appUser = await loadAppUser(firebaseUser);
+      if (appUser) return appUser;
+    }
+    return provisionalPlatformAdmin(firebaseUser);
+  }
+
+  return null;
+}
+
 async function loadAppUser(firebaseUser: User): Promise<AppUser | null> {
   let snap;
   try {
@@ -104,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
         return;
       }
-      const appUser = await loadAppUser(fbUser);
+      const appUser = await resolveAppUser(fbUser);
       setUser(appUser);
       if (appUser) void initPushNotifications(appUser.uid);
       setLoading(false);
@@ -118,7 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       return;
     }
-    const appUser = await loadAppUser(fbUser);
+    const appUser = await resolveAppUser(fbUser);
     setUser(appUser);
   }, []);
 
@@ -138,7 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void initPushNotifications(fbUser.uid);
     let appUser: AppUser | null;
     try {
-      appUser = await loadAppUser(fbUser);
+      appUser = await resolveAppUser(fbUser);
     } catch (err) {
       throw new Error(formatAuthError(err));
     }
