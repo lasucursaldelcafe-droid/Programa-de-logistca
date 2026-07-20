@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   DEFAULT_PERMISSIONS_BY_ROLE,
   PERMISSION_CATALOG,
@@ -80,6 +81,7 @@ export function RolesPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showCatalogo, setShowCatalogo] = useState(false);
 
   const groups = useMemo(() => getPermissionGroups(), []);
   const byGroup = useMemo(() => permissionsByGroup(), []);
@@ -282,11 +284,63 @@ export function RolesPage() {
       <div>
         <h1 className="font-display text-3xl font-bold">Roles y puestos</h1>
         <p className="mt-1 max-w-2xl text-neutral-400">
-          Usa plantillas de puestos con modo <strong className="text-neutral-300">lectura</strong> o{" "}
-          <strong className="text-neutral-300">editor</strong>, impórtalas o personalízalas. El
-          administrador operativo las asigna al registrar personal.
+          Como super administrador, defines los puestos que el equipo operativo asignará al registrar
+          personal.
         </p>
       </div>
+
+      <Card className="border-accent/20 bg-accent/5">
+        <h2 className="font-display text-lg font-semibold text-neutral-100">Cómo crear roles (3 pasos)</h2>
+        <ol className="mt-4 space-y-4 text-sm">
+          <li className="flex gap-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-bold text-black">
+              1
+            </span>
+            <div>
+              <p className="font-medium text-neutral-200">Importa plantillas de puesto</p>
+              <p className="mt-1 text-neutral-400">
+                El catálogo trae coordinadores, logística, seguridad y más — con permisos de lectura o
+                editor ya definidos.
+              </p>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void importarTodasPlantillas()}
+                className="mt-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
+              >
+                {busy ? "Importando…" : "Importar todas las plantillas"}
+              </button>
+            </div>
+          </li>
+          <li className="flex gap-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border text-xs font-bold text-neutral-400">
+              2
+            </span>
+            <div>
+              <p className="font-medium text-neutral-200">Personaliza si lo necesitas</p>
+              <p className="mt-1 text-neutral-400">
+                Edita un rol importado o crea uno nuevo con el formulario de abajo. Ajusta nombre,
+                permisos y modo lectura/editor.
+              </p>
+            </div>
+          </li>
+          <li className="flex gap-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border text-xs font-bold text-neutral-400">
+              3
+            </span>
+            <div>
+              <p className="font-medium text-neutral-200">Asigna al registrar personal</p>
+              <p className="mt-1 text-neutral-400">
+                El administrador operativo elige el puesto en{" "}
+                <Link to="/personal" className="text-accent underline">
+                  Personal → Nuevo trabajador
+                </Link>
+                . No hace falta volver aquí para cada persona.
+              </p>
+            </div>
+          </li>
+        </ol>
+      </Card>
 
       {error && (
         <p className="rounded-lg bg-alert/10 px-3 py-2 text-sm text-alert">{error}</p>
@@ -298,12 +352,20 @@ export function RolesPage() {
       <Card>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="font-display text-lg font-semibold">Catálogo de puestos (ejemplo)</h2>
+            <h2 className="font-display text-lg font-semibold">Catálogo de puestos</h2>
             <p className="mt-1 text-sm text-neutral-400">
-              {ROLE_TEMPLATES.length} plantillas listas · {importedTemplateIds.size} ya importadas
+              {ROLE_TEMPLATES.length} plantillas · {importedTemplateIds.size} ya importadas ·{" "}
+              {roles.length} roles activos
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setShowCatalogo((v) => !v)}
+              className="rounded-lg border border-border px-3 py-2 text-sm text-neutral-300 hover:bg-neutral-800"
+            >
+              {showCatalogo ? "Ocultar catálogo" : "Ver catálogo completo"}
+            </button>
             <select
               value={filterCategoria}
               onChange={(e) => setFilterCategoria(e.target.value)}
@@ -316,58 +378,52 @@ export function RolesPage() {
                 </option>
               ))}
             </select>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void importarTodasPlantillas()}
-              className="rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-black disabled:opacity-50"
-            >
-              Importar todas
-            </button>
           </div>
         </div>
 
-        <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {plantillasFiltradas.map((template) => {
-            const yaImportada = importedTemplateIds.has(template.id);
-            return (
-              <li
-                key={template.id}
-                className="flex flex-col rounded-xl border border-border bg-bg/50 p-4"
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium text-neutral-100">{template.puesto}</span>
-                  <AccessModeBadge mode={template.modoAcceso} />
-                </div>
-                <p className="mt-1 text-xs text-neutral-500">
-                  {template.categoria} · {BASE_ROLE_LABEL[template.baseRole]}
-                </p>
-                <p className="mt-2 flex-1 text-sm text-neutral-400">{template.descripcion}</p>
-                <p className="mt-2 text-xs text-neutral-500">
-                  {template.permisos.length} funciones
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => aplicarPlantilla(template)}
-                    className="rounded-lg border border-border px-2.5 py-1 text-xs text-neutral-300 hover:bg-neutral-800"
-                  >
-                    Personalizar
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busy || yaImportada}
-                    onClick={() => void importarPlantilla(template)}
-                    className="rounded-lg border border-accent/40 px-2.5 py-1 text-xs text-accent disabled:opacity-40"
-                  >
-                    {yaImportada ? "Importada" : "Importar"}
-                  </button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+        {showCatalogo && (
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {plantillasFiltradas.map((template) => {
+              const yaImportada = importedTemplateIds.has(template.id);
+              return (
+                <li
+                  key={template.id}
+                  className="flex flex-col rounded-xl border border-border bg-bg/50 p-4"
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium text-neutral-100">{template.puesto}</span>
+                    <AccessModeBadge mode={template.modoAcceso} />
+                  </div>
+                  <p className="mt-1 text-xs text-neutral-500">
+                    {template.categoria} · {BASE_ROLE_LABEL[template.baseRole]}
+                  </p>
+                  <p className="mt-2 flex-1 text-sm text-neutral-400">{template.descripcion}</p>
+                  <p className="mt-2 text-xs text-neutral-500">
+                    {template.permisos.length} funciones
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => aplicarPlantilla(template)}
+                      className="rounded-lg border border-border px-2.5 py-1 text-xs text-neutral-300 hover:bg-neutral-800"
+                    >
+                      Personalizar
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy || yaImportada}
+                      onClick={() => void importarPlantilla(template)}
+                      className="rounded-lg border border-accent/40 px-2.5 py-1 text-xs text-accent disabled:opacity-40"
+                    >
+                      {yaImportada ? "Importada" : "Importar"}
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </Card>
 
       <Card>

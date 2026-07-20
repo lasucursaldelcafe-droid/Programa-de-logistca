@@ -55,7 +55,11 @@ export function MasterHomePage() {
           <Card className="h-full">
             <h2 className="font-display text-lg font-semibold">Roles y puestos</h2>
             <p className="mt-2 text-3xl font-bold">{customRoles.length}</p>
-            <p className="mt-1 text-sm text-neutral-400">Plantillas para asignar al personal</p>
+            <p className="mt-1 text-sm text-neutral-400">
+              {customRoles.length === 0
+                ? "Importa plantillas para asignar puestos al personal"
+                : "Plantillas listas para asignar en Personal"}
+            </p>
             <span className="mt-3 inline-block text-sm text-accent underline">Gestionar roles →</span>
           </Card>
         </Link>

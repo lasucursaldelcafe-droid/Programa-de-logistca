@@ -77,6 +77,7 @@ const ADMIN_GATES: Record<string, (r: UserRole) => boolean> = {
   "/informes": can.reportes,
   "/qr-sitios": can.qr,
   "/nomina": can.nomina,
+  "/negocio": (r) => can.clientes(r) || can.facturacion(r) || can.inventario(r),
   "/clientes": can.clientes,
   "/facturacion": can.facturacion,
   "/inventario": can.inventario,
@@ -124,11 +125,7 @@ export function getAdminNavSections(role: UserRole): NavSection[] {
     {
       id: "negocio",
       title: "Negocio",
-      items: [
-        { to: "/clientes", label: "Clientes", icon: "building" },
-        { to: "/facturacion", label: "Facturación", icon: "receipt" },
-        { to: "/inventario", label: "Inventario", icon: "box" },
-      ],
+      items: [{ to: "/negocio", label: "Clientes e inventario", icon: "building" }],
     },
     {
       id: "sistema",
