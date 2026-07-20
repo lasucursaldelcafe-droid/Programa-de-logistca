@@ -1,9 +1,10 @@
 /**
- * Crea cuentas de plataforma en Firebase PRODUCCIÓN (Auth + Firestore).
+ * Crea la cuenta de administración en Firebase PRODUCCIÓN (Auth + Firestore).
  * Requiere cuenta de servicio con permisos Admin SDK (solo servidor — no va en la app web).
  *
  * Uso:
  *   npm run seed:production -- --service-account ./service-account.json
+ *   SPE_PROD_PASSWORD='…' npm run seed:production -- --service-account ./sa.json
  *   FIREBASE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}' npm run seed:production
  *   npm run seed:production -- --service-account ./sa.json --email admin@empresa.com --password "MiPass123!"
  */
@@ -15,6 +16,8 @@ import { getFirestore } from "firebase-admin/firestore";
 
 const ROOT = resolve(import.meta.dirname, "..");
 
+const PLATFORM_ADMIN_EMAIL = "lasucursaldelcafe@gmail.com";
+
 interface SeedUser {
   email: string;
   password: string;
@@ -22,30 +25,15 @@ interface SeedUser {
   role: "super_admin" | "administrador";
 }
 
-const DEFAULT_USERS: SeedUser[] = [
-  {
-    email: "master@eventos.test",
-    password: "Master123!",
-    nombre: "Master Plataforma",
-    role: "super_admin",
-  },
-  {
-    email: "admin@eventos.test",
-    password: "Admin123!",
-    nombre: "Administrador",
-    role: "administrador",
-  },
-];
-
 function parseArgs(): {
   serviceAccountPath: string;
   users: SeedUser[];
 } {
   const args = process.argv.slice(2);
   let serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS ?? "";
-  let customEmail = "";
-  let customPassword = "";
-  let customNombre = "Administrador";
+  let customEmail = process.env.SPE_PROD_EMAIL?.trim() ?? PLATFORM_ADMIN_EMAIL;
+  let customPassword = process.env.SPE_PROD_PASSWORD?.trim() ?? "";
+  let customNombre = "La Sucursal del Café";
   let customRole: SeedUser["role"] = "administrador";
 
   for (let i = 0; i < args.length; i++) {
@@ -69,15 +57,20 @@ function parseArgs(): {
     if (existsSync(fallback)) serviceAccountPath = fallback;
   }
 
-  const users = [...DEFAULT_USERS];
-  if (customEmail && customPassword) {
-    users.push({
+  if (!customPassword) {
+    console.error("✗ Falta contraseña para la cuenta de producción.");
+    console.error("  Usa SPE_PROD_PASSWORD='…' o --password '…'");
+    process.exit(1);
+  }
+
+  const users: SeedUser[] = [
+    {
       email: customEmail,
       password: customPassword,
       nombre: customNombre,
       role: customRole,
-    });
-  }
+    },
+  ];
 
   return {
     serviceAccountPath: serviceAccountPath ? resolve(serviceAccountPath) : "",
@@ -180,7 +173,7 @@ async function main(): Promise<void> {
     { merge: true },
   );
 
-  console.log("\n✓ Cuentas de producción listas.");
+  console.log("\n✓ Cuenta de producción lista.");
   console.log("  Inicia sesión en la app con las credenciales mostradas arriba.");
 }
 
