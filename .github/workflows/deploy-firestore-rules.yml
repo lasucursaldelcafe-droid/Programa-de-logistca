@@ -60,11 +60,11 @@ jobs:
         id: creds
         run: |
           if [ -z "$FIREBASE_TOKEN" ] && [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
-            echo "status=skipped" >> "$GITHUB_OUTPUT"
-            echo "::warning::Falta FIREBASE_TOKEN o FIREBASE_SERVICE_ACCOUNT_JSON"
-            echo "  PC: .\\scripts\\windows\\SPE-Produccion-Completa.ps1"
-            echo "  O GitHub → Settings → Secrets → Actions → FIREBASE_TOKEN"
-            exit 0
+            echo "status=missing" >> "$GITHUB_OUTPUT"
+            echo "::error::Falta FIREBASE_TOKEN o FIREBASE_SERVICE_ACCOUNT_JSON — sin esto no hay QR ni cuentas en producción"
+            echo "  PC: npx firebase login:ci → GitHub Secret FIREBASE_TOKEN"
+            echo "  O Console: pegar firestore.rules y Publicar"
+            exit 1
           fi
           if [ -z "$VITE_FIREBASE_PROJECT_ID" ]; then
             echo "::error::Falta VITE_FIREBASE_PROJECT_ID"
@@ -112,8 +112,8 @@ jobs:
           echo "| Paso | Estado |" >> "$GITHUB_STEP_SUMMARY"
           echo "|------|--------|" >> "$GITHUB_STEP_SUMMARY"
           echo "| Credenciales | \`${{ steps.creds.outputs.status || 'n/a' }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Login verify | \`${{ steps.verify.outputs.status || 'skipped' }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Login verify | \`${{ steps.verify.outputs.status || 'n/a' }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          if [ "${{ steps.creds.outputs.status }}" = "skipped" ]; then
-            echo "**Pendiente:** añade \`FIREBASE_TOKEN\` en GitHub Secrets y relanza este workflow." >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.creds.outputs.status }}" = "missing" ]; then
+            echo "**Fallo:** sin \`FIREBASE_TOKEN\` no se publican reglas → sin QR ni cuentas." >> "$GITHUB_STEP_SUMMARY"
           fi
