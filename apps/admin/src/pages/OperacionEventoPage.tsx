@@ -332,8 +332,8 @@ export function OperacionEventoPage() {
           <Card>
             <h2 className="font-display text-lg font-semibold">Agregar empleado al evento</h2>
             <p className="mt-1 text-sm text-neutral-400">
-              Asigna un turno en un sitio del evento. El trabajador recibirá la notificación para
-              aceptar.
+              Asigna un turno en un sitio del evento. El trabajador recibe notificación en la app y
+              correo automático con evento, sitio y horario.
             </p>
             {sitiosEvento.length === 0 ? (
               <p className="mt-4 text-sm text-accent">

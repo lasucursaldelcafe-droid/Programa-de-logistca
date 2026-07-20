@@ -124,6 +124,10 @@ export interface Invitation {
   role: "trabajador" | "supervisor_sitio";
   usadaEn?: string;
   uid?: string;
+  /** ISO timestamp cuando Cloud Functions envió el correo de invitación. */
+  emailEnviadoEn?: string;
+  /** Error al enviar correo automático (SMTP no configurado, etc.). */
+  emailError?: string;
 }
 
 export interface Worker {
@@ -178,6 +182,8 @@ export interface Turno {
   inicio: string;
   fin: string;
   estado: ShiftEstado;
+  /** ISO timestamp cuando se envió correo automático de turno asignado. */
+  emailTurnoEnviadoEn?: string;
 }
 
 export type NotificationTipo =

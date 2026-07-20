@@ -228,7 +228,7 @@ class DemoStore {
     });
   }
 
-  addWorker(worker: Omit<Worker, "id">, actorNombre?: string): void {
+  addWorker(worker: Omit<Worker, "id">, actorNombre?: string): string {
     const id = `worker-${Date.now()}`;
     this.workers = [...this.workers, { ...worker, id }].sort((a, b) =>
       a.nombre.localeCompare(b.nombre),
@@ -238,6 +238,7 @@ class DemoStore {
       actorNombre,
     });
     this.notify();
+    return id;
   }
 
   updateWorker(id: string, patch: Partial<Worker>, actorNombre?: string): void {
