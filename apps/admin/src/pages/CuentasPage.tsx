@@ -217,7 +217,7 @@ export function CuentasPage() {
               </button>
               {ownPasswordMsg && (
                 <p
-                  className={`text-sm ${ownPasswordMsg.includes("actualizada") ? "text-success" : "text-alert"}`}
+                  className={`text-sm ${ownPasswordMsg.includes("actualizada") ? "text-accent" : "text-alert"}`}
                 >
                   {ownPasswordMsg}
                 </p>

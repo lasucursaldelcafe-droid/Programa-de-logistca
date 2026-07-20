@@ -1,0 +1,59 @@
+name: Desplegar reglas Firestore
+
+# Corrige "Missing or insufficient permissions" en login.
+# Secret: FIREBASE_TOKEN (firebase login:ci — sin JSON de cuenta de servicio)
+on:
+  push:
+    branches: [main]
+    paths:
+      - firestore.rules
+      - firestore.indexes.json
+      - firebase.json
+      - .github/workflows/deploy-firestore-rules.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-rules:
+    runs-on: ubuntu-latest
+    env:
+      FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+      VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Instalar firebase-tools
+        run: npm install firebase-tools@14 --no-save
+
+      - name: Verificar token
+        run: |
+          if [ -z "$FIREBASE_TOKEN" ]; then
+            echo "::warning::Falta FIREBASE_TOKEN — reglas no desplegadas"
+            echo "  PC: firebase login:ci → npm run setup:firebase-token"
+            exit 0
+          fi
+          if [ -z "$VITE_FIREBASE_PROJECT_ID" ]; then
+            echo "::error::Falta VITE_FIREBASE_PROJECT_ID"
+            exit 1
+          fi
+
+      - name: Desplegar reglas e índices
+        if: env.FIREBASE_TOKEN != ''
+        run: |
+          npx firebase-tools deploy \
+            --only firestore:rules,firestore:indexes \
+            --project "$VITE_FIREBASE_PROJECT_ID" \
+            --non-interactive
+
+      - name: Resumen
+        if: env.FIREBASE_TOKEN != ''
+        run: |
+          echo "## Firestore rules desplegadas" >> "$GITHUB_STEP_SUMMARY"
+          echo "Proyecto: \`$VITE_FIREBASE_PROJECT_ID\`" >> "$GITHUB_STEP_SUMMARY"
