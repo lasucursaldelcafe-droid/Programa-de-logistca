@@ -17,3 +17,4 @@ export * from "./platformShell";
 export * from "./setupLinks";
 export * from "./setupGuide";
 export * from "./setupStatus";
+export * from "./qrCodeBuilder";

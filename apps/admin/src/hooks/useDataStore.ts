@@ -28,6 +28,10 @@ import {
   isInsideGeofence,
   isWithinTimeWindow,
   parseQrPayload,
+  buildQrCodeDocument,
+  buildQrCodeId,
+  buildQrCodeToken,
+  type CreateQrCodeInput,
   type Attendance,
   type AttendanceEstado,
   type Evento,
@@ -644,40 +648,12 @@ function resolveToken(qr: QrCode, token: string): boolean {
   return token === qr.token;
 }
 
-export async function createQrCode(data: {
-  eventId: string;
-  eventNombre: string;
-  siteId: string;
-  siteNombre: string;
-  modo: QrModo;
-  ventanaInicio: string;
-  ventanaFin: string;
-  radioGeocerca: number;
-  descripcionDatos: string;
-  intervaloRotacionSegundos?: number;
-  creadoPor: string;
-}): Promise<string> {
-  const id = `qr-${data.siteId}-${Date.now().toString(36)}`;
-  const token = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+export async function createQrCode(data: CreateQrCodeInput): Promise<string> {
+  const id = buildQrCodeId(data.siteId);
+  const token = buildQrCodeToken(crypto.randomUUID());
   const secret = data.modo === "rotativo" ? crypto.randomUUID().slice(0, 8) : undefined;
 
-  const qr: Omit<QrCode, "id"> = {
-    eventId: data.eventId,
-    eventNombre: data.eventNombre,
-    siteId: data.siteId,
-    siteNombre: data.siteNombre,
-    token,
-    secret,
-    modo: data.modo,
-    intervaloRotacionSegundos: data.intervaloRotacionSegundos,
-    ventanaInicio: data.ventanaInicio,
-    ventanaFin: data.ventanaFin,
-    radioGeocerca: data.radioGeocerca,
-    descripcionDatos: data.descripcionDatos,
-    activo: true,
-    creadoEn: new Date().toISOString(),
-    creadoPor: data.creadoPor,
-  };
+  const qr = buildQrCodeDocument(data, { token, secret });
 
   if (isDemoMode()) {
     demoStore.addQrCode({ ...qr, id });
@@ -1040,6 +1016,7 @@ export async function createEvent(data: {
 export async function createSite(data: {
   eventId: string;
   nombre: string;
+  direccion?: string;
   lat: number;
   lng: number;
   radioGeocerca: number;
@@ -1048,6 +1025,7 @@ export async function createSite(data: {
   const site = {
     eventId: data.eventId,
     nombre: data.nombre,
+    ...(data.direccion?.trim() ? { direccion: data.direccion.trim() } : {}),
     lat: data.lat,
     lng: data.lng,
     radioGeocerca: data.radioGeocerca,

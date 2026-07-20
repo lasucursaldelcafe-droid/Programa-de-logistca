@@ -31,6 +31,7 @@ import {
   useSetupConfig,
 } from "../hooks/useSetup";
 import { upsertPayrollRate, usePayrollRates } from "../hooks/usePayroll";
+import { SiteLocationPicker } from "../components/SiteLocationPicker";
 
 const DEFAULT_DESCRIPCION =
   "Recopilamos tu ubicación GPS solo durante la jornada activa para verificar presencia en el sitio asignado.";
@@ -56,6 +57,7 @@ export function ConfiguracionPage() {
   });
   const [sitioForm, setSitioForm] = useState({
     nombre: "",
+    direccion: "",
     lat: "4.6533",
     lng: "-74.0836",
     radioGeocerca: "80",
@@ -156,11 +158,12 @@ export function ConfiguracionPage() {
       await createSite({
         eventId: eventoActivo.id,
         nombre,
+        direccion: sitioForm.direccion,
         lat: Number(sitioForm.lat),
         lng: Number(sitioForm.lng),
         radioGeocerca: Number(sitioForm.radioGeocerca),
       });
-      setSitioForm((f) => ({ ...f, nombre: "" }));
+      setSitioForm((f) => ({ ...f, nombre: "", direccion: "" }));
       setMensaje(`Sitio "${nombre}" agregado.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al crear sitio");
@@ -379,9 +382,10 @@ export function ConfiguracionPage() {
 
       {paso === "sitios" && (
         <Card>
-          <h2 className="font-display text-lg font-semibold">2. Sitios y geocercas</h2>
+          <h2 className="font-display text-lg font-semibold">2. Sitios y área de trabajo</h2>
           <p className="mt-1 text-sm text-neutral-400">
-            Evento: {eventoActivo?.nombre ?? "—"}
+            Evento: {eventoActivo?.nombre ?? "—"} · Indica dirección, ubica el punto en el mapa y define
+            el radio del área de trabajo (geocerca GPS).
           </p>
           <form onSubmit={agregarSitio} className="mt-4 grid gap-3 sm:grid-cols-2">
             <label className="text-sm sm:col-span-2">
@@ -393,37 +397,15 @@ export function ConfiguracionPage() {
                 required
               />
             </label>
-            <label className="text-sm">
-              Latitud
-              <input
-                value={sitioForm.lat}
-                onChange={(e) => setSitioForm((f) => ({ ...f, lat: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-border bg-bg px-3 py-2"
-                required
-              />
-            </label>
-            <label className="text-sm">
-              Longitud
-              <input
-                value={sitioForm.lng}
-                onChange={(e) => setSitioForm((f) => ({ ...f, lng: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-border bg-bg px-3 py-2"
-                required
-              />
-            </label>
-            <label className="text-sm">
-              Radio geocerca (m)
-              <input
-                type="number"
-                min={10}
-                value={sitioForm.radioGeocerca}
-                onChange={(e) =>
-                  setSitioForm((f) => ({ ...f, radioGeocerca: e.target.value }))
-                }
-                className="mt-1 w-full rounded-lg border border-border bg-bg px-3 py-2"
-                required
-              />
-            </label>
+            <SiteLocationPicker
+              value={{
+                direccion: sitioForm.direccion,
+                lat: sitioForm.lat,
+                lng: sitioForm.lng,
+                radioGeocerca: sitioForm.radioGeocerca,
+              }}
+              onChange={(loc) => setSitioForm((f) => ({ ...f, ...loc }))}
+            />
             <div className="flex flex-wrap gap-2 sm:col-span-2">
               <button
                 type="submit"
@@ -446,7 +428,13 @@ export function ConfiguracionPage() {
             <ul className="mt-4 space-y-2 text-sm">
               {sitiosEvento.map((s) => (
                 <li key={s.id} className="rounded border border-border px-3 py-2">
-                  {s.nombre} · {s.lat}, {s.lng} · radio {s.radioGeocerca}m
+                  <div className="font-medium text-neutral-200">{s.nombre}</div>
+                  {s.direccion && (
+                    <div className="text-neutral-400">{s.direccion}</div>
+                  )}
+                  <div className="text-xs text-neutral-500">
+                    {s.lat.toFixed(5)}, {s.lng.toFixed(5)} · área {s.radioGeocerca} m
+                  </div>
                 </li>
               ))}
             </ul>
@@ -514,7 +502,10 @@ export function ConfiguracionPage() {
           <ul className="mt-4 space-y-2 text-sm">
             {sitiosEvento.map((s) => {
               const tieneQr = qrCodes.some(
-                (q) => q.siteId === s.id && q.activo,
+                (q) =>
+                  q.siteId === s.id &&
+                  q.eventId === eventoActivo?.id &&
+                  q.activo,
               );
               return (
                 <li
