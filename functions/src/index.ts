@@ -7,6 +7,7 @@ import { logger } from "firebase-functions";
 import { resolveRecipientUids, resolveChatRecipientUids, comunicacionLinkForUid } from "./pushRecipients";
 import { mailConfigured, sendMail } from "./mail";
 import { buildInvitationEmail, buildShiftAssignedEmail, resolveAppUrl } from "./emailTemplates";
+export { provisionWorkerAccount, importWorkersBulk } from "./provisionWorkers";
 
 initializeApp();
 
