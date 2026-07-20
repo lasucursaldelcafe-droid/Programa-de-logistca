@@ -35,17 +35,15 @@ export interface PlatformDownloadSpec {
 const DEMO_ADMIN_EMAIL = "admin@eventos.test";
 const DEMO_ADMIN_PASSWORD = "Admin123!";
 
-export function buildDemoLoginUrl(pagesUrl: string, role: "admin" | "master" = "admin"): string {
-  const email = role === "master" ? "master@eventos.test" : DEMO_ADMIN_EMAIL;
-  const password = role === "master" ? "Master123!" : DEMO_ADMIN_PASSWORD;
-  const base = pagesUrl.replace(/\/?$/, "/");
-  const params = new URLSearchParams({
-    spe_backend: "demo",
-    email,
-    password,
-    auto: "1",
-  });
-  return `${base}login?${params.toString()}`;
+/** @deprecated Modo demo eliminado — redirige al login normal. */
+export function buildDemoLoginUrl(pagesUrl: string, _role: "admin" | "master" = "admin"): string {
+  void DEMO_ADMIN_EMAIL;
+  void DEMO_ADMIN_PASSWORD;
+  return `${pagesUrl.replace(/\/?$/, "/")}login`;
+}
+
+export function buildLoginUrl(pagesUrl: string): string {
+  return `${pagesUrl.replace(/\/?$/, "/")}login`;
 }
 
 export function buildDescargasUrl(pagesUrl: string): string {
@@ -72,10 +70,10 @@ export function getPlatformDownloads(base: DeploymentBase): PlatformDownloadSpec
       label: "Navegador (todas las plataformas)",
       description: "Admin, Master y Trabajador en una sola URL. Funciona en PC, tablet y móvil.",
       icon: "🌐",
-      fallbackHref: () => buildDemoLoginUrl(pages),
+      fallbackHref: () => buildLoginUrl(pages),
       installSteps: [
         "Abre el enlace en Chrome, Edge o Safari.",
-        "Inicia sesión con tu cuenta o usa el acceso demo.",
+        "Inicia sesión con tu cuenta Firebase.",
         "Opcional: agrega a favoritos o pantalla de inicio.",
       ],
     },
@@ -136,7 +134,7 @@ export function getPlatformDownloads(base: DeploymentBase): PlatformDownloadSpec
       label: "iPhone / iPad (Safari)",
       description: "App web progresiva: instala desde Safari sin App Store.",
       icon: "📱",
-      fallbackHref: () => `${pages}login?spe_backend=demo`,
+      fallbackHref: () => `${pages}login`,
       installSteps: [
         "Abre el enlace en Safari (no Chrome en iOS).",
         "Toca Compartir → «Añadir a pantalla de inicio».",
@@ -164,13 +162,13 @@ export function getSetupChecklist(
       actionLabel: "Abrir guía",
     },
     {
-      id: "login-demo",
-      title: "Probar login demo en la web",
-      description: "Verifica que la app carga y entra con admin automático.",
+      id: "firebase-login",
+      title: "Probar login en producción",
+      description: "Verifica que la app carga y entra con tu cuenta Firebase.",
       priority: "p0",
-      href: buildDemoLoginUrl(pages),
-      actionLabel: "Entrar como admin",
-      doneHint: "Debes ver el panel con Backend: demo",
+      href: buildLoginUrl(pages),
+      actionLabel: "Ir al login",
+      doneHint: "Debes ver el panel con Backend: Firebase",
     },
     {
       id: "descargas",
@@ -190,28 +188,12 @@ export function getSetupChecklist(
       doneHint: "6 variables Firebase + opcional VAPID",
     },
     {
-      id: "sheets-backend",
-      title: "Alternativa: Google Sheets",
-      description: "Backend sin Firebase JSON — Apps Script + token API.",
-      priority: "p0",
-      href: `${pages}configurar`,
-      actionLabel: "Configurar Sheets",
-    },
-    {
       id: "releases",
       title: "Instaladores Windows / Android / Linux",
       description: "Se generan en cada push a main cuando CI pasa.",
       priority: "p1",
       href: releasesUrl,
       actionLabel: "Ver releases",
-    },
-    {
-      id: "clasp-push",
-      title: "Desplegar Apps Script (Sheets)",
-      description: "cd apps-script/spe-backend && clasp push && clasp run setupSheets",
-      priority: "p1",
-      href: `${base.repoUrl}/blob/main/docs-source/OPCION-GOOGLE-SHEETS.md`,
-      actionLabel: "Guía Sheets",
     },
     {
       id: "integraciones",

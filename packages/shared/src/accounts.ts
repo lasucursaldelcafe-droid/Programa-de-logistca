@@ -8,42 +8,8 @@ export const ROLES_ASIGNABLES_ADMIN: RolAsignablePorAdmin[] = [
   "supervisor_sitio",
 ];
 
-/** Correo principal de administración en producción (Google Sheets). */
+/** Correo principal de administración en producción (Firebase Auth). */
 export const PLATFORM_ADMIN_EMAIL = "lasucursaldelcafe@gmail.com";
-
-/** Correo demo del administrador único en modo local / GitHub Pages. */
-export const PLATFORM_DEMO_ADMIN_EMAIL = "admin@eventos.test";
-
-export interface PlatformSeedAccount {
-  email: string;
-  password: string;
-  nombre: string;
-  role: "super_admin" | "administrador";
-}
-
-/**
- * Cuentas precargadas en seed/demo. Master (plataforma) y administrador demo.
- * Supervisores y trabajadores se crean desde Admin → Personal + Cuentas.
- */
-export const PLATFORM_SEED_ACCOUNTS: PlatformSeedAccount[] = [
-  {
-    email: "master@eventos.test",
-    password: "Master123!",
-    nombre: "Master Plataforma",
-    role: "super_admin",
-  },
-  {
-    email: PLATFORM_DEMO_ADMIN_EMAIL,
-    password: "Admin123!",
-    nombre: "Administrador",
-    role: "administrador",
-  },
-];
-
-export function esCuentaPlataforma(email: string): boolean {
-  const normalized = email.trim().toLowerCase();
-  return PLATFORM_SEED_ACCOUNTS.some((a) => a.email.toLowerCase() === normalized);
-}
 
 /** Solo el administrador asigna roles al registrar e invitar personal. */
 export function puedeAsignarRoles(role: UserRole): boolean {

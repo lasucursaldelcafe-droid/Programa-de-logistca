@@ -127,9 +127,8 @@ export function PendientesPage() {
       {setupStatus.productionLive && (
         <Card glow className="border-positive/30">
           <p className="text-sm text-neutral-300">
-            <strong className="text-positive">Producción activa</strong> — backend{" "}
-            {setupStatus.sheetsReady ? "Google Sheets" : "Firebase"}. Firebase Secrets{" "}
-            {setupStatus.firebaseSecretsReady ? "listos" : "pendientes"}.
+            <strong className="text-positive">Producción activa</strong> — backend Firebase.
+            Secrets {setupStatus.firebaseSecretsReady ? "listos" : "pendientes"}.
             {setupStatus.mapsReady ? " Mapa con Google Maps." : ""}
           </p>
         </Card>

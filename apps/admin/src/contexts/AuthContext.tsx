@@ -18,24 +18,11 @@ import {
   getFirebaseAuth,
   getFirestoreDb,
   isFirebaseConfigured,
-  sheetsLogin,
-  saveSheetsSession,
-  clearSheetsSession,
-  loadSheetsSession,
-  esCuentaPlataforma,
-  resetToDemoMode,
   type AppUser,
   type UserRole,
 } from "@spe/shared";
-import { isDemoMode } from "../lib/mode";
-import { isSheetsBackend } from "../lib/backend";
 import { formatAuthError } from "../lib/authErrors";
 import { initPushNotifications } from "../lib/fcm";
-import {
-  clearDemoSession,
-  demoLogin,
-  loadDemoSession,
-} from "../demo/store";
 
 interface AuthContextValue {
   user: AppUser | null;
@@ -67,18 +54,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isDemoMode()) {
-      setUser(loadDemoSession());
-      setLoading(false);
-      return;
-    }
-
-    if (isSheetsBackend()) {
-      setUser(loadSheetsSession());
-      setLoading(false);
-      return;
-    }
-
     if (!isFirebaseConfigured()) {
       setUser(null);
       setLoading(false);
@@ -100,14 +75,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshUser = useCallback(async () => {
-    if (isDemoMode()) {
-      setUser(loadDemoSession());
-      return;
-    }
-    if (isSheetsBackend()) {
-      setUser(loadSheetsSession());
-      return;
-    }
     const fbUser = getFirebaseAuth().currentUser;
     if (!fbUser) {
       setUser(null);
@@ -118,59 +85,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<AppUser> => {
-    const normalizedEmail = email.trim().toLowerCase();
-
-    if (esCuentaPlataforma(normalizedEmail) && !isSheetsBackend()) {
-      if (!isDemoMode()) {
-        resetToDemoMode();
-      }
-      try {
-        const appUser = demoLogin(email, password);
-        setUser(appUser);
-        return appUser;
-      } catch (err) {
-        throw err instanceof Error ? err : new Error("Credenciales inválidas");
-      }
-    }
-
-    if (isDemoMode()) {
-      try {
-        const appUser = demoLogin(email, password);
-        setUser(appUser);
-        return appUser;
-      } catch (err) {
-        throw err instanceof Error ? err : new Error("Credenciales inválidas");
-      }
-    }
-    if (isSheetsBackend()) {
-      try {
-        const result = await sheetsLogin(email, password);
-        const appUser: AppUser = {
-          uid: result.uid,
-          email: result.email,
-          nombre: result.nombre,
-          role: result.role as UserRole,
-          workerId: result.workerId ?? undefined,
-          perfilCompleto: result.perfilCompleto ?? true,
-        };
-        saveSheetsSession(appUser);
-        setUser(appUser);
-        return appUser;
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Credenciales inválidas (Sheets)";
-        if (esCuentaPlataforma(normalizedEmail)) {
-          resetToDemoMode();
-          try {
-            const appUser = demoLogin(email, password);
-            setUser(appUser);
-            return appUser;
-          } catch {
-            /* sigue con error original */
-          }
-        }
-        throw new Error(message);
-      }
-    }
     if (!isFirebaseConfigured()) {
       throw new Error(
         "Firebase no está configurado en este despliegue. El administrador debe añadir las credenciales en GitHub Secrets (ver PRODUCCION-FIREBASE.md).",
@@ -183,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const fbUser = getFirebaseAuth().currentUser;
     if (!fbUser) throw new Error("No se pudo iniciar sesión");
-    if (fbUser) void initPushNotifications(fbUser.uid);
+    void initPushNotifications(fbUser.uid);
     const appUser = await loadAppUser(fbUser);
     if (!appUser) throw new Error("Usuario no registrado en el sistema");
     setUser(appUser);
@@ -191,17 +105,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    if (isDemoMode()) {
-      clearDemoSession();
-      setUser(null);
-      return;
-    }
-    if (isSheetsBackend()) {
-      clearSheetsSession();
-      setUser(null);
-      return;
-    }
     await signOut(getFirebaseAuth());
+    setUser(null);
   }, []);
 
   const value = useMemo(

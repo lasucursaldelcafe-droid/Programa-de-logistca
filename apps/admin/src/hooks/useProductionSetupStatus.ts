@@ -5,16 +5,14 @@ import {
   resolveSetupStatus,
   type ResolvedSetupStatus,
 } from "@spe/shared";
-import { getDataBackend } from "../lib/backend";
-import { isDemoMode } from "../lib/mode";
 
-/** Estado de configuración infra (Sheets, Firebase, Maps) para ocultar pendientes ya resueltos. */
+/** Estado de configuración infra (Firebase, Maps) para ocultar pendientes ya resueltos. */
 export function useProductionSetupStatus(): ResolvedSetupStatus {
   return useMemo(
     () =>
       resolveSetupStatus({
-        backend: getDataBackend(),
-        demoMode: isDemoMode(),
+        backend: "firebase",
+        demoMode: false,
         setupCompletado: getRuntimeSetupCompletado(),
         firebaseApiKey: import.meta.env.VITE_FIREBASE_API_KEY,
         vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
@@ -29,8 +27,8 @@ export function useProductionSetupStatusLive(): ResolvedSetupStatus {
   return useMemo(
     () =>
       resolveSetupStatus({
-        backend: getDataBackend(),
-        demoMode: isDemoMode(),
+        backend: "firebase",
+        demoMode: false,
         setupCompletado: getRuntimeSetupCompletado(),
         firebaseApiKey: import.meta.env.VITE_FIREBASE_API_KEY,
         vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,

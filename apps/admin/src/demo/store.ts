@@ -32,24 +32,13 @@ import {
 } from "./integrations";
 import { loadDemoPersistedState, saveDemoPersistedState } from "./persist";
 import { appendChangeLog, type DemoChangeAction, type DemoChangeEntry } from "./changeLog";
-import { PLATFORM_SEED_ACCOUNTS } from "@spe/shared";
 import { isDemoEntityId, isDemoEvent } from "./demoPurge";
 
 export const DEMO_ACCOUNTS: Array<{
   email: string;
   password: string;
   user: AppUser;
-}> = PLATFORM_SEED_ACCOUNTS.map((a) => ({
-  email: a.email,
-  password: a.password,
-  user: {
-    uid: a.role === "super_admin" ? "demo-master" : "demo-admin",
-    email: a.email,
-    nombre: a.nombre,
-    role: a.role,
-    perfilCompleto: true,
-  },
-}));
+}> = [];
 
 export const INITIAL_WORKERS: Worker[] = [];
 
