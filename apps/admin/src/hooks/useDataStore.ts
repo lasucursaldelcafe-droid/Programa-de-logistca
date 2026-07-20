@@ -659,7 +659,6 @@ export async function createQrCode(data: {
 }): Promise<string> {
   const id = `qr-${data.siteId}-${Date.now().toString(36)}`;
   const token = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
-  const secret = data.modo === "rotativo" ? crypto.randomUUID().slice(0, 8) : undefined;
 
   const qr: Omit<QrCode, "id"> = {
     eventId: data.eventId,
@@ -667,9 +666,7 @@ export async function createQrCode(data: {
     siteId: data.siteId,
     siteNombre: data.siteNombre,
     token,
-    secret,
     modo: data.modo,
-    intervaloRotacionSegundos: data.intervaloRotacionSegundos,
     ventanaInicio: data.ventanaInicio,
     ventanaFin: data.ventanaFin,
     radioGeocerca: data.radioGeocerca,
@@ -677,6 +674,14 @@ export async function createQrCode(data: {
     activo: true,
     creadoEn: new Date().toISOString(),
     creadoPor: data.creadoPor,
+    ...(data.modo === "rotativo"
+      ? {
+          secret: crypto.randomUUID().slice(0, 8),
+          ...(data.intervaloRotacionSegundos != null
+            ? { intervaloRotacionSegundos: data.intervaloRotacionSegundos }
+            : {}),
+        }
+      : {}),
   };
 
   if (isDemoMode()) {
