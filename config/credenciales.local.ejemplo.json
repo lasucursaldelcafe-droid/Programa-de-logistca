@@ -18,5 +18,6 @@
   },
   "firebaseServiceAccountPath": "service-account.json",
   "speProdPassword": "TU_CONTRASEÑA_FIREBASE_AUTH",
+  "firebaseToken": "TOKEN_DE_firebase_login_ci_SIN_JSON",
   "cursorApiKey": "TU_CURSOR_API_KEY_DESDE_cursor.com_settings"
 }

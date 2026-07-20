@@ -162,10 +162,43 @@ export function pushFirebaseSecrets(fb, extras = {}) {
   return { ok, fail };
 }
 
+export function getFirebaseToken() {
+  const fromEnv = process.env.FIREBASE_TOKEN?.trim();
+  if (fromEnv) return fromEnv;
+  const local = readJson(resolve(ROOT, "config/credenciales.local.json"));
+  const t = local?.firebaseToken?.trim();
+  if (t && t.length > 20) return t;
+  return "";
+}
+
+export function pushFirebaseTokenSecret() {
+  const token = getFirebaseToken();
+  if (!token || !ghAvailable()) return false;
+  return pushGhSecret("FIREBASE_TOKEN", token);
+}
+
 export function deployFirestoreWithServiceAccount(projectId) {
+  const firebaseToken = getFirebaseToken();
+  if (firebaseToken) {
+    return (
+      run(
+        "npx",
+        [
+          "firebase-tools",
+          "deploy",
+          "--only",
+          "firestore:rules,firestore:indexes",
+          "--project",
+          projectId,
+          "--non-interactive",
+        ],
+        { env: { FIREBASE_TOKEN: firebaseToken } },
+      ) === 0
+    );
+  }
   const sa = getServiceAccountSource();
   if (!sa) {
-    console.log("  ! Firestore: falta service-account.json o FIREBASE_SERVICE_ACCOUNT_JSON");
+    console.log("  ! Firestore: falta FIREBASE_TOKEN (firebase login:ci) o service-account.json");
     return false;
   }
   return (

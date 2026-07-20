@@ -60,6 +60,55 @@ Para **crear usuarios** (workflow Actions):
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | JSON cuenta de servicio (Admin SDK) |
 | `SPE_PROD_PASSWORD` | Contraseña que quieras para `lasucursaldelcafe@gmail.com` |
 | `CURSOR_API_KEY` | (Opcional) Cursor CLI en Actions → workflow **Cursor Agent (SPE)** |
+| `FIREBASE_TOKEN` | **firebase login:ci** — Firestore/CLI **sin JSON** de cuenta de servicio |
+| `SPE_PROD_PASSWORD` | Contraseña admin `lasucursaldelcafe@gmail.com` |
+
+> Si Google **bloquea** descargar JSON de cuenta de servicio, usa **`FIREBASE_TOKEN`** en lugar de `FIREBASE_SERVICE_ACCOUNT_JSON`.
+
+---
+
+## Firestore automático (sin JSON de cuenta de servicio)
+
+### En tu PC (una vez)
+
+```powershell
+cd C:\Users\LENOVO\Projects\Programa-de-logistca
+npx firebase-tools login:ci
+```
+
+Copia el token largo y guárdalo en `config/credenciales.local.json`:
+
+```json
+"firebaseToken": "1//0e…",
+"speProdPassword": "TuContraseñaAdmin"
+```
+
+Luego:
+
+```powershell
+npm run setup:firebase-token
+npm run firestore:bootstrap
+```
+
+O todo junto:
+
+```powershell
+SPE_PROD_PASSWORD='TuClave' npm run setup:cli -- --full
+```
+
+### En GitHub Actions
+
+1. Secret **`FIREBASE_TOKEN`** (del paso `firebase login:ci`)
+2. Secret **`SPE_PROD_PASSWORD`**
+3. **Actions → Bootstrap Firestore (SPE) → Run workflow**
+
+Si ya creaste el usuario en Authentication a mano, usa:
+- **admin_uid:** `8kJ9xnbXwlNVQerimF088JXo8Ql1`
+- **skip_auth:** `true`
+
+### Cursor Agent
+
+**Actions → Cursor Agent (SPE)** → task: **`firestore-bootstrap`**
 
 ---
 

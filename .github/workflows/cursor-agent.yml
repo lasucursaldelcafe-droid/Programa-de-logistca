@@ -13,6 +13,7 @@ on:
         options:
           - diagnostico
           - pendientes-firebase
+          - firestore-bootstrap
           - custom
       prompt:
         description: "Prompt personalizado (solo si task=custom)"
@@ -73,7 +74,10 @@ jobs:
               PROMPT="Repo: Sistema de Personal para Eventos (SPE). Backend producción: Firebase Auth + Firestore (sin demo, sin Google Sheets). Ejecuta: npm run acceso, npm run build, npm run check:nav, node scripts/spe-diagnostico.mjs --ci. Resume en español: estado del build, pendientes (Firestore rules, seed admin lasucursaldelcafe@gmail.com, secrets). NO modifiques archivos ni hagas commit; solo reporta."
               ;;
             pendientes-firebase)
-              PROMPT="Repo SPE — Firebase only. Lista pasos concretos pendientes para producción: (1) secrets VITE_FIREBASE_*, (2) FIREBASE_SERVICE_ACCOUNT_JSON + SPE_PROD_PASSWORD seed, (3) firebase deploy firestore rules+indexes, (4) verificar login GitHub Pages. Cita docs-source/ACCESO-PRODUCCION.md. NO modifiques archivos."
+              PROMPT="Repo SPE — Firebase only. Lista pasos concretos pendientes para producción: (1) secrets VITE_FIREBASE_*, (2) FIREBASE_TOKEN + SPE_PROD_PASSWORD (sin JSON SA), (3) npm run firestore:bootstrap, (4) verificar login GitHub Pages. Cita docs-source/ACCESO-PRODUCCION.md. NO modifiques archivos."
+              ;;
+            firestore-bootstrap)
+              PROMPT="Repo SPE. Ejecuta npm run firestore:bootstrap (requiere FIREBASE_TOKEN, VITE_FIREBASE_* en env, SPE_PROD_PASSWORD). Si falla por falta de token, documenta: firebase login:ci → FIREBASE_TOKEN. Proyecto Firebase: programalog-ccc12. NO commitees secretos."
               ;;
             custom)
               PROMPT="${{ github.event.inputs.prompt }}"
