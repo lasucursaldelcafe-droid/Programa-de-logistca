@@ -26,6 +26,7 @@ import { UnirseEmpresaPage } from "./pages/UnirseEmpresaPage";
 import { CompletarPerfilPage } from "./pages/CompletarPerfilPage";
 import { ConfigurarDesdeMovilPage } from "./pages/ConfigurarDesdeMovilPage";
 import { DescargasPage } from "./pages/DescargasPage";
+import { PendientesPage } from "./pages/PendientesPage";
 import { MasterRoutes } from "./routes/MasterRoutes";
 import { WorkerRoutes } from "./routes/WorkerRoutes";
 
@@ -103,6 +104,7 @@ export function App() {
         <Route path="notificaciones" element={<NotificacionesPage />} />
         <Route path="nomina" element={<NominaPage />} />
         <Route path="configuracion" element={<ConfiguracionPage />} />
+        <Route path="pendientes" element={<PendientesPage />} />
         <Route path="ayuda" element={<AyudaPage platform="admin" />} />
       </Route>
 

@@ -128,6 +128,21 @@ export const NavIcons: Record<string, (props: IconProps) => ReactElement> = {
       <path d="M6 6l12 12M18 6L6 18" />
     </svg>
   ),
+  chevron: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" className={base} {...p}>
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  ),
+  list: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.75" className={base} {...p}>
+      <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+    </svg>
+  ),
+  download: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.75" className={base} {...p}>
+      <path d="M12 3v12M7 8l5 5 5-5M4 21h16" />
+    </svg>
+  ),
 };
 
 export function NavIcon({ name, className }: { name: string; className?: string }) {

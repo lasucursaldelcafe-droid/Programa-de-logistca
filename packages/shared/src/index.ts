@@ -14,3 +14,4 @@ export * from "./sheetsClient";
 export * from "./sheetsSession";
 export * from "./runtimeBootstrap";
 export * from "./setupLinks";
+export * from "./setupGuide";
