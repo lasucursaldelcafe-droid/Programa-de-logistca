@@ -45,12 +45,25 @@ function normalizeBackend(value: string | undefined): EffectiveBackend | null {
   return null;
 }
 
+const PLACEHOLDER_SHEETS_TOKENS = new Set([
+  "",
+  "cambiar-token-seguro",
+  "placeholder",
+  "changeme",
+]);
+
+function isUsableSheetsToken(token: string): boolean {
+  const normalized = token.trim().toLowerCase();
+  return normalized.length >= 16 && !PLACEHOLDER_SHEETS_TOKENS.has(normalized);
+}
+
 function applyConfig(config: RuntimeBootstrapConfig): void {
   if (config.googleMapsApiKey) setGoogleMapsApiKey(config.googleMapsApiKey);
 
   if (config.backend === "demo" || config.demoMode === true) {
     runtime.backend = "demo";
     runtime.demoMode = true;
+    clearSheetsClient();
     return;
   }
 
@@ -67,7 +80,7 @@ function applyConfig(config: RuntimeBootstrapConfig): void {
 
   const sheetsUrl = config.sheetsWebAppUrl?.trim() ?? "";
   const sheetsToken = config.sheetsApiToken?.trim() ?? "";
-  if (sheetsUrl && sheetsToken) {
+  if (sheetsUrl && isUsableSheetsToken(sheetsToken)) {
     configureSheetsClient(sheetsUrl, sheetsToken);
     runtime.backend = "sheets";
     runtime.demoMode = false;
@@ -227,6 +240,8 @@ export async function bootstrapRuntimeConfig(
   }
 
   const fromUrl = parseFromUrl();
+  const urlForcedBackend = fromUrl?.backend ?? null;
+
   if (fromUrl) {
     applyConfig(fromUrl);
     saveRuntimeConfig(fromUrl);
@@ -242,14 +257,23 @@ export async function bootstrapRuntimeConfig(
     if (res.ok) {
       const remote = (await res.json()) as RuntimeBootstrapConfig;
       if (remote.googleMapsApiKey) setGoogleMapsApiKey(remote.googleMapsApiKey);
-      if (remote.backend === "demo" || remote.demoMode === true) {
+
+      // La URL (?spe_backend=demo) tiene prioridad sobre config remota en GitHub Pages.
+      if (urlForcedBackend === "demo") {
         persistDemoMode();
-      } else if (remote.sheetsWebAppUrl && remote.sheetsApiToken) {
+      } else if (urlForcedBackend === "sheets" && fromUrl?.sheetsWebAppUrl && fromUrl.sheetsApiToken) {
+        applyConfig(fromUrl);
+      } else if (remote.backend === "demo" || remote.demoMode === true) {
+        persistDemoMode();
+      } else if (
+        remote.sheetsWebAppUrl &&
+        isUsableSheetsToken(remote.sheetsApiToken ?? "")
+      ) {
         applyConfig(remote);
       } else if (remote.backend === "firebase" && remote.firebase) {
         applyConfig(remote);
-      } else if (remote.googleMapsApiKey) {
-        applyConfig(remote);
+      } else if (buildEnv.demoMode === true) {
+        persistDemoMode();
       }
     }
   } catch {
