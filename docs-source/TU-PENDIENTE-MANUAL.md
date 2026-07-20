@@ -33,6 +33,18 @@ Para **crear usuarios** (workflow Actions):
 |--------|--------|
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | JSON cuenta de servicio (Admin SDK) |
 | `SPE_PROD_PASSWORD` | Contraseña que quieras para `lasucursaldelcafe@gmail.com` |
+| `CURSOR_API_KEY` | (Opcional) Cursor CLI en Actions → workflow **Cursor Agent (SPE)** |
+
+---
+
+## Cursor Agent en GitHub Actions (opcional)
+
+1. [Cursor Dashboard](https://cursor.com) → genera **API Key**
+2. GitHub Secret: `CURSOR_API_KEY`
+3. **Actions** → **Cursor Agent (SPE)** → Run workflow
+4. Tareas: `diagnostico`, `pendientes-firebase` o `custom` con tu prompt
+
+Ver `.github/workflows/cursor-agent.yml` y [docs Cursor CLI](https://cursor.com/docs/cli/github-actions).
 
 ---
 
