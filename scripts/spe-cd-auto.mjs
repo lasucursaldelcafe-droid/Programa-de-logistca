@@ -103,7 +103,8 @@ async function applyAutoFixes(report) {
   );
   if (needsSync || applied.length > 0) {
     run("node", ["scripts/sync-repo-config.mjs"]);
-    applied.push("config:sync");
+    run("node", ["scripts/write-runtime-config.mjs"]);
+    applied.push("config:sync", "config:runtime");
   }
 
   return applied;
