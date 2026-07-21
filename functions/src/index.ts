@@ -7,7 +7,12 @@ import { db } from "./initAdmin";
 import { resolveRecipientUids, resolveChatRecipientUids, comunicacionLinkForUid, collectFcmTokensForUids, absoluteAppLink, notificationsLinkForUid } from "./pushRecipients";
 import { mailConfigured, sendMail } from "./mail";
 import { buildInvitationEmail, buildShiftAssignedEmail, resolveAppUrl } from "./emailTemplates";
-export { provisionWorkerAccount, importWorkersBulk, createPlatformAccountFn } from "./provisionWorkers";
+export {
+  provisionWorkerAccount,
+  importWorkersBulk,
+  createPlatformAccountFn,
+  deletePlatformAccountFn,
+} from "./provisionWorkers";
 export { resolveSiteQr, onboardFromSiteQr } from "./onboardFromQr";
 
 const gmailUser = defineSecret("GMAIL_USER");

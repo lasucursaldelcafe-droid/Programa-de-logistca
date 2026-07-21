@@ -103,7 +103,7 @@ export function RolesPage() {
   );
 
   if (!user || !puedeGestionarRolesCustom(user.role)) {
-    return <p className="text-neutral-400">Solo el super administrador puede gestionar roles.</p>;
+    return <p className="text-neutral-400">Solo Dirección (CEO / Master) puede gestionar roles.</p>;
   }
 
   const currentUser = user;
@@ -262,16 +262,18 @@ export function RolesPage() {
   async function eliminar(id: string) {
     if (
       !window.confirm(
-        "¿Eliminar este rol personalizado? Los usuarios asignados volverán a permisos por defecto.",
+        "¿Eliminar este rol personalizado? Los usuarios que lo tenían volverán a los permisos por defecto de su rol base.",
       )
     ) {
       return;
     }
     setBusy(true);
     setError(null);
+    setSuccess(null);
     try {
       await deleteCustomRole(id);
       if (editingId === id) resetForm();
+      setSuccess("Rol eliminado. Los permisos personalizados ya no aplican a quien lo tenía asignado.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo eliminar.");
     } finally {
@@ -284,8 +286,8 @@ export function RolesPage() {
       <div>
         <h1 className="font-display text-3xl font-bold">Roles y puestos</h1>
         <p className="mt-1 max-w-2xl text-neutral-400">
-          Como super administrador, defines los puestos que el equipo operativo asignará al registrar
-          personal.
+          Como Dirección defines los puestos que el equipo operativo asignará al registrar personal.
+          Puedes crear, editar y eliminar roles personalizados.
         </p>
       </div>
 

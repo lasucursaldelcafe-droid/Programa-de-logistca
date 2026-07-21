@@ -384,6 +384,36 @@ class DemoStore {
 
   deleteCustomRole(id: string): void {
     this.customRoles = this.customRoles.filter((r) => r.id !== id);
+    this.workers = this.workers.map((w) =>
+      w.customRoleId === id ? { ...w, customRoleId: undefined } : w,
+    );
+    this.accounts = this.accounts.map((a) =>
+      a.user.customRoleId === id
+        ? { ...a, user: { ...a.user, customRoleId: undefined } }
+        : a,
+    );
+    this.notify();
+  }
+
+  deletePlatformAccount(userId: string): void {
+    const account = this.accounts.find((a) => a.user.uid === userId);
+    if (!account) throw new Error("Usuario no encontrado.");
+    if (account.user.role === "ceo" || account.user.role === "master_app") {
+      throw new Error("No se puede eliminar una cuenta raíz (CEO / Master App).");
+    }
+    const workerId = account.user.workerId;
+    this.accounts = this.accounts.filter((a) => a.user.uid !== userId);
+    if (workerId) {
+      this.workers = this.workers.map((w) =>
+        w.id === workerId
+          ? { ...w, cuentaCreada: false, customRoleId: undefined }
+          : w,
+      );
+    }
+    this.recordChange("user.delete", userId, {
+      targetLabel: account.user.nombre,
+      detail: `Perfil eliminado (${account.user.email})`,
+    });
     this.notify();
   }
 

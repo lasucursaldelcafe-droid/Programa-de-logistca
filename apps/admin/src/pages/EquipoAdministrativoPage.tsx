@@ -16,6 +16,7 @@ import { PageHeader } from "../components/nav/PageHeader";
 import { PermissionDenied } from "../components/FeedbackStates";
 import {
   createPlatformAccount,
+  deletePlatformAccount,
   toUserFacingError,
   updatePlatformUserRole,
   usePlatformUsers,
@@ -41,6 +42,7 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [updatingRoleUid, setUpdatingRoleUid] = useState<string | null>(null);
+  const [deletingUid, setDeletingUid] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState("");
 
   /** Roles para crear cuentas de oficina (sin ficha de trabajador). */
@@ -126,10 +128,32 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
     }
   }
 
+  async function onEliminarPerfil(target: { uid: string; nombre: string; email: string; role: UserRole }) {
+    if (!user) return;
+    if (
+      !window.confirm(
+        `¿Eliminar el perfil de «${target.nombre}» (${target.email})?\n\nSe borrará su acceso a la plataforma. Si tiene ficha de personal, la ficha se conserva y se podrá reactivar la cuenta después.`,
+      )
+    ) {
+      return;
+    }
+    setDeletingUid(target.uid);
+    setError(null);
+    setMensaje(null);
+    try {
+      await deletePlatformAccount(target.uid, user);
+      setMensaje(`Perfil «${target.nombre}» eliminado.`);
+    } catch (err) {
+      setError(toUserFacingError(err, "No se pudo eliminar el perfil.").message);
+    } finally {
+      setDeletingUid(null);
+    }
+  }
+
   const descripcion =
     variant === "master"
-      ? "Aquí modificas el rol de cualquier cuenta creada (oficina o campo): por ejemplo pabcolgom@gmail.com o Jhonny. Busca por nombre o correo y elige el nuevo rol."
-      : "Crea cuentas de Personas (RH) y Finanzas, y modifica el rol de las existentes. El equipo del evento se gestiona en Equipo del evento.";
+      ? "Aquí modificas o eliminas el rol de cualquier cuenta creada (oficina o campo): por ejemplo pabcolgom@gmail.com o Jhonny. Busca por nombre o correo, cambia el rol o elimina el perfil."
+      : "Crea cuentas de Personas (RH) y Finanzas, modifica el rol de las existentes o elimínalas. El equipo del evento se gestiona en Equipo del evento.";
 
   const tituloPagina = variant === "master" ? "Perfiles y roles" : "Equipo de oficina";
   const tituloLista =
@@ -269,6 +293,10 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
                 u.uid !== user.uid &&
                 rolesParaEditar.length > 0 &&
                 (puedeAsignarRol(user.role, u.role) || variant === "master");
+              const puedeEliminar =
+                u.uid !== user.uid &&
+                !ROLES_RAIZ.includes(u.role) &&
+                (puedeAsignarRol(user.role, u.role) || variant === "master");
               return (
                 <li
                   key={u.uid}
@@ -279,36 +307,48 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
                     <div className="font-mono text-xs text-neutral-500">{u.email}</div>
                     <div className="mt-1 text-xs text-neutral-500">{resumenRol(u.role)}</div>
                   </div>
-                  {puedeEditar ? (
-                    <label className="flex w-full flex-col gap-1 text-xs text-neutral-400 sm:w-auto sm:min-w-[11rem]">
-                      <span>Rol</span>
-                      <select
-                        value={u.role}
-                        disabled={updatingRoleUid === u.uid}
-                        onChange={(e) =>
-                          void onChangeRole(u.uid, e.target.value as UserRole)
-                        }
-                        className="w-full rounded-lg border border-border bg-bg px-3 py-1.5 text-sm text-neutral-100 disabled:opacity-50"
-                        title="Cambiar rol de esta cuenta"
-                      >
-                        {!rolesParaEditar.includes(u.role) && (
-                          <option value={u.role}>{ROLE_LABEL[u.role]}</option>
+                  <div className="flex w-full flex-wrap items-end gap-2 sm:w-auto">
+                    {puedeEditar ? (
+                      <label className="flex min-w-[11rem] flex-1 flex-col gap-1 text-xs text-neutral-400 sm:flex-none">
+                        <span>Rol</span>
+                        <select
+                          value={u.role}
+                          disabled={updatingRoleUid === u.uid || deletingUid === u.uid}
+                          onChange={(e) =>
+                            void onChangeRole(u.uid, e.target.value as UserRole)
+                          }
+                          className="w-full rounded-lg border border-border bg-bg px-3 py-1.5 text-sm text-neutral-100 disabled:opacity-50"
+                          title="Cambiar rol de esta cuenta"
+                        >
+                          {!rolesParaEditar.includes(u.role) && (
+                            <option value={u.role}>{ROLE_LABEL[u.role]}</option>
+                          )}
+                          {rolesParaEditar.map((rol) => (
+                            <option key={rol} value={rol}>
+                              {ROLE_LABEL[rol]}
+                            </option>
+                          ))}
+                        </select>
+                        {updatingRoleUid === u.uid && (
+                          <span className="text-accent">Guardando…</span>
                         )}
-                        {rolesParaEditar.map((rol) => (
-                          <option key={rol} value={rol}>
-                            {ROLE_LABEL[rol]}
-                          </option>
-                        ))}
-                      </select>
-                      {updatingRoleUid === u.uid && (
-                        <span className="text-accent">Guardando…</span>
-                      )}
-                    </label>
-                  ) : (
-                    <span className="rounded-full bg-neutral-800 px-3 py-1 text-xs">
-                      {u.uid === user.uid ? "Tu cuenta" : ROLE_LABEL[u.role]}
-                    </span>
-                  )}
+                      </label>
+                    ) : (
+                      <span className="rounded-full bg-neutral-800 px-3 py-1 text-xs">
+                        {u.uid === user.uid ? "Tu cuenta" : ROLE_LABEL[u.role]}
+                      </span>
+                    )}
+                    {puedeEliminar && (
+                      <button
+                        type="button"
+                        disabled={busy || deletingUid === u.uid || updatingRoleUid === u.uid}
+                        onClick={() => void onEliminarPerfil(u)}
+                        className="rounded-lg border border-alert/40 px-3 py-1.5 text-xs text-alert disabled:opacity-50"
+                      >
+                        {deletingUid === u.uid ? "Eliminando…" : "Eliminar"}
+                      </button>
+                    )}
+                  </div>
                 </li>
               );
             })}
