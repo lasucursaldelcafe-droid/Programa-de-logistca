@@ -31,6 +31,7 @@ export function ReportarPage() {
 
   const workerId = user.workerId;
   const workerNombre = user.nombre;
+  const reporterUid = user.uid;
 
   const ahora = Date.now();
   const turnoActivo =
@@ -59,6 +60,7 @@ export function ReportarPage() {
       await createReporte({
         workerId,
         workerNombre,
+        reporterUid,
         ...(turnoActivo?.id ? { shiftId: turnoActivo.id } : {}),
         ...(turnoActivo?.siteId ? { siteId: turnoActivo.siteId } : {}),
         ...(turnoActivo?.siteNombre ? { siteNombre: turnoActivo.siteNombre } : {}),
