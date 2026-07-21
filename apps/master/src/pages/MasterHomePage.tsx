@@ -63,19 +63,28 @@ export function MasterHomePage() {
             <span className="mt-3 inline-block text-sm text-accent underline">Gestionar roles →</span>
           </Card>
         </Link>
-        <Card className="h-full">
-          <h2 className="font-display text-lg font-semibold">Personal de campo</h2>
-          <p className="mt-2 text-3xl font-bold">{workers.length}</p>
-          <p className="mt-1 text-sm text-neutral-400">
-            Supervisores y empleados (los crea el equipo admin en consola operativa)
-          </p>
-        </Card>
+        <Link to="/master/trabajadores" className="block transition hover:opacity-90">
+          <Card className="h-full border-positive/30 bg-positive/5">
+            <h2 className="font-display text-lg font-semibold text-positive">Trabajadores en vivo</h2>
+            <p className="mt-2 text-3xl font-bold">{workers.length}</p>
+            <p className="mt-1 text-sm text-neutral-400">
+              {activos > 0
+                ? `${activos} en jornada ahora — ver qué hace cada uno`
+                : "Ver personal de campo, jornadas GPS y turnos"}
+            </p>
+            <span className="mt-3 inline-block text-sm text-positive underline">Ver actividad →</span>
+          </Card>
+        </Link>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard label="Eventos" value={String(events.length)} />
-        <MetricCard label="Trabajadores" value={String(workers.length)} />
-        <MetricCard label="Jornadas activas" value={String(activos)} tone="positive" />
+        <Link to="/master/trabajadores" className="block transition hover:opacity-90">
+          <MetricCard label="Trabajadores" value={String(workers.length)} />
+        </Link>
+        <Link to="/master/trabajadores" className="block transition hover:opacity-90">
+          <MetricCard label="Jornadas activas" value={String(activos)} tone="positive" />
+        </Link>
         <MetricCard label="Reportes abiertos" value={String(reportesAbiertos)} tone="alert" />
       </div>
 

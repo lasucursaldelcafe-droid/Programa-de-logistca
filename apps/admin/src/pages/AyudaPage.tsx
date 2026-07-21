@@ -27,6 +27,7 @@ const PLATFORM_STEPS: Record<Platform, string[]> = {
   ],
   master: [
     "Revisa el panel global de la operación.",
+    "En Trabajadores en vivo ves qué hace cada persona de campo (jornada, GPS, turnos).",
     "Gestiona administradores y permisos de plataforma.",
     "Exporta informes CSV para análisis.",
     "Audita nómina y movimientos sensibles.",
