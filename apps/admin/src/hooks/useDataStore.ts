@@ -2604,6 +2604,7 @@ async function createPlatformAccountViaAuthRest(data: {
 export async function createReporte(data: {
   workerId: string;
   workerNombre: string;
+  reporterUid?: string;
   shiftId?: string;
   siteId?: string;
   siteNombre?: string;
@@ -2620,6 +2621,7 @@ export async function createReporte(data: {
   const reporte = omitUndefinedFields({
     workerId: data.workerId,
     workerNombre: data.workerNombre,
+    reporterUid: data.reporterUid,
     tipo: data.tipo,
     mensaje,
     estado: "abierto" as const,

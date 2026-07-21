@@ -237,6 +237,8 @@ export interface Reporte {
   id: string;
   workerId: string;
   workerNombre: string;
+  /** Auth UID de quien envió el reporte (para abrir chat 1:1). */
+  reporterUid?: string;
   shiftId?: string;
   siteId?: string;
   siteNombre?: string;
