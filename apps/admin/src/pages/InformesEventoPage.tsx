@@ -97,7 +97,7 @@ export function InformesEventoPage() {
           <select
             value={evento?.id ?? ""}
             onChange={(e) => setEventoId(e.target.value)}
-            className="mt-1 block min-w-[220px] rounded-lg border border-border bg-bg px-3 py-2"
+            className="mt-1 block w-full max-w-full rounded-lg border border-border bg-bg px-3 py-2 sm:min-w-[220px] sm:w-auto"
           >
             {events.map((ev) => (
               <option key={ev.id} value={ev.id}>

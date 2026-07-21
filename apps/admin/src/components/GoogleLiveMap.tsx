@@ -91,7 +91,7 @@ function GoogleMapContent({ sites, attendances }: Omit<GoogleLiveMapProps, "apiK
 
 export function GoogleLiveMap({ apiKey, sites, attendances, className }: GoogleLiveMapProps) {
   const markers = collectMapMarkers(sites, attendances);
-  const heightClass = className ?? "h-80";
+  const heightClass = className ?? "spe-map-frame";
 
   if (markers.length === 0 && sites.length === 0) {
     return (

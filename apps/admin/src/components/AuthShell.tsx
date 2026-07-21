@@ -12,16 +12,16 @@ interface AuthShellProps {
 /** Layout uniforme para login, invitación, activar cuenta, etc. */
 export function AuthShell({ title, subtitle, children, footer, wide }: AuthShellProps) {
   return (
-    <div className="spe-login-bg flex min-h-screen items-center justify-center px-4 py-10">
-      <div className={`spe-animate-in w-full ${wide ? "max-w-lg" : "max-w-md"}`}>
+    <div className="spe-login-bg flex min-h-dvh items-center justify-center px-3 py-8 safe-area-inset sm:px-4 sm:py-10">
+      <div className={`spe-animate-in w-full min-w-0 ${wide ? "max-w-lg" : "max-w-md"}`}>
         <div className="mb-6 text-center">
-          <div className="spe-brand-glow mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl">
-            <span className="font-display text-2xl font-bold text-accent">SPE</span>
+          <div className="spe-brand-glow mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl sm:h-16 sm:w-16">
+            <span className="font-display text-xl font-bold text-accent sm:text-2xl">SPE</span>
           </div>
-          <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
+          <h1 className="font-display text-xl font-bold tracking-tight sm:text-2xl md:text-3xl">{title}</h1>
           {subtitle && <p className="mt-2 text-sm text-neutral-400">{subtitle}</p>}
         </div>
-        <div className="spe-glass rounded-2xl p-5 sm:p-6">{children}</div>
+        <div className="spe-glass rounded-2xl p-4 sm:p-5 md:p-6">{children}</div>
         {footer && (
           <div className="mt-5 text-center text-xs leading-relaxed text-neutral-500">{footer}</div>
         )}

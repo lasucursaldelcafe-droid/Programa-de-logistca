@@ -23,8 +23,8 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1280,
     height: 840,
-    minWidth: 900,
-    minHeight: 600,
+    minWidth: 360,
+    minHeight: 480,
     title: "SPE Eventos",
     autoHideMenuBar: true,
     webPreferences: {

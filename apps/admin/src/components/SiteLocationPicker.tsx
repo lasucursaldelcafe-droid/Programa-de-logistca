@@ -56,7 +56,7 @@ function SchematicSiteMap({
   const pinY = toY(lat);
 
   return (
-    <div className="relative h-80 overflow-hidden rounded-xl border border-accent/30 bg-[#111]">
+    <div className="spe-map-frame relative overflow-hidden rounded-xl border border-accent/30 bg-[#111]">
       <svg
         viewBox="0 0 100 100"
         className="h-full w-full cursor-crosshair"
@@ -188,7 +188,7 @@ function GoogleSiteMap({
   onPick: (coords: { lat: number; lng: number }) => void;
 }) {
   return (
-    <div className="relative h-80 overflow-hidden rounded-xl border border-accent/30">
+    <div className="spe-map-frame relative overflow-hidden rounded-xl border border-accent/30">
       <APIProvider apiKey={apiKey} language="es" region="CO">
         <GoogleSiteMapInner lat={lat} lng={lng} radioMeters={radioMeters} onPick={onPick} />
       </APIProvider>

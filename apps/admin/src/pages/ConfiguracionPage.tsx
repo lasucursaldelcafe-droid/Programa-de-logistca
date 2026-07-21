@@ -397,8 +397,8 @@ export function ConfiguracionPage() {
     <div className="space-y-5">
       <div>
         <p className="text-xs font-semibold uppercase tracking-wider text-accent">Paso 1 del flujo</p>
-        <h1 className="font-display text-3xl font-bold">Crear evento</h1>
-        <p className="mt-1 max-w-2xl text-neutral-400">
+        <h1 className="font-display text-2xl font-bold sm:text-3xl">Crear evento</h1>
+        <p className="mt-1 max-w-2xl text-sm text-neutral-400 sm:text-base">
           Asistente en 6 pasos: evento, sitios, tarifas, QR, operaciones (temática y reglas) y
           resumen. Después registra personal, envía invitaciones y asigna turnos en Operación.
         </p>
@@ -633,10 +633,10 @@ export function ConfiguracionPage() {
               return (
                 <li
                   key={s.id}
-                  className="flex justify-between rounded border border-border px-3 py-2"
+                  className="flex flex-wrap items-center justify-between gap-2 rounded border border-border px-3 py-2"
                 >
-                  <span>{s.nombre}</span>
-                  <span className={tieneQr ? "text-positive" : "text-accent"}>
+                  <span className="min-w-0 break-words">{s.nombre}</span>
+                  <span className={`shrink-0 ${tieneQr ? "text-positive" : "text-accent"}`}>
                     {tieneQr ? "QR activo" : "Pendiente"}
                   </span>
                 </li>
@@ -844,7 +844,7 @@ function WizardProgress({
         return (
           <div
             key={step.id}
-            className={`flex-1 min-w-[120px] rounded-lg border px-3 py-2 text-center text-xs ${
+            className={`min-w-[calc(50%-0.25rem)] flex-1 rounded-lg border px-2 py-2 text-center text-[11px] sm:min-w-[120px] sm:px-3 sm:text-xs ${
               active
                 ? "border-accent bg-accent/10 text-accent"
                 : done
@@ -852,8 +852,10 @@ function WizardProgress({
                   : "border-border text-neutral-500"
             }`}
           >
-            <div className="font-medium">{i + 1}. {step.titulo}</div>
-            <div className="mt-0.5 opacity-70">{step.descripcion}</div>
+            <div className="font-medium">
+              {i + 1}. {step.titulo}
+            </div>
+            <div className="mt-0.5 hidden opacity-70 sm:block">{step.descripcion}</div>
           </div>
         );
       })}

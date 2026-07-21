@@ -10,7 +10,7 @@ interface LiveMapSchematicProps {
 
 export function LiveMapSchematic({ sites, attendances, className }: LiveMapSchematicProps) {
   const markers = collectMapMarkers(sites, attendances);
-  const heightClass = className ?? "h-80";
+  const heightClass = className ?? "spe-map-frame";
 
   const mapMarkers =
     markers.length > 0
