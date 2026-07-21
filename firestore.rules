@@ -236,7 +236,14 @@ service cloud.firestore {
     }
 
     match /chatMessages/{messageId} {
-      allow read: if signedIn();
+      allow read: if signedIn()
+        && (
+          !(resource.data.channelId is string && resource.data.channelId.matches('dm-.*'))
+          || (
+            resource.data.participantUids is list
+            && request.auth.uid in resource.data.participantUids
+          )
+        );
       allow create: if signedIn()
         && request.resource.data.senderUid == request.auth.uid
         && request.resource.data.text is string
@@ -247,12 +254,20 @@ service cloud.firestore {
         && (
           !("audience" in request.resource.data)
           || request.resource.data.audience == null
-          || request.resource.data.audience in ["evento", "empleados", "supervisores"]
+          || request.resource.data.audience in ["evento", "empleados", "supervisores", "directo"]
         )
-        // Empleados de campo no escriben en canal de supervisores
         && !(
           request.resource.data.audience == "supervisores"
           && role() == "trabajador"
+        )
+        && (
+          !(request.resource.data.channelId.matches('dm-.*'))
+          || (
+            request.resource.data.audience == "directo"
+            && request.resource.data.participantUids is list
+            && request.resource.data.participantUids.size() == 2
+            && request.auth.uid in request.resource.data.participantUids
+          )
         );
       allow update, delete: if isAdmin();
     }

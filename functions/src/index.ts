@@ -259,6 +259,9 @@ export const onChatMessageCreated = onDocumentCreated(
         eventId: data.eventId as string | null | undefined,
         audience: data.audience as string | null | undefined,
         senderUid,
+        participantUids: Array.isArray(data.participantUids)
+          ? (data.participantUids as string[])
+          : undefined,
       });
 
       if (uids.length === 0) {
@@ -289,11 +292,14 @@ export const onChatMessageCreated = onDocumentCreated(
             tipo: "chat",
             channelId,
             messageId,
+            ...(channelId.startsWith("dm-") ? { dm: "1" } : {}),
           },
           webpush: {
             notification: { icon: "/favicon.ico" },
             fcmOptions: {
-              link: await comunicacionLinkForUid(db, r.uid),
+              link: channelId.startsWith("dm-")
+                ? `${await comunicacionLinkForUid(db, r.uid)}?dm=${encodeURIComponent(senderUid)}`
+                : await comunicacionLinkForUid(db, r.uid),
             },
           },
         })),

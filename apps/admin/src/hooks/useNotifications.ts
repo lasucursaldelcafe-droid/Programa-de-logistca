@@ -110,8 +110,14 @@ export function useNotifications(user: AppUser | null): AppNotification[] {
       query(collection(getFirestoreDb(), "notifications"), orderBy("timestamp", "desc")),
       (snap) =>
         setNotifications(
-          snap.docs.map((d) => ({ id: d.id, ...d.data() } as AppNotification)),
+          snap.docs.map((d) =>
+            parseNotification({ id: d.id, ...(d.data() as Record<string, unknown>) }),
+          ),
         ),
+      (err) => {
+        console.error("No se pudieron cargar notificaciones:", err);
+        setNotifications([]);
+      },
     );
     return unsub;
   }, [user]);
