@@ -1,17 +1,13 @@
-import { initializeApp } from "firebase-admin/app";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { FieldValue } from "firebase-admin/firestore";
 import { getMessaging } from "firebase-admin/messaging";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { defineSecret } from "firebase-functions/params";
 import { logger } from "firebase-functions";
+import { db } from "./initAdmin";
 import { resolveRecipientUids, resolveChatRecipientUids, comunicacionLinkForUid } from "./pushRecipients";
 import { mailConfigured, sendMail } from "./mail";
 import { buildInvitationEmail, buildShiftAssignedEmail, resolveAppUrl } from "./emailTemplates";
 export { provisionWorkerAccount, importWorkersBulk, createPlatformAccountFn } from "./provisionWorkers";
-
-initializeApp();
-
-const db = getFirestore();
 
 const gmailUser = defineSecret("GMAIL_USER");
 const gmailAppPassword = defineSecret("GMAIL_APP_PASSWORD");

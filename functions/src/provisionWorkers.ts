@@ -1,12 +1,11 @@
 import { getAuth } from "firebase-admin/auth";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { FieldValue } from "firebase-admin/firestore";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { logger } from "firebase-functions";
 import { mailConfigured, sendMail } from "./mail";
 import { buildWorkerCredentialsEmail, resolveAppUrl } from "./emailTemplates";
-
-const db = getFirestore();
+import { db } from "./initAdmin";
 
 const gmailUser = defineSecret("GMAIL_USER");
 const gmailAppPassword = defineSecret("GMAIL_APP_PASSWORD");
