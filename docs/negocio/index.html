@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#f09040" />
+    <link rel="manifest" href="/Programa-de-logistca/manifest.json" />
+    <title>Admin Console — Personal Eventos</title>
+    <link rel="icon" type="image/svg+xml" href="/Programa-de-logistca/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script type="module" crossorigin src="/Programa-de-logistca/assets/index-CztVx19b.js"></script>
+    <link rel="modulepreload" crossorigin href="/Programa-de-logistca/assets/vendor-react-FWDJupN7.js">
+    <link rel="modulepreload" crossorigin href="/Programa-de-logistca/assets/vendor-firebase-BAS34ikl.js">
+    <link rel="modulepreload" crossorigin href="/Programa-de-logistca/assets/vendor-router-CX3rEs2N.js">
+    <link rel="modulepreload" crossorigin href="/Programa-de-logistca/assets/vendor-maps-BFNwUS9f.js">
+    <link rel="stylesheet" crossorigin href="/Programa-de-logistca/assets/index-t2zKnSVC.css">
+  </head>
+  <body>
+    <script>
+      (function () {
+        var BUILD = "0a0bb433d781";
+        var keys = [
+          "spe-runtime-config-v1",
+          "spe-runtime-config-v2",
+          "spe-demo-store-v1",
+          "spe-demo-integrations-v1",
+          "spe-demo-user",
+          "spe-sheets-session",
+        ];
+        try {
+          if (localStorage.getItem("spe-build-id") !== BUILD) {
+            keys.forEach(function (k) {
+              localStorage.removeItem(k);
+            });
+            sessionStorage.removeItem("spe-sheets-session");
+            localStorage.setItem("spe-build-id", BUILD);
+            if (!sessionStorage.getItem("spe-build-reloaded")) {
+              sessionStorage.setItem("spe-build-reloaded", "1");
+              location.reload();
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <div id="root"></div>
+  </body>
+</html>
