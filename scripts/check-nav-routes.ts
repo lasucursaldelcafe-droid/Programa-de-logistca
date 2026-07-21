@@ -11,7 +11,7 @@ const ADMIN_ROUTES = new Set([
 ]);
 
 const MASTER_ROUTES = new Set([
-  "/master", "/master/trabajadores", "/master/administradores", "/master/roles", "/master/informes", "/master/auditoria", "/master/ayuda",
+  "/master", "/master/trabajadores", "/master/comunicacion", "/master/administradores", "/master/roles", "/master/informes", "/master/auditoria", "/master/ayuda",
 ]);
 
 const WORKER_ROUTES = new Set([

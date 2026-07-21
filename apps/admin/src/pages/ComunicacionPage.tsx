@@ -73,7 +73,7 @@ export function ComunicacionPage() {
     <div className="mx-auto max-w-4xl space-y-5">
       <PageHeader
         title="Comunicación"
-        description="Chat entre empleados, supervisores o el evento general. Elige el evento y el canal."
+        description="Chat y videollamadas: evento general, empleados o supervisores. Dirección (CEO) puede ver y unirse a todos los canales."
       />
 
       <div className="flex flex-wrap items-end gap-3">

@@ -269,6 +269,7 @@ export function getMasterNavSections(): NavSection[] {
       items: [
         { to: "/master", label: "Resumen", icon: "grid", end: true },
         { to: "/master/trabajadores", label: "Trabajadores en vivo", icon: "users" },
+        { to: "/master/comunicacion", label: "Chat y videollamadas", icon: "message" },
         { to: "/master/administradores", label: "Equipo administrativo", icon: "shield" },
         { to: "/master/roles", label: "Roles y puestos", icon: "users" },
         { to: "/master/informes", label: "Informes globales", icon: "chart" },
