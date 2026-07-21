@@ -120,8 +120,8 @@ function navAdministrador(role: UserRole): NavSection[] {
       title: "Preparar evento",
       items: [
         { to: "/configuracion", label: "1. Crear evento", icon: "calendar" },
-        { to: "/equipo-admin", label: "2. Equipo administrativo", icon: "shield" },
-        { to: "/personal", label: "3. Personal de campo", icon: "users" },
+        { to: "/equipo-admin", label: "2. Equipo de oficina", icon: "shield" },
+        { to: "/personal", label: "3. Equipo del evento", icon: "users" },
         { to: "/cuentas", label: "4. Invitaciones", icon: "mail" },
         { to: "/operacion", label: "5. Dashboard del evento", icon: "calendar" },
       ],
@@ -162,7 +162,7 @@ function navRecursosHumanos(role: UserRole): NavSection[] {
       id: "personas",
       title: "Gestión de personal",
       items: [
-        { to: "/personal", label: "Personal de campo", icon: "users" },
+        { to: "/personal", label: "Equipo del evento", icon: "users" },
         { to: "/cuentas", label: "Invitaciones", icon: "mail" },
         { to: "/turnos", label: "Turnos", icon: "calendar" },
         { to: "/comunicacion", label: "Comunicación", icon: "message" },
@@ -217,7 +217,7 @@ function navSupervisor(role: UserRole): NavSection[] {
         { to: "/turnos", label: "Turnos", icon: "calendar" },
         { to: "/qr-sitios", label: "QR y sitios", icon: "qr" },
         { to: "/comunicacion", label: "Comunicación", icon: "message" },
-        { to: "/personal", label: "Personal de campo", icon: "users" },
+        { to: "/personal", label: "Equipo del evento", icon: "users" },
       ],
     },
     {
@@ -268,9 +268,9 @@ export function getMasterNavSections(): NavSection[] {
       title: "Dirección de plataforma",
       items: [
         { to: "/master", label: "Resumen", icon: "grid", end: true },
-        { to: "/master/trabajadores", label: "Trabajadores en vivo", icon: "users" },
+        { to: "/master/trabajadores", label: "Equipo en vivo", icon: "users" },
         { to: "/master/comunicacion", label: "Chat y videollamadas", icon: "message" },
-        { to: "/master/administradores", label: "Equipo administrativo", icon: "shield" },
+        { to: "/master/administradores", label: "Equipo de oficina", icon: "shield" },
         { to: "/master/roles", label: "Roles y puestos", icon: "users" },
         { to: "/master/informes", label: "Informes globales", icon: "chart" },
         { to: "/master/auditoria", label: "Auditoría", icon: "audit" },

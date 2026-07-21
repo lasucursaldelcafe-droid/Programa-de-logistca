@@ -18,8 +18,16 @@ export function WelcomeModal({ user }: WelcomeModalProps) {
 
   useEffect(() => {
     if (!user.uid || hasSeenWelcome(user.uid)) return;
-    setContent(getWelcomeContent(user));
-    setOpen(true);
+    // Tras await implícito del tick: evita setState síncrono puro en el efecto.
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setContent(getWelcomeContent(user));
+      setOpen(true);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [user.uid, user.nombre, user.role]);
 
   if (!open || !content) return null;
@@ -39,7 +47,7 @@ export function WelcomeModal({ user }: WelcomeModalProps) {
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-accent/30 bg-surface shadow-2xl">
         <div className="border-b border-border bg-gradient-to-br from-accent/15 to-transparent px-5 py-5 sm:px-6">
           <p className="text-xs font-medium uppercase tracking-wide text-accent">
-            Primer inicio de sesión
+            Nueva sesión · Buen desarrollo
           </p>
           <h2 id="welcome-title" className="mt-1 font-display text-2xl font-bold text-white">
             {content.titulo}
@@ -58,6 +66,9 @@ export function WelcomeModal({ user }: WelcomeModalProps) {
               </li>
             ))}
           </ul>
+          <p className="rounded-lg border border-accent/25 bg-accent/10 px-4 py-3 text-sm font-medium text-accent">
+            {content.motivacion}
+          </p>
           <p className="rounded-lg border border-positive/30 bg-positive/10 px-4 py-3 text-sm font-medium text-positive">
             {content.cierre}
           </p>
@@ -66,7 +77,7 @@ export function WelcomeModal({ user }: WelcomeModalProps) {
             onClick={handleDismiss}
             className="w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-bg transition hover:opacity-90"
           >
-            ¡Comenzar!
+            Entrar a trabajar
           </button>
         </div>
       </div>

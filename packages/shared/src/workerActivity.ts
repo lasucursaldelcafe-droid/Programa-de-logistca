@@ -145,7 +145,7 @@ export function buildWorkerActivityRows(input: {
 
       const actividad =
         kind === "fuera_geocerca"
-          ? "Fuera de geocerca (alerta)"
+          ? "Fuera del área del sitio (alerta)"
           : kind === "revision_manual"
             ? "En revisión manual GPS"
             : "Trabajando en sitio (jornada activa)";
@@ -240,7 +240,7 @@ export function buildWorkerActivityRows(input: {
 
 export const WORKER_ACTIVITY_KIND_LABEL: Record<WorkerActivityKind, string> = {
   en_jornada: "En jornada",
-  fuera_geocerca: "Fuera de geocerca",
+  fuera_geocerca: "Fuera del área del sitio",
   revision_manual: "Revisión GPS",
   turno_confirmado: "Turno listo",
   turno_pendiente: "Turno pendiente",

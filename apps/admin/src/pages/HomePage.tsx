@@ -157,7 +157,7 @@ export function HomePage() {
           <p className="mt-2 max-w-2xl text-sm text-neutral-500">
             Empieza en{" "}
             <Link to="/personal" className="text-accent hover:underline">
-              Personal de campo
+              Equipo del evento
             </Link>{" "}
             o revisa{" "}
             <Link to="/turnos" className="text-accent hover:underline">

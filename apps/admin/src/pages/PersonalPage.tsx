@@ -252,8 +252,8 @@ export function PersonalPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        title="Personal de campo"
-        description="Supervisores y empleados de campo. Credenciales: correo = usuario, documento = contraseña inicial. Las cuentas administrativas se crean en Equipo administrativo."
+        title="Equipo del evento"
+        description="Coordinación en sitio y personal en sitio. Credenciales: correo = usuario, documento = contraseña inicial. Las cuentas de oficina se crean en Equipo de oficina."
       />
 
       {error && (

@@ -56,7 +56,7 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
       <PermissionDenied
         role={user?.role}
         title="Sin permiso para crear cuentas administrativas"
-        description="Solo CEO, Master App o Administrador de operaciones pueden crear estas cuentas."
+        description="Solo Dirección general, Dirección técnica u Operaciones pueden crear estas cuentas."
       />
     );
   }
@@ -102,12 +102,12 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
 
   const descripcion =
     variant === "master"
-      ? "Al inicio solo existen CEO y Master App. Desde aquí creas el equipo administrativo y puedes cambiar el rol de las cuentas ya creadas."
-      : "Crea cuentas de Recursos Humanos y Contabilidad, y modifica el rol de las existentes. El personal de campo se gestiona en Personal de campo.";
+      ? "Al inicio solo existen Dirección general y Dirección técnica. Desde aquí creas el equipo de oficina y puedes cambiar el rol de las cuentas ya creadas."
+      : "Crea cuentas de Personas (RH) y Finanzas, y modifica el rol de las existentes. El equipo del evento se gestiona en Equipo del evento.";
 
   return (
     <div className="space-y-8">
-      <PageHeader title="Equipo administrativo" description={descripcion} />
+      <PageHeader title="Equipo de oficina" description={descripcion} />
 
       <Card className="border-accent/20 bg-accent/5">
         <h2 className="font-display text-lg font-semibold">Cómo se crean las cuentas</h2>
@@ -146,7 +146,7 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
       )}
 
       <Card>
-        <h2 className="font-display text-lg font-semibold">Nueva cuenta administrativa</h2>
+        <h2 className="font-display text-lg font-semibold">Nueva cuenta de oficina</h2>
         <form onSubmit={onSubmit} className="mt-4 grid gap-3 sm:grid-cols-2">
           <label className="text-sm sm:col-span-2">
             <span className="mb-1 block text-neutral-300">Nombre completo *</span>

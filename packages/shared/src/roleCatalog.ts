@@ -1,6 +1,6 @@
 /**
- * Catálogo de roles de plataforma: nombres, qué ven y quién los crea.
- * Al inicio solo existen CEO y Master App; el resto se crea en cascada.
+ * Catálogo de roles: nombres claros desde dirección, operaciones, personas, finanzas y sitio.
+ * Al inicio solo existen Dirección general (CEO) y Dirección técnica; el resto se crea en cascada.
  */
 import type { UserRole } from "./types";
 import { normalizeUserRole } from "./accounts";
@@ -27,82 +27,82 @@ export interface RoleCatalogEntry {
 export const ROLE_CATALOG: Record<UserRole, RoleCatalogEntry> = {
   ceo: {
     id: "ceo",
-    nombre: "CEO",
-    nombreCompleto: "CEO — Dirección general",
+    nombre: "Dirección",
+    nombreCompleto: "Dirección general (CEO)",
     resumen:
-      "Cuenta raíz del negocio. Opera todos los parámetros de la empresa y el personal (crear, quitar, ajustar, reportes), sin ser empleado de campo.",
+      "Cuenta raíz del negocio. Define el rumbo y opera empresa y personal (crear, ajustar, reportes), sin marcar entrada como personal en sitio.",
     consola: "master",
     area: "direccion",
     puedeVer: [
       "Equipo administrativo (crear cuentas)",
-      "Configurar eventos, sitios, QR y operaciones",
+      "Preparar eventos, sitios, códigos de entrada y reglas",
       "Personal: crear, editar, quitar e invitar",
-      "Turnos, supervisión, mapa y reportes",
+      "Turnos, supervisión, mapa y novedades",
       "Nómina, clientes, facturación e inventario",
-      "Trabajadores en vivo, chat e informes",
+      "Equipo en vivo, chat e informes",
       "Roles, auditoría e integraciones",
     ],
     noVe: [
-      "App de campo del empleado (marcar entrada / mis turnos como trabajador)",
+      "App de personal en sitio (marcar entrada / mis turnos como personal)",
     ],
   },
   master_app: {
     id: "master_app",
-    nombre: "Master App",
-    nombreCompleto: "Master App — Plataforma",
-    resumen: "Cuenta raíz técnica. Configura la plataforma y el equipo inicial.",
+    nombre: "Plataforma",
+    nombreCompleto: "Dirección técnica (plataforma)",
+    resumen: "Cuenta raíz técnica. Deja la herramienta y el equipo inicial listos para operar.",
     consola: "master",
     area: "direccion",
     puedeVer: [
       "Equipo administrativo (crear cuentas)",
-      "Trabajadores en vivo (actividad y GPS)",
-      "Chat y videollamadas (todos los canales del evento)",
+      "Equipo en vivo (actividad y ubicación)",
+      "Chat y videollamadas (canales del evento)",
       "Roles y puestos personalizados",
       "Informes y auditoría global",
     ],
-    noVe: ["App de campo del trabajador", "Marcado de entrada QR"],
+    noVe: ["App de personal en sitio", "Marcado de entrada con código"],
   },
   super_admin: {
     id: "super_admin",
-    nombre: "Master App",
-    nombreCompleto: "Master App — Plataforma",
-    resumen: "Alias legacy de Master App.",
+    nombre: "Plataforma",
+    nombreCompleto: "Dirección técnica (plataforma)",
+    resumen: "Alias legacy de Dirección técnica.",
     consola: "master",
     area: "direccion",
-    puedeVer: ["Igual que Master App"],
-    noVe: ["App de campo"],
+    puedeVer: ["Igual que Dirección técnica"],
+    noVe: ["App de personal en sitio"],
   },
   administrador: {
     id: "administrador",
-    nombre: "Administrador",
-    nombreCompleto: "Administrador de operaciones",
+    nombre: "Operaciones",
+    nombreCompleto: "Operaciones del evento",
     resumen: "Dirige la operación del evento: sitios, turnos, personal y cierre.",
     consola: "admin",
     area: "administracion",
     puedeVer: [
-      "Crear y configurar eventos",
-      "Equipo administrativo (RH y Contabilidad)",
-      "Personal de campo e invitaciones",
-      "Supervisión, mapa, QR, reportes",
+      "Crear y preparar eventos",
+      "Equipo administrativo (Personas y Finanzas)",
+      "Personal en sitio e invitaciones",
+      "Supervisión, mapa, códigos de entrada, novedades",
       "Nómina y clientes/inventario",
     ],
-    noVe: ["Consola Master (roles globales / auditoría)"],
+    noVe: ["Consola de dirección (roles globales / auditoría)"],
   },
   recursos_humanos: {
     id: "recursos_humanos",
-    nombre: "Recursos Humanos",
-    nombreCompleto: "Recursos Humanos",
-    resumen: "Gestiona altas, cuentas e invitaciones del personal.",
+    nombre: "Personas",
+    nombreCompleto: "Personas (RH)",
+    resumen: "Gestiona altas, accesos e invitaciones del equipo del evento.",
     consola: "admin",
     area: "administracion",
     puedeVer: [
-      "Personal de campo (supervisores y empleados)",
+      "Personal en sitio (coordinación y equipo)",
       "Invitaciones y accesos",
       "Turnos y comunicación",
-      "Reportes e informes de personal",
+      "Novedades e informes de personal",
     ],
     noVe: [
-      "Crear eventos / configuración global",
+      "Crear eventos / preparación global",
       "Nómina y facturación",
       "Clientes e inventario",
       "APIs e integraciones",
@@ -110,8 +110,8 @@ export const ROLE_CATALOG: Record<UserRole, RoleCatalogEntry> = {
   },
   contador: {
     id: "contador",
-    nombre: "Contabilidad",
-    nombreCompleto: "Contabilidad y finanzas",
+    nombre: "Finanzas",
+    nombreCompleto: "Finanzas",
     resumen: "Cierra números: nómina, facturación, cartera e inventario.",
     consola: "admin",
     area: "administracion",
@@ -122,27 +122,27 @@ export const ROLE_CATALOG: Record<UserRole, RoleCatalogEntry> = {
       "Integraciones de lectura",
     ],
     noVe: [
-      "Crear eventos o personal de campo",
-      "Supervisión en vivo / QR",
+      "Crear eventos o personal en sitio",
+      "Supervisión en vivo / códigos de entrada",
       "Crear otras cuentas",
     ],
   },
   supervisor_sitio: {
     id: "supervisor_sitio",
-    nombre: "Supervisor",
-    nombreCompleto: "Supervisor de campo",
-    resumen: "Coordina el equipo en el sitio durante el evento.",
+    nombre: "Coordinación",
+    nombreCompleto: "Coordinación en sitio",
+    resumen: "Coordina al equipo en el lugar durante el evento.",
     consola: "admin",
     area: "campo",
     puedeVer: [
       "Supervisión y mapa en vivo",
       "Turnos del sitio",
-      "QR y sitios",
-      "Reportes y comunicación",
-      "Registrar empleados de campo",
+      "Códigos de entrada y sitios",
+      "Novedades y comunicación",
+      "Registrar personal en sitio",
     ],
     noVe: [
-      "Configuración de eventos",
+      "Preparación de eventos",
       "Nómina y finanzas",
       "Clientes / facturación",
       "Crear cuentas administrativas",
@@ -150,14 +150,14 @@ export const ROLE_CATALOG: Record<UserRole, RoleCatalogEntry> = {
   },
   trabajador: {
     id: "trabajador",
-    nombre: "Empleado",
-    nombreCompleto: "Empleado de campo",
-    resumen: "Trabaja en el evento: turnos, entrada QR y reportes.",
+    nombre: "En sitio",
+    nombreCompleto: "Personal en sitio",
+    resumen: "Trabaja el evento: turnos, entrada con código y novedades.",
     consola: "worker",
     area: "campo",
     puedeVer: [
       "Mis turnos",
-      "Escanear QR / marcar entrada",
+      "Escanear código / marcar entrada",
       "Reportar novedades",
       "Chat y alertas",
       "Mi nómina (consulta)",
@@ -183,21 +183,22 @@ export const JERARQUIA_CUENTAS: {
 }[] = [
   {
     titulo: "1. Cuentas raíz (únicas al inicio)",
-    detalle: "CEO — Dirección general y Master App — Plataforma. Solo ellas existen al arrancar.",
+    detalle:
+      "Dirección general (CEO) y Dirección técnica (plataforma). Solo ellas existen al arrancar.",
   },
   {
-    titulo: "2. Equipo administrativo",
+    titulo: "2. Equipo de oficina",
     detalle:
-      "CEO / Master App crean: Administrador de operaciones, Recursos Humanos y Contabilidad.",
+      "Dirección crea: Operaciones del evento, Personas (RH) y Finanzas.",
   },
   {
-    titulo: "3. Cascada operativa",
+    titulo: "3. Cascada en el evento",
     detalle:
-      "CEO y Administrador pueden registrar Supervisores y Empleados. RH también. Supervisor puede dar de alta Empleados.",
+      "Dirección y Operaciones pueden registrar Coordinación en sitio y Personal en sitio. Personas (RH) también. Quien coordina en sitio puede dar de alta personal.",
   },
   {
     titulo: "4. Cada rol ve solo su área",
     detalle:
-      "El menú y los permisos se filtran por rol. El CEO ve toda la empresa salvo la app de empleado. Finanzas no ve campo; el empleado no ve consola admin.",
+      "El menú y los permisos se filtran por rol. Dirección ve la empresa salvo la app de personal en sitio. Finanzas no ve el campo; el personal en sitio no ve la consola de oficina.",
   },
 ];
