@@ -35,7 +35,7 @@ export function MasterHomePage() {
     <div className="space-y-8">
       <PageHeader
         title="Resumen"
-        description="Cuentas raíz (CEO / Master App): crea el equipo administrativo; cada rol verá solo su área"
+        description="CEO / Master App: dirección de plataforma y operación de la empresa (personal, eventos, reportes). Sin app de empleado."
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -49,6 +49,26 @@ export function MasterHomePage() {
                 : "Administrador · RR. HH. · Contabilidad"}
             </p>
             <span className="mt-3 inline-block text-sm text-accent underline">Crear cuentas →</span>
+          </Card>
+        </Link>
+        <Link to="/personal" className="block transition hover:opacity-90">
+          <Card className="h-full border-positive/20 bg-positive/5">
+            <h2 className="font-display text-lg font-semibold text-positive">Personal de campo</h2>
+            <p className="mt-2 text-3xl font-bold">{workers.length}</p>
+            <p className="mt-1 text-sm text-neutral-400">
+              Crear, ajustar o quitar empleados y supervisores; luego invita en Cuentas
+            </p>
+            <span className="mt-3 inline-block text-sm text-positive underline">Gestionar personal →</span>
+          </Card>
+        </Link>
+        <Link to="/configuracion" className="block transition hover:opacity-90">
+          <Card className="h-full">
+            <h2 className="font-display text-lg font-semibold">Configurar evento</h2>
+            <p className="mt-2 text-3xl font-bold">{events.length}</p>
+            <p className="mt-1 text-sm text-neutral-400">
+              Crear o eliminar eventos, sitios, QR y reglas operativas
+            </p>
+            <span className="mt-3 inline-block text-sm text-accent underline">Ir a configuración →</span>
           </Card>
         </Link>
         <Link to="/master/roles" className="block transition hover:opacity-90">
@@ -73,6 +93,16 @@ export function MasterHomePage() {
                 : "Ver personal de campo, jornadas GPS y turnos"}
             </p>
             <span className="mt-3 inline-block text-sm text-positive underline">Ver actividad →</span>
+          </Card>
+        </Link>
+        <Link to="/reportes" className="block transition hover:opacity-90">
+          <Card className="h-full">
+            <h2 className="font-display text-lg font-semibold">Reportes de campo</h2>
+            <p className="mt-2 text-3xl font-bold">{reportesAbiertos}</p>
+            <p className="mt-1 text-sm text-neutral-400">
+              Novedades abiertas enviadas por empleados
+            </p>
+            <span className="mt-3 inline-block text-sm text-accent underline">Ver reportes →</span>
           </Card>
         </Link>
       </div>

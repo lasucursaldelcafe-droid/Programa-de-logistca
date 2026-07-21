@@ -29,18 +29,22 @@ export const ROLE_CATALOG: Record<UserRole, RoleCatalogEntry> = {
     id: "ceo",
     nombre: "CEO",
     nombreCompleto: "CEO — Dirección general",
-    resumen: "Cuenta raíz del negocio. Define el equipo y la estrategia.",
+    resumen:
+      "Cuenta raíz del negocio. Opera todos los parámetros de la empresa y el personal (crear, quitar, ajustar, reportes), sin ser empleado de campo.",
     consola: "master",
     area: "direccion",
     puedeVer: [
       "Equipo administrativo (crear cuentas)",
-      "Trabajadores en vivo (qué hace cada uno)",
-      "Chat y videollamadas (ver y unirse a todos los canales)",
-      "Roles y puestos",
-      "Informes globales",
-      "Auditoría de plataforma",
+      "Configurar eventos, sitios, QR y operaciones",
+      "Personal: crear, editar, quitar e invitar",
+      "Turnos, supervisión, mapa y reportes",
+      "Nómina, clientes, facturación e inventario",
+      "Trabajadores en vivo, chat e informes",
+      "Roles, auditoría e integraciones",
     ],
-    noVe: ["App de campo del trabajador", "Configurar un evento paso a paso (lo delega al admin)"],
+    noVe: [
+      "App de campo del empleado (marcar entrada / mis turnos como trabajador)",
+    ],
   },
   master_app: {
     id: "master_app",
@@ -189,11 +193,11 @@ export const JERARQUIA_CUENTAS: {
   {
     titulo: "3. Cascada operativa",
     detalle:
-      "Administrador crea RH y Contabilidad. RH registra Supervisores y Empleados de campo. Supervisor puede dar de alta Empleados.",
+      "CEO y Administrador pueden registrar Supervisores y Empleados. RH también. Supervisor puede dar de alta Empleados.",
   },
   {
     titulo: "4. Cada rol ve solo su área",
     detalle:
-      "El menú y los permisos se filtran por rol: finanzas no ve operación de campo, campo no ve nómina, etc.",
+      "El menú y los permisos se filtran por rol. El CEO ve toda la empresa salvo la app de empleado. Finanzas no ve campo; el empleado no ve consola admin.",
   },
 ];

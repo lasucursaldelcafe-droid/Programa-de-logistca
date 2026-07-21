@@ -232,10 +232,23 @@ const CONTADOR_DEFAULT: SpePermission[] = [
   "ver_integraciones",
 ];
 
+/** Permisos propios del Empleado de campo (app worker). El CEO no los tiene. */
+export const WORKER_SELF_PERMISSIONS: SpePermission[] = [
+  "marcar_entrada",
+  "reportar_supervisor",
+  "ver_turnos_propio",
+];
+
+/**
+ * CEO: todos los parámetros de empresa/operación (igual que Administrador),
+ * sin actuar como empleado. Sí puede crear/quitar/ajustar personal y ver reportes.
+ */
+const CEO_EMPRESA_FULL: SpePermission[] = [...ADMIN_FULL];
+
 const MASTER_DEFAULT: SpePermission[] = [...ALL_SPE_PERMISSIONS];
 
 export const DEFAULT_PERMISSIONS_BY_ROLE: Record<UserRole, SpePermission[]> = {
-  ceo: MASTER_DEFAULT,
+  ceo: CEO_EMPRESA_FULL,
   master_app: MASTER_DEFAULT,
   super_admin: MASTER_DEFAULT,
   administrador: ADMIN_FULL,

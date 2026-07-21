@@ -12,11 +12,11 @@ const WELCOME_BY_ROLE: Record<UserRole, Omit<WelcomeContent, "saludo">> = {
   ceo: {
     titulo: "Bienvenido, CEO — Dirección general",
     mensaje:
-      "Eres una de las dos cuentas raíz. Desde aquí creas el equipo administrativo; cada persona verá solo lo de su rol.",
+      "Eres una de las dos cuentas raíz. Tienes todos los parámetros de la empresa: personal, eventos, turnos, reportes y negocio. No usas la app de empleado.",
     puntos: [
-      "Ve a Equipo administrativo y crea Administrador, Recursos Humanos y Contabilidad.",
-      "Define roles y puestos para acotar lo que ve cada persona.",
-      "Delega la operación diaria al Administrador de operaciones.",
+      "Crea el equipo administrativo (Administrador, RH, Contabilidad) cuando lo necesites.",
+      "Desde Operación empresa: registra, ajusta o elimina personal e invitaciones.",
+      "Configura eventos, revisa reportes, nómina e informes cuando quieras intervenir.",
     ],
     cierre: "Tu criterio guía la organización.",
   },

@@ -277,6 +277,22 @@ export function getMasterNavSections(): NavSection[] {
         { to: "/master/ayuda", label: "Ayuda", icon: "help" },
       ],
     },
+    {
+      id: "empresa",
+      title: "Operación empresa",
+      items: [
+        { to: "/configuracion", label: "Configurar evento", icon: "settings" },
+        { to: "/personal", label: "Personal (crear / ajustar)", icon: "users" },
+        { to: "/cuentas", label: "Invitaciones y cuentas", icon: "mail" },
+        { to: "/operacion", label: "Operación y turnos", icon: "calendar" },
+        { to: "/qr-sitios", label: "QR y sitios", icon: "qr" },
+        { to: "/reportes", label: "Reportes de campo", icon: "flag" },
+        { to: "/informes", label: "Informes por evento", icon: "chart" },
+        { to: "/nomina", label: "Nómina", icon: "wallet" },
+        { to: "/negocio", label: "Negocio", icon: "building" },
+        { to: "/panel", label: "Panel operativo", icon: "grid" },
+      ],
+    },
   ];
 }
 

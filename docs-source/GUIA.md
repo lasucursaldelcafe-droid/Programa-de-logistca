@@ -27,16 +27,21 @@ Ver guía completa: [CUENTAS-Y-ROLES.md](./CUENTAS-Y-ROLES.md)
 
 ## 1. Master Console
 
-**Para quién:** dueño de la plataforma o gerencia global.
+**Para quién:** CEO y Master App (dirección).
 
 **Funciones principales:**
 
-- **Panel** — vista general de la operación.
-- **Administradores** — listado y gestión de cuentas con rol administrador.
-- **Informes** — exportación de datos (CSV) para análisis.
-- **Auditoría** — revisión de nómina y movimientos sensibles.
+- **Panel / Resumen** — vista general.
+- **Operación empresa** — atajos a configurar evento, personal (crear/quitar/ajustar), invitaciones, turnos, reportes, nómina y negocio.
+- **Trabajadores en vivo** — actividad GPS y contacto (llamada / chat).
+- **Administradores** — equipo administrativo.
+- **Informes / Auditoría** — CSV globales y revisión sensible.
 
-**Flujo típico:** revisar informes semanales → auditar nómina → verificar administradores activos.
+El **CEO** opera toda la empresa desde aquí y desde Admin; **no** usa la app de Empleado.
+
+**Flujo típico:** configurar evento → registrar personal → monitorear en vivo → informes.
+
+Ver también: [INFORME-QUE-HACE-CADA-COSA.md](./INFORME-QUE-HACE-CADA-COSA.md)
 
 ---
 
