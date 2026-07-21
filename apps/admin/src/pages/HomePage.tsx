@@ -19,6 +19,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { Card } from "../components/ui";
 import { MetricCard } from "../components/dashboard/MetricCard";
+import { QuickConfigSheet } from "../components/dashboard/QuickConfigSheet";
 import { BarChart } from "../components/dashboard/BarChart";
 import { ActivityFeed } from "../components/dashboard/ActivityFeed";
 import { SiteBreakdown } from "../components/dashboard/SiteBreakdown";
@@ -37,6 +38,7 @@ import { PageHeader } from "../components/nav/PageHeader";
 import { EventFlowGuide, computeEventFlowProgress } from "../components/EventFlowGuide";
 import { DataLoadingSkeleton, LoadingScreen } from "../components/FeedbackStates";
 import { useSetupConfig } from "../hooks/useSetup";
+import { KPI_SHORTCUTS, type KpiShortcutKey } from "../config/kpiShortcuts";
 
 export function HomePage() {
   const { user, loading: authLoading } = useAuth();
@@ -50,6 +52,7 @@ export function HomePage() {
   const notifications = useNotifications(user);
   const setupConfig = useSetupConfig();
   const [filtroEvento, setFiltroEvento] = useState("");
+  const [openKpi, setOpenKpi] = useState<KpiShortcutKey | null>(null);
 
   const esOperativo = user && puedeVerDashboardOperativo(user.role);
   const puedeFlujo = user && puedeGestionarConfiguracion(user.role);
@@ -118,6 +121,53 @@ export function HomePage() {
     [sites, attendances, shifts, events, filtroEvento],
   );
 
+  const activeShortcut = openKpi ? KPI_SHORTCUTS[openKpi] : null;
+  const sheetActions =
+    user && activeShortcut
+      ? activeShortcut.actions({
+          role: user.role,
+          eventId: filtroEvento || undefined,
+        })
+      : [];
+
+  const sheetValue = useMemo(() => {
+    if (!openKpi) return undefined;
+    switch (openKpi) {
+      case "workersTotal":
+        return kpis.workersTotal;
+      case "workersEnSitio":
+        return kpis.workersEnSitio;
+      case "turnosPendientes":
+        return kpis.turnosPendientes;
+      case "jornadasActivas":
+        return kpis.jornadasActivas;
+      case "alertasGeocerca":
+        return kpis.alertasGeocerca;
+      case "nominaPendiente":
+        return kpis.nominaPendienteCount;
+      case "turnosConfirmados":
+        return kpis.turnosConfirmados;
+      case "jornadasCerradas":
+        return kpis.jornadasCerradas;
+      case "nominaPagada":
+        return formatCurrencyCOP(kpis.nominaPagadaMonto);
+      case "cuentasSinActivar":
+        return kpis.cuentasSinActivar;
+      default:
+        return undefined;
+    }
+  }, [openKpi, kpis]);
+
+  const sheetSublabel = useMemo(() => {
+    if (openKpi === "nominaPendiente") {
+      return formatCurrencyCOP(kpis.nominaPendienteMonto);
+    }
+    if (openKpi === "cuentasSinActivar") {
+      return `${kpis.invitacionesPendientes} invitaciones pendientes`;
+    }
+    return undefined;
+  }, [openKpi, kpis]);
+
   if (authLoading) return <LoadingScreen />;
   if (!user) return null;
 
@@ -151,7 +201,7 @@ export function HomePage() {
             <Link to="/operacion?tab=supervision" className="text-accent hover:underline">
               Supervisión
             </Link>
-            .
+            . Pulsa cualquier cifra del resumen para una acción rápida.
           </p>
         ) : puedeGestionarPersonal(user.role) ? (
           <p className="mt-2 max-w-2xl text-sm text-neutral-500">
@@ -163,7 +213,7 @@ export function HomePage() {
             <Link to="/turnos" className="text-accent hover:underline">
               Turnos
             </Link>
-            .
+            . Las tarjetas del resumen son atajos.
           </p>
         ) : puedeVerNomina(user.role) ? (
           <p className="mt-2 max-w-2xl text-sm text-neutral-500">
@@ -175,7 +225,7 @@ export function HomePage() {
             <Link to="/negocio" className="text-accent hover:underline">
               Clientes e inventario
             </Link>
-            .
+            . También puedes pulsar las cifras del resumen.
           </p>
         ) : null}
       </div>
@@ -184,7 +234,7 @@ export function HomePage() {
       )}
       <PageHeader
         title="Resumen"
-        description="Personal, turnos, GPS y nómina"
+        description="Pulsa una cifra para abrir la configuración rápida de esa acción"
       >
         {esOperativo && events.length > 0 && (
           <label className="text-sm">
@@ -206,28 +256,64 @@ export function HomePage() {
       </PageHeader>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-        <MetricCard value={kpis.workersTotal} label="Trabajadores" />
-        <MetricCard value={kpis.workersEnSitio} label="En sitio" tone="positive" />
-        <MetricCard value={kpis.turnosPendientes} label="Turnos pendientes" tone="accent" />
-        <MetricCard value={kpis.jornadasActivas} label="Jornadas GPS" tone="positive" />
-        <MetricCard value={kpis.alertasGeocerca} label="Alertas geocerca" tone="alert" />
+        <MetricCard
+          value={kpis.workersTotal}
+          label="Trabajadores"
+          onOpen={() => setOpenKpi("workersTotal")}
+        />
+        <MetricCard
+          value={kpis.workersEnSitio}
+          label="En sitio"
+          tone="positive"
+          onOpen={() => setOpenKpi("workersEnSitio")}
+        />
+        <MetricCard
+          value={kpis.turnosPendientes}
+          label="Turnos pendientes"
+          tone="accent"
+          onOpen={() => setOpenKpi("turnosPendientes")}
+        />
+        <MetricCard
+          value={kpis.jornadasActivas}
+          label="Jornadas GPS"
+          tone="positive"
+          onOpen={() => setOpenKpi("jornadasActivas")}
+        />
+        <MetricCard
+          value={kpis.alertasGeocerca}
+          label="Alertas geocerca"
+          tone="alert"
+          onOpen={() => setOpenKpi("alertasGeocerca")}
+        />
         <MetricCard
           value={kpis.nominaPendienteCount}
           label="Nómina pendiente"
           sublabel={formatCurrencyCOP(kpis.nominaPendienteMonto)}
           tone="accent"
+          onOpen={() => setOpenKpi("nominaPendiente")}
         />
-        <MetricCard value={kpis.turnosConfirmados} label="Turnos confirmados" tone="positive" />
-        <MetricCard value={kpis.jornadasCerradas} label="Jornadas cerradas" />
+        <MetricCard
+          value={kpis.turnosConfirmados}
+          label="Turnos confirmados"
+          tone="positive"
+          onOpen={() => setOpenKpi("turnosConfirmados")}
+        />
+        <MetricCard
+          value={kpis.jornadasCerradas}
+          label="Jornadas cerradas"
+          onOpen={() => setOpenKpi("jornadasCerradas")}
+        />
         <MetricCard
           value={formatCurrencyCOP(kpis.nominaPagadaMonto)}
           label="Nómina pagada"
           tone="positive"
+          onOpen={() => setOpenKpi("nominaPagada")}
         />
         <MetricCard
           value={kpis.cuentasSinActivar}
           label="Sin cuenta activa"
           sublabel={`${kpis.invitacionesPendientes} invitaciones`}
+          onOpen={() => setOpenKpi("cuentasSinActivar")}
         />
       </div>
 
@@ -265,6 +351,18 @@ export function HomePage() {
           </div>
         </Card>
       </div>
+
+      {activeShortcut && (
+        <QuickConfigSheet
+          open={Boolean(openKpi)}
+          title={activeShortcut.title}
+          hint={activeShortcut.hint}
+          value={sheetValue}
+          valueLabel={sheetSublabel}
+          actions={sheetActions}
+          onClose={() => setOpenKpi(null)}
+        />
+      )}
     </div>
   );
 }

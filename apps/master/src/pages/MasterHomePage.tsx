@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   formatCurrencyCOP,
@@ -6,6 +7,7 @@ import {
 } from "@spe/shared";
 import { Card } from "@core/components/ui";
 import { MetricCard } from "@core/components/dashboard/MetricCard";
+import { QuickConfigSheet } from "@core/components/dashboard/QuickConfigSheet";
 import {
   useAttendances,
   useEvents,
@@ -16,8 +18,11 @@ import {
 import { usePayrollEntries } from "@core/hooks/usePayroll";
 import { useCustomRoles } from "@core/hooks/useCustomRoles";
 import { PageHeader } from "@core/components/nav/PageHeader";
+import { useAuth } from "@core/contexts/AuthContext";
+import { KPI_SHORTCUTS, type KpiShortcutKey } from "@core/config/kpiShortcuts";
 
 export function MasterHomePage() {
+  const { user } = useAuth();
   const workers = useWorkers();
   const events = useEvents();
   const users = usePlatformUsers();
@@ -25,21 +30,32 @@ export function MasterHomePage() {
   const reportes = useReportes();
   const payroll = usePayrollEntries();
   const customRoles = useCustomRoles();
+  const [openKpi, setOpenKpi] = useState<KpiShortcutKey | null>(null);
 
   const activos = attendances.filter((a) => a.estado !== "cerrado").length;
   const reportesAbiertos = reportes.filter((r) => r.estado !== "resuelto").length;
   const nominaTotal = payroll.reduce((s, p) => s + p.total, 0);
   const equipoAdmin = users.filter((u) => rolesCuentaPlataforma("ceo").includes(u.role));
 
+  const activeShortcut = openKpi ? KPI_SHORTCUTS[openKpi] : null;
+  const sheetActions =
+    user && activeShortcut
+      ? activeShortcut.actions({ role: user.role })
+      : [];
+
   return (
     <div className="space-y-8">
       <PageHeader
         title="Resumen"
-        description="CEO / Master App: dirección de plataforma y operación de la empresa (personal, eventos, reportes). Sin app de empleado."
+        description="Pulsa una tarjeta o cifra para abrir la configuración rápida de esa acción."
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Link to="/master/administradores" className="block transition hover:opacity-90">
+        <button
+          type="button"
+          onClick={() => setOpenKpi("equipoAdmin")}
+          className="block w-full text-left transition hover:opacity-90"
+        >
           <Card className="h-full border-accent/30 bg-accent/5">
             <h2 className="font-display text-lg font-semibold text-accent">Equipo administrativo</h2>
             <p className="mt-2 text-3xl font-bold">{equipoAdmin.length}</p>
@@ -48,29 +64,37 @@ export function MasterHomePage() {
                 ? "Crea Administrador, Recursos Humanos y Contabilidad"
                 : "Administrador · RR. HH. · Contabilidad"}
             </p>
-            <span className="mt-3 inline-block text-sm text-accent underline">Crear cuentas →</span>
+            <span className="mt-3 inline-block text-sm text-accent">Abrir configuración →</span>
           </Card>
-        </Link>
-        <Link to="/master/personal" className="block transition hover:opacity-90">
+        </button>
+        <button
+          type="button"
+          onClick={() => setOpenKpi("personalCampo")}
+          className="block w-full text-left transition hover:opacity-90"
+        >
           <Card className="h-full border-positive/20 bg-positive/5">
             <h2 className="font-display text-lg font-semibold text-positive">Personal de campo</h2>
             <p className="mt-2 text-3xl font-bold">{workers.length}</p>
             <p className="mt-1 text-sm text-neutral-400">
               Crear, ajustar o quitar empleados y supervisores; luego invita en Cuentas
             </p>
-            <span className="mt-3 inline-block text-sm text-positive underline">Gestionar personal →</span>
+            <span className="mt-3 inline-block text-sm text-positive">Abrir configuración →</span>
           </Card>
-        </Link>
-        <Link to="/master/configuracion" className="block transition hover:opacity-90">
+        </button>
+        <button
+          type="button"
+          onClick={() => setOpenKpi("eventos")}
+          className="block w-full text-left transition hover:opacity-90"
+        >
           <Card className="h-full">
             <h2 className="font-display text-lg font-semibold">Configurar evento</h2>
             <p className="mt-2 text-3xl font-bold">{events.length}</p>
             <p className="mt-1 text-sm text-neutral-400">
               Crear o eliminar eventos, sitios, QR y reglas operativas
             </p>
-            <span className="mt-3 inline-block text-sm text-accent underline">Ir a configuración →</span>
+            <span className="mt-3 inline-block text-sm text-accent">Abrir configuración →</span>
           </Card>
-        </Link>
+        </button>
         <Link to="/master/roles" className="block transition hover:opacity-90">
           <Card className="h-full">
             <h2 className="font-display text-lg font-semibold">Roles y puestos</h2>
@@ -83,7 +107,11 @@ export function MasterHomePage() {
             <span className="mt-3 inline-block text-sm text-accent underline">Gestionar roles →</span>
           </Card>
         </Link>
-        <Link to="/master/trabajadores" className="block transition hover:opacity-90">
+        <button
+          type="button"
+          onClick={() => setOpenKpi("jornadasActivas")}
+          className="block w-full text-left transition hover:opacity-90"
+        >
           <Card className="h-full border-positive/30 bg-positive/5">
             <h2 className="font-display text-lg font-semibold text-positive">Trabajadores en vivo</h2>
             <p className="mt-2 text-3xl font-bold">{workers.length}</p>
@@ -92,45 +120,77 @@ export function MasterHomePage() {
                 ? `${activos} en jornada ahora — ver qué hace cada uno`
                 : "Ver personal de campo, jornadas GPS y turnos"}
             </p>
-            <span className="mt-3 inline-block text-sm text-positive underline">Ver actividad →</span>
+            <span className="mt-3 inline-block text-sm text-positive">Abrir configuración →</span>
           </Card>
-        </Link>
-        <Link to="/master/reportes" className="block transition hover:opacity-90">
+        </button>
+        <button
+          type="button"
+          onClick={() => setOpenKpi("reportesAbiertos")}
+          className="block w-full text-left transition hover:opacity-90"
+        >
           <Card className="h-full">
             <h2 className="font-display text-lg font-semibold">Reportes de campo</h2>
             <p className="mt-2 text-3xl font-bold">{reportesAbiertos}</p>
             <p className="mt-1 text-sm text-neutral-400">
               Novedades abiertas enviadas por empleados
             </p>
-            <span className="mt-3 inline-block text-sm text-accent underline">Ver reportes →</span>
+            <span className="mt-3 inline-block text-sm text-accent">Abrir configuración →</span>
           </Card>
-        </Link>
+        </button>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard label="Eventos" value={String(events.length)} />
-        <Link to="/master/trabajadores" className="block transition hover:opacity-90">
-          <MetricCard label="Trabajadores" value={String(workers.length)} />
-        </Link>
-        <Link to="/master/trabajadores" className="block transition hover:opacity-90">
-          <MetricCard label="Jornadas activas" value={String(activos)} tone="positive" />
-        </Link>
-        <MetricCard label="Reportes abiertos" value={String(reportesAbiertos)} tone="alert" />
+        <MetricCard
+          label="Eventos"
+          value={String(events.length)}
+          onOpen={() => setOpenKpi("eventos")}
+        />
+        <MetricCard
+          label="Trabajadores"
+          value={String(workers.length)}
+          onOpen={() => setOpenKpi("personalCampo")}
+        />
+        <MetricCard
+          label="Jornadas activas"
+          value={String(activos)}
+          tone="positive"
+          onOpen={() => setOpenKpi("jornadasActivas")}
+        />
+        <MetricCard
+          label="Reportes abiertos"
+          value={String(reportesAbiertos)}
+          tone="alert"
+          onOpen={() => setOpenKpi("reportesAbiertos")}
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card>
-          <h2 className="font-display text-lg font-semibold">Cuentas administrativas</h2>
-          <p className="mt-2 text-3xl font-bold">{equipoAdmin.length}</p>
-          <p className="text-sm text-neutral-400">
-            {ROLES_PERSONAL_ADMIN.map((r) => r.replace("_", " ")).join(", ")}
-          </p>
-        </Card>
-        <Card>
-          <h2 className="font-display text-lg font-semibold">Nómina acumulada</h2>
-          <p className="mt-2 text-3xl font-bold">{formatCurrencyCOP(nominaTotal)}</p>
-          <p className="text-sm text-neutral-400">{payroll.length} registros</p>
-        </Card>
+        <button
+          type="button"
+          onClick={() => setOpenKpi("equipoAdmin")}
+          className="w-full text-left"
+        >
+          <Card className="h-full transition hover:ring-1 hover:ring-accent/30">
+            <h2 className="font-display text-lg font-semibold">Cuentas administrativas</h2>
+            <p className="mt-2 text-3xl font-bold">{equipoAdmin.length}</p>
+            <p className="text-sm text-neutral-400">
+              {ROLES_PERSONAL_ADMIN.map((r) => r.replace("_", " ")).join(", ")}
+            </p>
+            <span className="mt-2 inline-block text-xs text-accent">Abrir configuración →</span>
+          </Card>
+        </button>
+        <button
+          type="button"
+          onClick={() => setOpenKpi("nominaPendiente")}
+          className="w-full text-left"
+        >
+          <Card className="h-full transition hover:ring-1 hover:ring-accent/30">
+            <h2 className="font-display text-lg font-semibold">Nómina acumulada</h2>
+            <p className="mt-2 text-3xl font-bold">{formatCurrencyCOP(nominaTotal)}</p>
+            <p className="text-sm text-neutral-400">{payroll.length} registros</p>
+            <span className="mt-2 inline-block text-xs text-accent">Abrir configuración →</span>
+          </Card>
+        </button>
         <Link to="/master/comunicacion" className="block transition hover:opacity-90">
           <Card className="h-full border-accent/30 bg-accent/5">
             <h2 className="font-display text-lg font-semibold text-accent">Chat y videollamadas</h2>
@@ -146,16 +206,28 @@ export function MasterHomePage() {
         <h2 className="font-display text-lg font-semibold">Eventos activos</h2>
         <ul className="mt-4 space-y-2">
           {events.map((e) => (
-            <li
-              key={e.id}
-              className="flex justify-between rounded-lg border border-border bg-bg px-4 py-3 text-sm"
-            >
-              <span>{e.nombre}</span>
-              <span className="text-neutral-500">{e.sitioIds.length} sitio(s)</span>
+            <li key={e.id}>
+              <Link
+                to={`/master/configuracion?evento=${encodeURIComponent(e.id)}`}
+                className="flex justify-between rounded-lg border border-border bg-bg px-4 py-3 text-sm transition hover:border-accent/40"
+              >
+                <span>{e.nombre}</span>
+                <span className="text-neutral-500">{e.sitioIds.length} sitio(s)</span>
+              </Link>
             </li>
           ))}
         </ul>
       </Card>
+
+      {activeShortcut && (
+        <QuickConfigSheet
+          open={Boolean(openKpi)}
+          title={activeShortcut.title}
+          hint={activeShortcut.hint}
+          actions={sheetActions}
+          onClose={() => setOpenKpi(null)}
+        />
+      )}
     </div>
   );
 }
