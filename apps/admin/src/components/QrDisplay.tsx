@@ -6,19 +6,34 @@ import { buildSiteQrJoinUrl } from "../lib/urls";
 
 export function QrDisplay({ qr, effectiveToken }: { qr: QrCode; effectiveToken: string }) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   /** URL pública: al escanear con la cámara abre el alta / puesto. */
   const joinUrl = buildSiteQrJoinUrl(qr.id, effectiveToken);
   const legacyPayload = formatQrPayload(qr.id, effectiveToken);
 
   useEffect(() => {
     let cancelled = false;
-    QRCode.toDataURL(joinUrl, { width: 220, margin: 2, color: { dark: "#E8823C", light: "#0A0A0A" } })
-      .then((url) => {
-        if (!cancelled) setDataUrl(url);
-      })
-      .catch(() => {
-        if (!cancelled) setDataUrl(null);
-      });
+    void (async () => {
+      // Negro sobre blanco: contraste alto para que la cámara del teléfono lea el código.
+      // (Naranja sobre fondo oscuro fallaba al escanear en muchos dispositivos.)
+      try {
+        const url = await QRCode.toDataURL(joinUrl, {
+          width: 220,
+          margin: 2,
+          errorCorrectionLevel: "M",
+          color: { dark: "#000000", light: "#FFFFFF" },
+        });
+        if (!cancelled) {
+          setError(null);
+          setDataUrl(url);
+        }
+      } catch (err: unknown) {
+        if (!cancelled) {
+          setDataUrl(null);
+          setError(err instanceof Error ? err.message : "No se pudo dibujar el QR.");
+        }
+      }
+    })();
     return () => {
       cancelled = true;
     };
@@ -27,7 +42,15 @@ export function QrDisplay({ qr, effectiveToken }: { qr: QrCode; effectiveToken: 
   return (
     <div className="flex flex-col items-center gap-3">
       {dataUrl ? (
-        <img src={dataUrl} alt={`QR ${qr.siteNombre}`} className="rounded-lg border border-border" />
+        <img
+          src={dataUrl}
+          alt={`QR ${qr.siteNombre}`}
+          className="rounded-lg border border-border bg-white p-2"
+        />
+      ) : error ? (
+        <div className="flex h-[220px] w-[220px] items-center justify-center rounded-lg border border-alert/40 bg-bg p-3 text-center text-xs text-alert">
+          {error}
+        </div>
       ) : (
         <div className="flex h-[220px] w-[220px] items-center justify-center rounded-lg border border-border bg-bg text-xs text-neutral-500">
           Generando QR…
