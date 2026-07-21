@@ -20,6 +20,7 @@ import {
   createEvent,
   createQrCode,
   createSite,
+  deleteEvent,
   toUserFacingError,
   updateEvento,
   useEvents,
@@ -161,6 +162,29 @@ export function ConfiguracionPage() {
       setMensaje(`Evento "${eventoForm.nombre}" creado.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al crear evento");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function eliminarEvento(eventId: string, nombre: string) {
+    const ok = window.confirm(
+      `¿Eliminar el evento "${nombre}"?\n\nSe borrarán sitios, turnos, QR, asistencias, chat y nómina de ese evento. Esta acción no se puede deshacer.`,
+    );
+    if (!ok) return;
+    setError(null);
+    setMensaje(null);
+    setBusy(true);
+    try {
+      await deleteEvent(eventId, currentUser.nombre);
+      if (typeof sessionStorage !== "undefined") {
+        const stored = sessionStorage.getItem("spe-evento-operacion");
+        if (stored === eventId) sessionStorage.removeItem("spe-evento-operacion");
+      }
+      setMensaje(`Evento "${nombre}" eliminado.`);
+      if (events.length <= 1) setPaso("evento");
+    } catch (err) {
+      setError(toUserFacingError(err, "No se pudo eliminar el evento").message);
     } finally {
       setBusy(false);
     }
@@ -440,6 +464,41 @@ export function ConfiguracionPage() {
             <p className="mt-4 text-sm text-neutral-500">
               Evento actual: <span className="text-neutral-300">{eventoActivo.nombre}</span>
             </p>
+          )}
+          {events.length > 0 && (
+            <div className="mt-6 border-t border-border/60 pt-4">
+              <h3 className="text-sm font-semibold text-neutral-300">Eventos registrados</h3>
+              <p className="mt-1 text-xs text-neutral-500">
+                Puedes eliminar un evento completo (sitios, turnos, QR y datos asociados). No se puede
+                si hay jornadas GPS abiertas.
+              </p>
+              <ul className="mt-3 space-y-2">
+                {events.map((ev) => (
+                  <li
+                    key={ev.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-3 py-2"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-neutral-200">
+                        {ev.nombre}
+                        {eventoActivo?.id === ev.id ? (
+                          <span className="ml-2 text-[11px] text-accent">activo</span>
+                        ) : null}
+                      </p>
+                      <p className="font-mono text-[11px] text-neutral-600">{ev.id}</p>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void eliminarEvento(ev.id, ev.nombre)}
+                      className="rounded-lg border border-alert/40 px-3 py-1.5 text-xs font-semibold text-alert hover:bg-alert/10 disabled:opacity-50"
+                    >
+                      Eliminar
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </Card>
       )}
@@ -721,6 +780,16 @@ export function ConfiguracionPage() {
             >
               Configurar otro evento
             </button>
+            {eventoActivo && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void eliminarEvento(eventoActivo.id, eventoActivo.nombre)}
+                className="rounded-lg border border-alert/40 px-4 py-2 text-sm font-medium text-alert hover:bg-alert/10 disabled:opacity-50"
+              >
+                Eliminar este evento
+              </button>
+            )}
             <Link to="/personal" className="rounded-lg border border-border px-4 py-2 text-sm">
               Siguiente: Personal →
             </Link>

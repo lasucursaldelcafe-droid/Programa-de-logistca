@@ -683,6 +683,52 @@ class DemoStore {
     this.notify();
   }
 
+  /** Elimina un evento y datos operativos asociados (sitios, turnos, QR, asistencias, etc.). */
+  removeEvent(eventId: string, actorNombre?: string): void {
+    const event = this.events.find((e) => e.id === eventId);
+    if (!event) return;
+
+    const hasActive = this.attendances.some(
+      (a) => a.eventId === eventId && a.estado !== "cerrado",
+    );
+    if (hasActive) {
+      throw new Error(
+        "No se puede eliminar: hay jornadas activas en este evento. Ciérralas primero.",
+      );
+    }
+
+    this.events = this.events.filter((e) => e.id !== eventId);
+    this.sites = this.sites.filter((s) => s.eventId !== eventId);
+    this.shifts = this.shifts.filter((s) => s.eventId !== eventId);
+    this.attendances = this.attendances.filter((a) => a.eventId !== eventId);
+    this.qrCodes = this.qrCodes.filter((q) => q.eventId !== eventId);
+    this.reportes = this.reportes.filter((r) => r.eventId !== eventId);
+    this.notifications = this.notifications.filter((n) => n.eventId !== eventId);
+    this.payrollEntries = this.payrollEntries.filter((p) => p.eventId !== eventId);
+    this.conversations = this.conversations.filter((c) => c.eventId !== eventId);
+    const keepConvIds = new Set(this.conversations.map((c) => c.id));
+    this.messages = this.messages.filter((m) => keepConvIds.has(m.conversationId));
+    this.videoRooms = this.videoRooms.filter((v) => v.eventId !== eventId);
+
+    if (this.setupConfig?.eventoId === eventId) {
+      this.setupConfig = {
+        ...this.setupConfig,
+        eventoId: undefined,
+        completado: false,
+        pasoActual: "evento",
+        pasosCompletados: [],
+        actualizadoEn: new Date().toISOString(),
+      };
+    }
+
+    this.recordChange("event.delete", eventId, {
+      targetLabel: event.nombre,
+      actorNombre,
+      detail: "Evento eliminado con datos relacionados",
+    });
+    this.notify();
+  }
+
   addConversation(conv: ChatConversation): void {
     const exists = this.conversations.some((c) => c.id === conv.id);
     this.conversations = exists
