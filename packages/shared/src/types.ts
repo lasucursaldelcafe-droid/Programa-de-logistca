@@ -339,14 +339,14 @@ export const SHIFT_LABEL: Record<ShiftEstado, string> = {
 };
 
 export const ROLE_LABEL: Record<UserRole, string> = {
-  ceo: "CEO — Dirección general",
-  master_app: "Master App — Plataforma",
-  super_admin: "Master App — Plataforma",
-  administrador: "Administrador de operaciones",
-  recursos_humanos: "Recursos Humanos",
-  contador: "Contabilidad y finanzas",
-  supervisor_sitio: "Supervisor de campo",
-  trabajador: "Empleado de campo",
+  ceo: "Dirección general (CEO)",
+  master_app: "Dirección técnica (plataforma)",
+  super_admin: "Dirección técnica (plataforma)",
+  administrador: "Operaciones del evento",
+  recursos_humanos: "Personas (RH)",
+  contador: "Finanzas",
+  supervisor_sitio: "Coordinación en sitio",
+  trabajador: "Personal en sitio",
 };
 
 import {
@@ -402,9 +402,9 @@ export const NOTIFICATION_TIPO_LABEL: Record<NotificationTipo, string> = {
   entrada: "Entrada",
   salida: "Salida",
   llegada_sitio: "Llegada al sitio",
-  geocerca_alerta: "Alerta geocerca",
-  reentrada_geocerca: "Re-entrada al sitio",
-  reporte_trabajador: "Reporte de trabajador",
+  geocerca_alerta: "Alerta: salió del área del sitio",
+  reentrada_geocerca: "Volvió al área del sitio",
+  reporte_trabajador: "Novedad del personal",
   videollamada_iniciada: "Videollamada",
   emergencia: "Emergencia",
   break_recordatorio: "Recordatorio break",
@@ -433,7 +433,7 @@ export const QR_MODO_LABEL: Record<QrModo, string> = {
 
 export const ATTENDANCE_LABEL: Record<AttendanceEstado, string> = {
   activo: "En jornada",
-  fuera_geocerca: "Fuera de geocerca",
+  fuera_geocerca: "Fuera del área del sitio",
   revision_manual: "Revisión manual",
   cerrado: "Cerrado",
 };

@@ -5,105 +5,130 @@ export interface WelcomeContent {
   saludo: string;
   mensaje: string;
   puntos: string[];
+  /** Frase motivadora de buen desarrollo (cambia por sesión). */
+  motivacion: string;
   cierre: string;
 }
 
-const WELCOME_BY_ROLE: Record<UserRole, Omit<WelcomeContent, "saludo">> = {
+/** Frases transversales: buen desarrollo profesional y humano. */
+const MOTIVACIONES_BUEN_DESARROLLO = [
+  "El buen desarrollo se construye turno a turno: con respeto, claridad y constancia.",
+  "Hoy puedes dejar el evento un poco mejor de como lo encontraste. Eso también es crecer.",
+  "Cuidar a las personas y a la operación es la misma meta: un desarrollo sólido.",
+  "La excelencia no es un acto aislado: es el hábito de hacer bien lo cotidiano.",
+  "Cuando cada rol entiende su aporte, el equipo avanza con confianza.",
+  "Motívate a desarrollar talento, procesos y confianza — no solo a “sacar el día”.",
+  "Un buen desarrollo se nota en la calma del sitio, no solo en los números.",
+  "Tu trabajo de hoy forma la reputación de mañana. Hazlo con orgullo.",
+];
+
+export function getSessionMotivation(seed: string): string {
+  let hash = 0;
+  const key = `${seed}:${new Date().toDateString()}`;
+  for (let i = 0; i < key.length; i += 1) {
+    hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+  }
+  return MOTIVACIONES_BUEN_DESARROLLO[hash % MOTIVACIONES_BUEN_DESARROLLO.length]!;
+}
+
+const WELCOME_BY_ROLE: Record<UserRole, Omit<WelcomeContent, "saludo" | "motivacion">> = {
   ceo: {
-    titulo: "Bienvenido, CEO — Dirección general",
+    titulo: "Bienvenida a tu sesión de dirección",
     mensaje:
-      "Eres una de las dos cuentas raíz. Tienes todos los parámetros de la empresa: personal, eventos, turnos, reportes y negocio. No usas la app de empleado.",
+      "Desde la dirección general ves la empresa completa: personas, eventos, dinero y operación. Esta sesión es para impulsar el buen desarrollo del negocio y del equipo — sin trabajar como personal en sitio.",
     puntos: [
-      "Crea el equipo administrativo (Administrador, RH, Contabilidad) cuando lo necesites.",
-      "Desde Operación empresa: registra, ajusta o elimina personal e invitaciones.",
-      "Configura eventos, revisa reportes, nómina e informes cuando quieras intervenir.",
+      "Mirada estratégica: revisa eventos activos, personal y señales de la operación.",
+      "Equipo: crea o ajusta roles (Operaciones, Personas, Finanzas) cuando haga falta.",
+      "Desarrollo: usa reportes e informes para mejorar procesos, no solo para controlar.",
     ],
-    cierre: "Tu criterio guía la organización.",
+    cierre: "Lidera con propósito: cada decisión clara acerca a un mejor desarrollo colectivo.",
   },
   master_app: {
-    titulo: "Bienvenido, Master App — Plataforma",
+    titulo: "Bienvenida a tu sesión de plataforma",
     mensaje:
-      "Eres la otra cuenta raíz. Configuras la plataforma, roles e informes globales, y das de alta el primer equipo.",
+      "Como dirección técnica cuidas que la herramienta y las cuentas estén listas para que todos trabajen bien. Hoy también es un día para el buen desarrollo del sistema y del equipo.",
     puntos: [
-      "Crea las cuentas iniciales en Equipo administrativo.",
-      "Importa plantillas de puestos desde Roles y puestos.",
-      "Supervisa auditoría e informes globales.",
+      "Deja el equipo administrativo listo (Operaciones, Personas, Finanzas).",
+      "Revisa roles, auditoría e informes para sostener un crecimiento ordenado.",
+      "Acompaña la operación en vivo cuando haga falta — la plataforma sirve a las personas.",
     ],
-    cierre: "Confiamos en tu criterio técnico y operativo.",
+    cierre: "La mejor plataforma es la que hace más fácil el buen trabajo de todos.",
   },
   super_admin: {
-    titulo: "Bienvenido, Master App — Plataforma",
+    titulo: "Bienvenida a tu sesión de plataforma",
     mensaje:
-      "Gestionas la plataforma: cuentas, roles, auditoría e informes globales.",
+      "Gestionas la base técnica: cuentas, roles e informes. Usa esta sesión para fortalecer el buen desarrollo de la organización.",
     puntos: [
-      "Crea las cuentas iniciales del equipo administrativo.",
-      "Importa plantillas de puestos desde Roles.",
+      "Mantén claras las cuentas y los roles.",
+      "Revisa auditoría e informes globales.",
+      "Facilita que cada área avance sin fricción.",
     ],
-    cierre: "Confiamos en tu criterio.",
+    cierre: "Tu criterio técnico sostiene el desarrollo del resto del equipo.",
   },
   administrador: {
-    titulo: "Bienvenido, Administrador de operaciones",
+    titulo: "Bienvenida a tu sesión de operaciones",
     mensaje:
-      "Diriges el evento: configuración, personal, supervisión y cierre. Puedes crear cuentas de RH y Contabilidad.",
+      "Diriges el evento de punta a punta: preparación, equipo en sitio, supervisión y cierre. Esta sesión es para sacar un evento bien hecho y ayudar al desarrollo del personal.",
     puntos: [
-      "Completa la configuración del evento antes de abrir turnos.",
-      "Registra personal de campo y asigna supervisores.",
-      "Supervisa entradas, geocerca y reportes en vivo.",
+      "Prepara el evento (sitios, códigos de entrada, reglas) antes de abrir turnos.",
+      "Registra y orienta al personal en sitio y a quien coordina en el lugar.",
+      "Supervisa entradas, área del sitio y novedades con calma y rigor.",
     ],
-    cierre: "Gracias por liderar con orden y humanidad.",
+    cierre: "Operar con orden y humanidad es la mejor forma de desarrollar confianza.",
   },
   recursos_humanos: {
-    titulo: "Bienvenido, Recursos Humanos",
+    titulo: "Bienvenida a tu sesión de personas",
     mensaje:
-      "Gestionas altas, invitaciones y turnos del personal. No verás nómina ni configuración de eventos.",
+      "Tu foco es el equipo: altas, accesos y turnos. Desde Personas impulsas el buen desarrollo de quienes hacen el evento posible.",
     puntos: [
-      "Registra supervisores y empleados de campo con sus credenciales.",
-      "Gestiona invitaciones y accesos del equipo.",
-      "Coordina turnos y comunicación con la operación.",
+      "Da de alta a quien coordina en sitio y al personal del evento con datos claros.",
+      "Cuida invitaciones y accesos: un buen inicio evita fricción después.",
+      "Coordina turnos y comunicación para que nadie se sienta perdido.",
     ],
-    cierre: "Tu trabajo humano marca la diferencia en cada evento.",
+    cierre: "Desarrollar personas es el corazón de cada evento memorable.",
   },
   contador: {
-    titulo: "Bienvenido, Contabilidad y finanzas",
+    titulo: "Bienvenida a tu sesión de finanzas",
     mensaje:
-      "Tu menú es financiero: nómina, clientes, facturación e inventario. No creas personal ni eventos.",
+      "Cierras el ciclo económico: nómina, clientes, facturación e inventario. Unos números claros también son buen desarrollo organizacional.",
     puntos: [
-      "Revisa y calcula nómina al cierre del evento.",
-      "Consulta facturación, cartera e inventario.",
-      "Usa los informes para contabilidad y cumplimiento.",
+      "Revisa nómina al cierre con datos limpios de la operación.",
+      "Mantén cartera, facturación e inventario al día.",
+      "Usa informes para decidir con evidencia, no a ciegas.",
     ],
-    cierre: "Gracias por el rigor y la claridad en los números.",
+    cierre: "La claridad financiera protege el desarrollo sostenible del negocio.",
   },
   supervisor_sitio: {
-    titulo: "Bienvenido, Supervisor de campo",
+    titulo: "Bienvenida a tu sesión en sitio",
     mensaje:
-      "Coordina el sitio en vivo: mapa, turnos, QR y reportes. Puedes dar de alta empleados de campo.",
+      "Coordina el lugar en vivo: mapa, turnos, códigos de entrada y novedades. Tu liderazgo diario desarrolla al equipo que está en el evento.",
     puntos: [
-      "Verifica que el personal marque entrada con QR.",
-      "Atiende alertas de geocerca y reportes con prontitud.",
-      "Registra empleados de campo cuando lo necesites.",
+      "Asegura que el personal marque entrada con el código del sitio.",
+      "Atiende a tiempo si alguien sale del área del sitio o reporta un problema.",
+      "Orienta y registra personal en sitio cuando la operación lo pida.",
     ],
-    cierre: "Tu liderazgo en sitio marca la diferencia.",
+    cierre: "Un sitio bien cuidado es la escuela práctica del buen desarrollo.",
   },
   trabajador: {
-    titulo: "¡Bienvenido, Empleado de campo!",
+    titulo: "¡Bienvenida a tu sesión en el evento!",
     mensaje:
-      "Tu app es de campo: turnos, escanear QR, reportar y chat (general o empleados). No tienes acceso a la consola administrativa.",
+      "Tu app es para el día a día en sitio: turnos, marcar entrada, reportar y conversar con el equipo. Cada turno bien hecho construye tu desarrollo profesional.",
     puntos: [
       "Confirma tus turnos y llega a tiempo al sitio indicado.",
-      "Marca entrada escaneando el QR.",
-      "Reporta novedades desde la app si algo ocurre.",
+      "Marca entrada escaneando el código del sitio.",
+      "Si algo ocurre, repórtalo desde la app: tu voz mejora la operación.",
     ],
-    cierre: "Estamos orgullosos de tenerte en el equipo.",
+    cierre: "Estamos contigo: tu crecimiento y el del evento van de la mano.",
   },
 };
 
-export function getWelcomeContent(user: Pick<AppUser, "nombre" | "role">): WelcomeContent {
+export function getWelcomeContent(user: Pick<AppUser, "uid" | "nombre" | "role">): WelcomeContent {
   const base = WELCOME_BY_ROLE[user.role];
   const primerNombre = user.nombre.trim().split(/\s+/)[0] ?? user.nombre;
   return {
     ...base,
     saludo: `Hola, ${primerNombre}`,
+    motivacion: getSessionMotivation(user.uid || user.nombre),
   };
 }
 
@@ -111,11 +136,12 @@ export function getWelcomeRoleLabel(role: UserRole): string {
   return ROLE_LABEL[role];
 }
 
-const STORAGE_PREFIX = "spe-bienvenida-vista:";
+/** Una vez por pestaña/sesión de navegador (cada nuevo login o pestaña nueva vuelve a mostrar). */
+const SESSION_PREFIX = "spe-bienvenida-sesion:";
 
 export function hasSeenWelcome(uid: string): boolean {
   try {
-    return localStorage.getItem(`${STORAGE_PREFIX}${uid}`) === "1";
+    return sessionStorage.getItem(`${SESSION_PREFIX}${uid}`) === "1";
   } catch {
     return false;
   }
@@ -123,8 +149,10 @@ export function hasSeenWelcome(uid: string): boolean {
 
 export function markWelcomeSeen(uid: string): void {
   try {
-    localStorage.setItem(`${STORAGE_PREFIX}${uid}`, "1");
+    sessionStorage.setItem(`${SESSION_PREFIX}${uid}`, "1");
+    // Limpia el flag antiguo “solo la primera vez en la vida”
+    localStorage.removeItem(`spe-bienvenida-vista:${uid}`);
   } catch {
-    // localStorage no disponible
+    // almacenamiento no disponible
   }
 }
