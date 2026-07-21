@@ -22,7 +22,7 @@ const PLATFORM_STEPS: Record<Platform, string[]> = {
     "Activa tu cuenta con el enlace de invitación.",
     "Completa tu perfil y acepta los turnos asignados.",
     "Al llegar al sitio, escanea el QR y valida tu ubicación GPS.",
-    "Usa Chat / Video para hablar con supervisión en tiempo real.",
+    "Usa Chat / Video: canal general del evento o canal de empleados.",
     "Si hay un problema, usa Reportar para avisar al supervisor.",
   ],
   master: [
