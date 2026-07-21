@@ -262,6 +262,104 @@ export const createPlatformAccountFn = onCall(
   },
 );
 
+const ROOT_ROLES = new Set(["ceo", "master_app", "super_admin"]);
+
+const ASSIGNABLE_BY_ROLE: Record<string, string[]> = {
+  ceo: ["administrador", "recursos_humanos", "contador", "supervisor_sitio", "trabajador"],
+  master_app: ["administrador", "recursos_humanos", "contador", "supervisor_sitio", "trabajador"],
+  super_admin: ["administrador", "recursos_humanos", "contador", "supervisor_sitio", "trabajador"],
+  administrador: ["recursos_humanos", "contador", "supervisor_sitio", "trabajador"],
+  recursos_humanos: ["supervisor_sitio", "trabajador"],
+  supervisor_sitio: ["trabajador"],
+};
+
+/**
+ * Elimina un perfil de plataforma: Auth + users/{uid} + token FCM.
+ * Si tenía ficha de personal vinculada, solo desvincula la cuenta (no borra el worker).
+ */
+export const deletePlatformAccountFn = onCall(
+  { region: "us-central1" },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Debes iniciar sesión.");
+    }
+
+    const targetUid = String(request.data?.uid ?? "").trim();
+    if (!targetUid) {
+      throw new HttpsError("invalid-argument", "Se requiere el uid del perfil a eliminar.");
+    }
+    if (targetUid === request.auth.uid) {
+      throw new HttpsError("failed-precondition", "No puedes eliminar tu propia cuenta.");
+    }
+
+    const callerSnap = await db.collection("users").doc(request.auth.uid).get();
+    const callerRole = String(callerSnap.data()?.role ?? "");
+    if (!callerRole || !PLATFORM_CREATOR_ROLES.has(callerRole)) {
+      throw new HttpsError("permission-denied", "No puedes eliminar perfiles de plataforma.");
+    }
+
+    const targetSnap = await db.collection("users").doc(targetUid).get();
+    if (!targetSnap.exists) {
+      throw new HttpsError("not-found", "Perfil no encontrado.");
+    }
+    const target = targetSnap.data()!;
+    const targetRole = String(target.role ?? "trabajador");
+    if (ROOT_ROLES.has(targetRole)) {
+      throw new HttpsError(
+        "failed-precondition",
+        "No se puede eliminar una cuenta raíz (CEO / Master App).",
+      );
+    }
+
+    const allowed = ASSIGNABLE_BY_ROLE[callerRole] ?? [];
+    if (!allowed.includes(targetRole)) {
+      throw new HttpsError("permission-denied", "No puedes eliminar un perfil con ese rol.");
+    }
+
+    const workerId =
+      typeof target.workerId === "string" && target.workerId.trim()
+        ? target.workerId.trim()
+        : null;
+
+    const auth = getAuth();
+    try {
+      await auth.deleteUser(targetUid);
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code;
+      if (code !== "auth/user-not-found") {
+        const message = err instanceof Error ? err.message : String(err);
+        throw new HttpsError(
+          "failed-precondition",
+          message || "No se pudo eliminar la cuenta en Firebase Auth.",
+        );
+      }
+    }
+
+    await db.collection("users").doc(targetUid).delete();
+    await db.collection("fcmTokens").doc(targetUid).delete().catch(() => undefined);
+
+    if (workerId) {
+      await db
+        .collection("workers")
+        .doc(workerId)
+        .update({
+          cuentaCreada: false,
+          customRoleId: FieldValue.delete(),
+        })
+        .catch(() => undefined);
+    }
+
+    logger.info("Perfil de plataforma eliminado", {
+      targetUid,
+      targetRole,
+      workerId,
+      by: request.auth.uid,
+    });
+
+    return { ok: true as const };
+  },
+);
+
 interface BulkRowInput {
   nombre: string;
   documento: string;

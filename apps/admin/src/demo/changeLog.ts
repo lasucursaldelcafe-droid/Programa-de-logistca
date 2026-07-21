@@ -3,6 +3,7 @@ export type DemoChangeAction =
   | "worker.update"
   | "worker.delete"
   | "user.role"
+  | "user.delete"
   | "event.delete"
   | "invitation.create"
   | "invitation.revoke";

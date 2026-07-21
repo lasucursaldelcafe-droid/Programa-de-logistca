@@ -2673,6 +2673,60 @@ export async function updatePlatformUserRole(
   }
 }
 
+function assertPuedeEliminarPerfil(
+  actor: Pick<AppUser, "uid" | "role">,
+  target: { uid: string; role: UserRole },
+): void {
+  if (target.uid === actor.uid) {
+    throw new Error("No puedes eliminar tu propia cuenta.");
+  }
+  const targetRole = normalizeUserRole(target.role);
+  if (ROLES_RAIZ.includes(targetRole)) {
+    throw new Error("No se puede eliminar una cuenta raíz (CEO / Master App).");
+  }
+  if (!esRolMaster(actor.role) && !puedeAsignarRol(actor.role, targetRole)) {
+    throw new Error("No puedes eliminar este perfil.");
+  }
+}
+
+/** Elimina un perfil de plataforma (Auth + users). No borra la ficha de personal si existe. */
+export async function deletePlatformAccount(
+  userId: string,
+  actor: Pick<AppUser, "uid" | "nombre" | "role">,
+): Promise<void> {
+  if (isDemoMode()) {
+    const target = demoStore.platformUsers.find((u) => u.uid === userId);
+    if (!target) throw new Error("Usuario no encontrado.");
+    assertPuedeEliminarPerfil(actor, target);
+    demoStore.deletePlatformAccount(userId);
+    return;
+  }
+
+  if (isSheetsBackend()) {
+    throw new Error("Eliminar perfiles no está disponible con backend Google Sheets.");
+  }
+
+  const userRef = doc(getFirestoreDb(), "users", userId);
+  const snap = await getDoc(userRef);
+  if (!snap.exists()) throw new Error("Usuario no encontrado.");
+  const data = snap.data();
+  const currentRole = normalizeUserRole(String(data.role ?? "trabajador"));
+  assertPuedeEliminarPerfil(actor, { uid: userId, role: currentRole });
+
+  try {
+    const fn = httpsCallable<{ uid: string }, { ok: boolean }>(
+      getFunctions(getFirebaseApp(), "us-central1"),
+      "deletePlatformAccountFn",
+    );
+    await fn({ uid: userId });
+  } catch (err) {
+    throw toUserFacingError(
+      err,
+      "No se pudo eliminar el perfil. Si acabas de desplegar, espera un minuto e inténtalo de nuevo.",
+    );
+  }
+}
+
 /** Cambia el rol de campo de un trabajador y sincroniza la cuenta Auth/Firestore si existe. */
 export async function updateWorkerPlatformRole(
   workerId: string,
@@ -3112,7 +3166,17 @@ export async function deleteCustomRole(id: string): Promise<void> {
     return;
   }
 
-  await deleteDoc(doc(getFirestoreDb(), "customRoles", id));
+  const db = getFirestoreDb();
+  await deleteDoc(doc(db, "customRoles", id));
+
+  const [usersSnap, workersSnap] = await Promise.all([
+    getDocs(query(collection(db, "users"), where("customRoleId", "==", id))),
+    getDocs(query(collection(db, "workers"), where("customRoleId", "==", id))),
+  ]);
+  await Promise.all([
+    ...usersSnap.docs.map((d) => updateDoc(d.ref, { customRoleId: deleteField() })),
+    ...workersSnap.docs.map((d) => updateDoc(d.ref, { customRoleId: deleteField() })),
+  ]);
 }
 
 /** Importa plantillas de ejemplo que aún no existen (por plantillaId). */
