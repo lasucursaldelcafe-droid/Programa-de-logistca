@@ -116,6 +116,7 @@ export function getPlatformDownloads(base: DeploymentBase): PlatformDownloadSpec
         "Permite orígenes desconocidos en Ajustes → Seguridad.",
         "Instala y abre SPE Eventos.",
         "Al abrir, acepta GPS, cámara, micrófono, notificaciones, archivos y teléfono.",
+        "Usa «Escanear QR» en login o en Entrada para leer el código del sitio con la cámara.",
         "Inicia sesión con la misma cuenta Firebase que en web/PC.",
       ],
     },

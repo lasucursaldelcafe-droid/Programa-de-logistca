@@ -39,7 +39,7 @@ export const NATIVE_PERMISSION_ITEMS: Array<{
   {
     id: "camera",
     label: "Cámara",
-    description: "Videollamadas y captura de evidencias.",
+    description: "Leer QR del sitio, videollamadas y evidencias.",
   },
   {
     id: "microphone",

@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { parseQrPayload, workerDocumentPassword } from "@spe/shared";
 import { AuthShell, authButtonClass, authInputClass } from "../components/AuthShell";
+import { ScanQrButton } from "../components/ScanQrButton";
 import { useAuth } from "../contexts/AuthContext";
 import {
   onboardFromSiteQr,
@@ -9,6 +10,7 @@ import {
   toUserFacingError,
   type SiteQrPreview,
 } from "../hooks/useDataStore";
+import { scannedQrToJoinPath } from "../lib/qrScanner";
 
 export function UnirseQrPage() {
   const navigate = useNavigate();
@@ -123,6 +125,16 @@ export function UnirseQrPage() {
         <p className="rounded-lg bg-alert/10 px-3 py-2 text-sm text-alert">
           {previewError ?? "Código QR no encontrado."}
         </p>
+        <div className="mt-4">
+          <ScanQrButton
+            label="Escanear otro QR con la cámara"
+            className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-black disabled:opacity-50"
+            onScanned={(_normalized, raw) => {
+              const path = scannedQrToJoinPath(raw);
+              if (path) navigate(path, { replace: true });
+            }}
+          />
+        </div>
       </AuthShell>
     );
   }
