@@ -159,20 +159,28 @@ jobs:
               core.warning(`No se pudo borrar rama ${branch}: ${e.message}`);
             }
 
+      - name: Checkout (para gh workflow run)
+        if: steps.pr.outputs.merged == 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
       - name: Disparar deploys tras merge
         if: steps.pr.outputs.merged == 'true'
         env:
           GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
         run: |
           set +e
           echo "Disparando workflows de deploy en main…"
-          gh workflow run "Publicar app (GitHub Pages)" --ref main
+          # -R evita depender del remote git; GH_PAT permite encadenar workflows
+          gh workflow run "Publicar app (GitHub Pages)" --repo "$REPO" --ref main
           PAGES=$?
-          gh workflow run "Desplegar reglas Firestore" --ref main
+          gh workflow run "Desplegar reglas Firestore" --repo "$REPO" --ref main
           RULES=$?
-          gh workflow run "Producción completa (SPE)" --ref main
+          gh workflow run "Producción completa (SPE)" --repo "$REPO" --ref main
           PROD=$?
-          gh workflow run "Configurar Firebase (SPE)" --ref main
+          gh workflow run "Configurar Firebase (SPE)" --repo "$REPO" --ref main
           FIRE=$?
           {
             echo "## Deploys tras auto-merge"
@@ -184,12 +192,10 @@ jobs:
             echo "| Producción completa | $PROD |"
             echo "| Configurar Firebase | $FIRE |"
             echo ""
-            if [ -z "${{ secrets.GH_PAT }}" ]; then
-              echo "**Nota:** sin secret \`GH_PAT\`, el dispatch puede fallar (403)."
-              echo "Crea un PAT classic con scopes \`repo\` + \`workflow\` → Secret \`GH_PAT\`."
+            if [ "$PAGES" -ne 0 ] || [ "$RULES" -ne 0 ]; then
+              echo "**Si falló el dispatch:** añade secret \`GH_PAT\` (PAT classic scopes \`repo\`+\`workflow\`)."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
-          # No tumbar el job: el merge ya ocurrió. Pages/Firebase son best-effort aquí.
           exit 0
 
       - name: Resumen
