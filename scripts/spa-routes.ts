@@ -6,6 +6,7 @@ export const SPA_MIRROR_ROUTES: readonly string[] = [
   "login",
   "configurar",
   "ayuda",
+  "glosario",
   "unirse",
   "unirse-qr",
   "completar-perfil",
@@ -40,6 +41,7 @@ export const SPA_MIRROR_ROUTES: readonly string[] = [
   "master/informes-evento",
   "master/auditoria",
   "master/ayuda",
+  "master/glosario",
   "master/panel",
   "master/configuracion",
   "master/personal",
@@ -62,6 +64,7 @@ export const SPA_MIRROR_ROUTES: readonly string[] = [
   "worker/comunicacion",
   "worker/notificaciones",
   "worker/ayuda",
+  "worker/glosario",
 ] as const;
 
 /** Rutas críticas que CI debe verificar tras el build. */
@@ -72,4 +75,6 @@ export const SPA_CRITICAL_ROUTES: readonly string[] = [
   "worker/notificaciones",
   "worker/ayuda",
   "master/ayuda",
+  "glosario",
+  "master/glosario",
 ] as const;

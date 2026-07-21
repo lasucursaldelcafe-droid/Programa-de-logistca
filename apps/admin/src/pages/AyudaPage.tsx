@@ -31,7 +31,7 @@ const PLATFORM_STEPS: Record<Platform, string[]> = {
     "En Chat y videollamadas puedes unirte a los canales del evento.",
     "Gestiona administradores, roles, informes globales y auditoría.",
     "No usas la app de empleado (marcar entrada); eso es solo para el rol Empleado.",
-    "Informe completo: docs/INFORME-QUE-HACE-CADA-COSA.md",
+    "Informe completo: menú Sistema → Glosario.",
   ],
 };
 
@@ -40,6 +40,9 @@ interface AyudaPageProps {
 }
 
 export function AyudaPage({ platform }: AyudaPageProps) {
+  const glosarioPath =
+    platform === "master" ? "/master/glosario" : platform === "worker" ? "/worker/glosario" : "/glosario";
+
   return (
     <div className="mx-auto max-w-2xl space-y-5 py-4">
       <div>
@@ -48,6 +51,17 @@ export function AyudaPage({ platform }: AyudaPageProps) {
           {PLATFORM_TITLE[platform]} — Sistema de Personal para Eventos
         </p>
       </div>
+
+      <section className="rounded-lg border border-accent/30 bg-accent/5 px-4 py-3 space-y-2">
+        <h2 className="text-lg font-medium text-white">Glosario y tutorial (apartado aparte)</h2>
+        <p className="text-sm text-neutral-300">
+          Las explicaciones de «qué hace cada módulo, rol y consola» viven en el{" "}
+          <Link to={glosarioPath} className="font-medium text-accent underline">
+            Glosario
+          </Link>
+          , no mezcladas con las herramientas de trabajo. Aquí solo tienes pasos rápidos y FAQ.
+        </p>
+      </section>
 
       <section className="space-y-3">
         <h2 className="text-lg font-medium text-white">Instrucciones de operación</h2>
@@ -80,15 +94,10 @@ export function AyudaPage({ platform }: AyudaPageProps) {
           </li>
         </ul>
         <p className="text-sm text-neutral-500">
-          Cada plataforma valida tu rol al iniciar sesión. Detalle de módulos:{" "}
-          <a
-            className="text-accent underline"
-            href={`${import.meta.env.BASE_URL}INFORME-QUE-HACE-CADA-COSA.md`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Informe: qué hace cada cosa
-          </a>
+          Detalle de cada módulo:{" "}
+          <Link to={glosarioPath} className="text-accent underline">
+            abrir glosario
+          </Link>
           .
         </p>
       </section>
@@ -115,6 +124,13 @@ export function AyudaPage({ platform }: AyudaPageProps) {
             <dd className="mt-1">
               Sí. Con «Ya estoy aquí» o al escanear el QR, el sistema valida que estás dentro
               del radio del sitio asignado para activar la jornada.
+            </dd>
+          </div>
+          <div>
+            <dt className="font-medium text-white">¿Cómo busco una pantalla del menú?</dt>
+            <dd className="mt-1">
+              Usa la barra «Buscar opciones» del menú lateral o pulsa Ctrl+K. Eso abre
+              herramientas; para aprender qué significan, ve al Glosario.
             </dd>
           </div>
         </dl>

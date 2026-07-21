@@ -9,6 +9,7 @@ import { AdminsPage } from "@master/pages/AdminsPage";
 import { InformesPage } from "@master/pages/InformesPage";
 import { AuditoriaPage } from "@master/pages/AuditoriaPage";
 import { AyudaPage } from "../pages/AyudaPage";
+import { GlosarioPage } from "../pages/GlosarioPage";
 import { RolesPage } from "@master/pages/RolesPage";
 import { TrabajadoresActividadPage } from "@master/pages/TrabajadoresActividadPage";
 import { ComunicacionPage } from "../pages/ComunicacionPage";
@@ -72,6 +73,7 @@ export function RedirectMasterToUnifiedConsole({ children }: { children: React.R
     "/integraciones": "/master/integraciones",
     "/descargas": "/master/descargas",
     "/ayuda": "/master/ayuda",
+    "/glosario": "/master/glosario",
   };
 
   const dest = map[path];
@@ -85,6 +87,7 @@ export function MasterRoutes() {
   return (
     <Routes>
       <Route path="ayuda" element={<AyudaPage platform="master" />} />
+      <Route path="glosario" element={<GlosarioPage toolBase="master" />} />
       <Route
         element={
           <MasterProtected>
@@ -100,6 +103,7 @@ export function MasterRoutes() {
         <Route path="informes" element={<InformesPage />} />
         <Route path="auditoria" element={<AuditoriaPage />} />
         <Route path="ayuda" element={<AyudaPage platform="master" />} />
+        <Route path="glosario" element={<GlosarioPage toolBase="master" />} />
 
         {/* Operación empresa — misma consola, sin saltar a Admin */}
         <Route path="panel" element={<HomePage />} />

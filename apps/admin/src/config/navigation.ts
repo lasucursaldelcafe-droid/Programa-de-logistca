@@ -103,6 +103,7 @@ const SISTEMA_COMUN = (role: UserRole): NavSection => ({
       icon: "plug",
     },
     { to: "/descargas", label: "Descargas", icon: "download" },
+    { to: "/glosario", label: "Glosario", icon: "book" },
     { to: "/ayuda", label: "Ayuda", icon: "help" },
   ],
 });
@@ -302,6 +303,7 @@ export function getMasterNavSections(): NavSection[] {
         { to: "/master/pendientes", label: "Pendientes", icon: "list" },
         { to: "/master/integraciones", label: "APIs e integraciones", icon: "plug" },
         { to: "/master/descargas", label: "Descargas", icon: "download" },
+        { to: "/master/glosario", label: "Glosario", icon: "book" },
         { to: "/master/ayuda", label: "Ayuda", icon: "help" },
       ],
     },
@@ -312,6 +314,7 @@ export function getWorkerNavItems(): NavLinkItem[] {
   return [
     ...getWorkerBottomNavItems(),
     { to: "/worker/notificaciones", label: "Alertas", icon: "mail" },
+    { to: "/worker/glosario", label: "Glosario", icon: "book" },
     { to: "/worker/ayuda", label: "Ayuda", icon: "help" },
   ];
 }
