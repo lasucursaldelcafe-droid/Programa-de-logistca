@@ -6,7 +6,7 @@ import {
 } from "@spe/shared";
 import { useAuth } from "@core/contexts/AuthContext";
 import { Card } from "@core/components/ui";
-import { createReporte, useShifts } from "@core/hooks/useDataStore";
+import { createReporte, toUserFacingError, useShifts } from "@core/hooks/useDataStore";
 
 const TIPOS: ReporteTipo[] = [
   "retraso",
@@ -25,18 +25,27 @@ export function ReportarPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  if (!user?.workerId) {
+  if (!user?.workerId || !puedeReportarASupervisor(user.role)) {
     return <p className="text-neutral-400">Solo trabajadores pueden enviar reportes.</p>;
   }
 
   const workerId = user.workerId;
   const workerNombre = user.nombre;
 
-  const turnoActivo = shifts.find(
-    (s) =>
-      s.workerId === user.workerId &&
-      (s.estado === "confirmado" || s.estado === "pendiente"),
-  );
+  const ahora = Date.now();
+  const turnoActivo =
+    shifts.find(
+      (s) =>
+        s.workerId === user.workerId &&
+        s.estado === "confirmado" &&
+        new Date(s.inicio).getTime() <= ahora &&
+        new Date(s.fin).getTime() >= ahora,
+    ) ??
+    shifts.find(
+      (s) =>
+        s.workerId === user.workerId &&
+        (s.estado === "confirmado" || s.estado === "pendiente"),
+    );
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -50,17 +59,17 @@ export function ReportarPage() {
       await createReporte({
         workerId,
         workerNombre,
-        shiftId: turnoActivo?.id,
-        siteId: turnoActivo?.siteId,
-        siteNombre: turnoActivo?.siteNombre,
-        eventId: turnoActivo?.eventId,
+        ...(turnoActivo?.id ? { shiftId: turnoActivo.id } : {}),
+        ...(turnoActivo?.siteId ? { siteId: turnoActivo.siteId } : {}),
+        ...(turnoActivo?.siteNombre ? { siteNombre: turnoActivo.siteNombre } : {}),
+        ...(turnoActivo?.eventId ? { eventId: turnoActivo.eventId } : {}),
         tipo,
         mensaje: mensaje.trim(),
       });
       setEnviado(true);
       setMensaje("");
-    } catch {
-      setError("No se pudo enviar el reporte.");
+    } catch (err) {
+      setError(toUserFacingError(err, "No se pudo enviar el reporte.").message);
     } finally {
       setSubmitting(false);
     }
@@ -94,6 +103,16 @@ export function ReportarPage() {
       </div>
       <Card>
         <form onSubmit={onSubmit} className="space-y-4">
+          {turnoActivo ? (
+            <p className="rounded-lg border border-border bg-bg px-3 py-2 text-xs text-neutral-400">
+              Sitio asociado: {turnoActivo.siteNombre ?? turnoActivo.siteId} ·{" "}
+              {turnoActivo.eventNombre ?? "evento"}
+            </p>
+          ) : (
+            <p className="rounded-lg border border-border bg-bg px-3 py-2 text-xs text-neutral-500">
+              Sin turno vinculado: el reporte se enviará igual al supervisor.
+            </p>
+          )}
           <label className="block text-sm">
             <span className="mb-1 block text-neutral-300">Tipo</span>
             <select

@@ -14,11 +14,15 @@ import {
   getFirestoreDb,
   notificationUnreadFor,
   notificationVisibleTo,
+  omitUndefinedFields,
+  assertFirestoreSafe,
+  REPORTE_TIPO_LABEL,
   type AppNotification,
   type AppUser,
   type BreakSchedule,
   type BreakTipo,
   type NotificationTipo,
+  type ReporteTipo,
 } from "@spe/shared";
 import { isDemoMode } from "../lib/mode";
 import { isSheetsBackend } from "../lib/backend";
@@ -149,7 +153,8 @@ export async function sendNotification(data: {
   actorNombre?: string;
   accionTurno?: boolean;
 }): Promise<void> {
-  const payload: Omit<AppNotification, "id"> = {
+  // Firestore rechaza undefined en campos opcionales.
+  const payload = omitUndefinedFields({
     tipo: data.tipo,
     titulo: data.titulo,
     mensaje: data.mensaje,
@@ -162,18 +167,23 @@ export async function sendNotification(data: {
     attendanceId: data.attendanceId,
     actorUid: data.actorUid,
     actorNombre: data.actorNombre,
-    leidaPor: [],
+    leidaPor: [] as string[],
     accionTurno: data.accionTurno ?? false,
-  };
+  });
+  assertFirestoreSafe(payload, "notifications");
 
   if (isDemoMode()) {
-    demoStore.addNotification(payload);
+    demoStore.addNotification(payload as Omit<AppNotification, "id">);
     return;
   }
 
   if (isSheetsBackend()) {
     const id = `notif-${Date.now().toString(36)}`;
-    await sheetsUpsertRecord("notifications", serializeNotification(id, payload), "id");
+    await sheetsUpsertRecord(
+      "notifications",
+      serializeNotification(id, payload as Omit<AppNotification, "id">),
+      "id",
+    );
     return;
   }
 
@@ -439,9 +449,13 @@ export async function notifyReporteTrabajador(data: {
   mensaje: string;
   reporteId: string;
 }): Promise<void> {
+  const tipoLabel =
+    data.tipo in REPORTE_TIPO_LABEL
+      ? REPORTE_TIPO_LABEL[data.tipo as ReporteTipo]
+      : data.tipo;
   await sendNotification({
     tipo: "reporte_trabajador",
-    titulo: `Reporte: ${data.tipo}`,
+    titulo: `Reporte: ${tipoLabel}`,
     mensaje: `${data.workerNombre}${data.siteNombre ? ` (${data.siteNombre})` : ""}: ${data.mensaje}`,
     urgente: true,
     destinatarios: ["_admins"],
