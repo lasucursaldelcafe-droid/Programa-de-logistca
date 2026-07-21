@@ -5,6 +5,7 @@ import type { AppUser } from "@spe/shared";
 import type { NavSection } from "../../config/navigation";
 import { NotificationBell } from "../NotificationBell";
 import { WelcomeModal } from "../WelcomeModal";
+import { ChatBubble } from "../comunicacion/ChatBubble";
 import { NavIcon } from "./NavIcons";
 import { SidebarNav } from "./SidebarNav";
 
@@ -88,6 +89,7 @@ export function AppShell({ user, brand, brandSub, sections, onLogout }: AppShell
             <Outlet />
           </div>
         </main>
+        <ChatBubble />
       </div>
     </div>
   );

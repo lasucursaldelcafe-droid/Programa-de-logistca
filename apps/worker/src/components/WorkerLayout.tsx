@@ -4,6 +4,7 @@ import { useAuth } from "@core/contexts/AuthContext";
 import { FieldGpsProvider, useFieldGps } from "@core/contexts/FieldGpsContext";
 import { NotificationBell } from "@core/components/NotificationBell";
 import { WelcomeModal } from "@core/components/WelcomeModal";
+import { ChatBubble } from "@core/components/comunicacion/ChatBubble";
 import { WorkerBottomNav } from "@core/components/nav/WorkerBottomNav";
 
 function GpsTrackingHint() {
@@ -69,6 +70,7 @@ export function WorkerLayout() {
           <Outlet />
         </main>
         <WorkerBottomNav />
+        <ChatBubble />
       </div>
     </FieldGpsProvider>
   );

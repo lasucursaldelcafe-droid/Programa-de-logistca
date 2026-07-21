@@ -9,6 +9,7 @@ import {
   doc,
   setDoc,
   getDoc,
+  arrayUnion,
 } from "firebase/firestore";
 import {
   getFirestoreDb,
@@ -321,12 +322,34 @@ export function useBreaks(): BreakSchedule[] {
   return isDemoMode() ? demoBreaks : breaks;
 }
 
+/**
+ * Guarda el token FCM del dispositivo actual.
+ * Usa `tokens[]` (arrayUnion) para no pisar móvil y PC del mismo usuario;
+ * mantiene `token` (último) por compatibilidad con Cloud Functions antiguas.
+ */
 export async function saveFcmToken(uid: string, token: string): Promise<void> {
   if (isDemoMode() || isSheetsBackend()) return;
-  await setDoc(doc(getFirestoreDb(), "fcmTokens", uid), {
-    token,
-    actualizadoEn: new Date().toISOString(),
-  });
+  const trimmedUid = uid.trim();
+  const trimmedToken = token.trim();
+  if (!trimmedUid || !trimmedToken) return;
+
+  const platform =
+    typeof navigator !== "undefined"
+      ? /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)
+        ? "mobile"
+        : "desktop"
+      : "unknown";
+
+  await setDoc(
+    doc(getFirestoreDb(), "fcmTokens", trimmedUid),
+    {
+      token: trimmedToken,
+      tokens: arrayUnion(trimmedToken),
+      actualizadoEn: new Date().toISOString(),
+      platform,
+    },
+    { merge: true },
+  );
 }
 
 // --- Auto-notificaciones ---

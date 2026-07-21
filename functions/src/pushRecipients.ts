@@ -118,6 +118,58 @@ function comunicacionLinkForRole(role: string | undefined): string {
   return "/comunicacion";
 }
 
+function notificationsLinkForRole(role: string | undefined): string {
+  if (role === "trabajador") {
+    return "/worker/notificaciones";
+  }
+  if (role === "ceo" || role === "master_app" || role === "super_admin") {
+    return "/master/notificaciones";
+  }
+  return "/notificaciones";
+}
+
+/** Tokens FCM de un doc: `token` (legacy) + `tokens[]` (multi-dispositivo). */
+export function tokensFromFcmDoc(data: Record<string, unknown> | undefined): string[] {
+  if (!data) return [];
+  const out = new Set<string>();
+  if (typeof data.token === "string" && data.token.trim()) {
+    out.add(data.token.trim());
+  }
+  if (Array.isArray(data.tokens)) {
+    for (const t of data.tokens) {
+      if (typeof t === "string" && t.trim()) out.add(t.trim());
+    }
+  }
+  return [...out];
+}
+
+export async function collectFcmTokensForUids(
+  db: Firestore,
+  uids: string[],
+): Promise<Array<{ uid: string; token: string }>> {
+  const recipients: Array<{ uid: string; token: string }> = [];
+  for (const uid of uids) {
+    const tokenDoc = await db.collection("fcmTokens").doc(uid).get();
+    for (const token of tokensFromFcmDoc(tokenDoc.data() as Record<string, unknown> | undefined)) {
+      recipients.push({ uid, token });
+    }
+  }
+  return recipients;
+}
+
+/** Une base pública (Pages) + path relativo de la app. */
+export function absoluteAppLink(appBaseUrl: string, path: string): string {
+  const base = appBaseUrl.endsWith("/") ? appBaseUrl.slice(0, -1) : appBaseUrl;
+  const p = path.startsWith("/") ? path : `/${path}`;
+  return `${base}${p}`;
+}
+
+export async function notificationsLinkForUid(db: Firestore, uid: string): Promise<string> {
+  const userDoc = await db.collection("users").doc(uid).get();
+  const role = userDoc.data()?.role as string | undefined;
+  return notificationsLinkForRole(role);
+}
+
 type ChatAudience = "evento" | "empleados" | "supervisores";
 
 function parseEventChatChannelId(

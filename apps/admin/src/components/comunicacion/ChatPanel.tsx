@@ -11,6 +11,8 @@ interface ChatPanelProps {
   peerUid?: string;
   messages: ChatMessage[];
   canSend?: boolean;
+  /** Clases extra del contenedor (p. ej. altura en burbuja flotante). */
+  className?: string;
 }
 
 export function ChatPanel({
@@ -21,6 +23,7 @@ export function ChatPanel({
   peerUid,
   messages,
   canSend = true,
+  className,
 }: ChatPanelProps) {
   const { user } = useAuth();
   const [text, setText] = useState("");
@@ -67,7 +70,11 @@ export function ChatPanel({
           : "Mensaje al evento…";
 
   return (
-    <div className="flex h-[min(70vh,560px)] flex-col rounded-2xl border border-border bg-surface">
+    <div
+      className={`flex flex-col rounded-2xl border border-border bg-surface ${
+        className ?? "h-[min(70vh,560px)]"
+      }`}
+    >
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
         {messages.length === 0 ? (
           <p className="text-center text-sm text-neutral-500">
