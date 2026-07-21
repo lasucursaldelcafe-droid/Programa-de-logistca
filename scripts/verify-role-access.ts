@@ -2,8 +2,11 @@
  * Verifica jerarquía de creación y menú visible por rol.
  */
 import {
+  DEFAULT_PERMISSIONS_BY_ROLE,
   ROLE_CATALOG,
   ROLE_LABEL,
+  WORKER_SELF_PERMISSIONS,
+  puedeAccederPlataforma,
   rolesAsignablesPor,
   rolesCuentaPlataforma,
   rolesPersonalCampo,
@@ -70,6 +73,37 @@ function main(): void {
   assert(masterPaths.includes("/master/administradores"), "Master debe tener equipo admin");
   assert(masterPaths.includes("/master/trabajadores"), "Master/CEO debe ver trabajadores en vivo");
   assert(masterPaths.includes("/master/comunicacion"), "Master/CEO debe acceder al chat");
+  assert(masterPaths.includes("/personal"), "CEO/Master debe gestionar personal desde menú");
+  assert(masterPaths.includes("/configuracion"), "CEO/Master debe configurar eventos");
+  assert(masterPaths.includes("/reportes"), "CEO/Master debe ver reportes de campo");
+
+  // CEO: empresa completa vía admin; nunca app de empleado
+  assert(puedeAccederPlataforma("ceo", "admin"), "CEO debe acceder a consola admin");
+  assert(puedeAccederPlataforma("ceo", "master"), "CEO debe acceder a consola master");
+  assert(!puedeAccederPlataforma("ceo", "worker"), "CEO no debe ser app de empleado");
+  for (const perm of WORKER_SELF_PERMISSIONS) {
+    assert(
+      !DEFAULT_PERMISSIONS_BY_ROLE.ceo.includes(perm),
+      `CEO no debe tener permiso de empleado: ${perm}`,
+    );
+  }
+  assert(
+    DEFAULT_PERMISSIONS_BY_ROLE.ceo.includes("gestionar_personal"),
+    "CEO debe poder gestionar personal",
+  );
+  assert(
+    DEFAULT_PERMISSIONS_BY_ROLE.ceo.includes("ver_reportes_trabajadores"),
+    "CEO debe poder ver reportes",
+  );
+  assert(
+    DEFAULT_PERMISSIONS_BY_ROLE.ceo.includes("gestionar_configuracion"),
+    "CEO debe poder configurar eventos",
+  );
+
+  const ceoAdminPaths = pathsOf(getAdminNavSections("ceo"));
+  assert(ceoAdminPaths.includes("/personal"), "Menú admin CEO debe incluir Personal");
+  assert(ceoAdminPaths.includes("/configuracion"), "Menú admin CEO debe incluir Configuración");
+  assert(ceoAdminPaths.includes("/reportes"), "Menú admin CEO debe incluir Reportes");
 
   // Contabilidad: finanzas sí, operación de campo no
   const contPaths = pathsOf(getAdminNavSections("contador"));
@@ -108,6 +142,8 @@ function main(): void {
   const workerPaths = getWorkerNavItems().map((i) => i.to);
   assert(workerPaths.includes("/worker/entrada"), "Empleado debe escanear QR");
   assert(!workerPaths.some((p) => p.startsWith("/panel")), "Empleado no ve panel admin");
+  assert(puedeAccederPlataforma("trabajador", "worker"), "Empleado accede a worker");
+  assert(!puedeAccederPlataforma("trabajador", "admin"), "Empleado no accede a admin");
 
   // Etiquetas del catálogo
   for (const role of [...ROOT, ...ADMIN_ROLES, "trabajador"] as UserRole[]) {
@@ -117,8 +153,11 @@ function main(): void {
 
   console.log("✓ Acceso por rol OK:", {
     raiz: ROOT.map((r) => ROLE_LABEL[r]),
+    ceoEmpresa: DEFAULT_PERMISSIONS_BY_ROLE.ceo.length,
     menus: {
       administrador: admPaths.length,
+      ceoAdmin: ceoAdminPaths.length,
+      master: masterPaths.length,
       recursos_humanos: rhPaths.length,
       contador: contPaths.length,
       supervisor_sitio: supPaths.length,

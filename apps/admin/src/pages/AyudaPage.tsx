@@ -26,12 +26,12 @@ const PLATFORM_STEPS: Record<Platform, string[]> = {
     "Si hay un problema, usa Reportar para avisar al supervisor.",
   ],
   master: [
-    "Revisa el panel global de la operación.",
-    "En Trabajadores en vivo ves qué hace cada persona de campo (jornada, GPS, turnos). Desde ahí puedes llamar al celular o abrir el chat de la app (la APK pedirá permisos del teléfono).",
-    "En Chat y videollamadas puedes ver y unirte a las conversaciones del evento.",
-    "Gestiona administradores y permisos de plataforma.",
-    "Exporta informes CSV para análisis.",
-    "Audita nómina y movimientos sensibles.",
+    "Revisa el panel global y la sección Operación empresa (eventos, personal, reportes, nómina).",
+    "En Trabajadores en vivo ves actividad GPS; puedes llamar al celular o abrir el chat de la app.",
+    "En Chat y videollamadas puedes unirte a los canales del evento.",
+    "Gestiona administradores, roles, informes globales y auditoría.",
+    "No usas la app de empleado (marcar entrada); eso es solo para el rol Empleado.",
+    "Informe completo: docs/INFORME-QUE-HACE-CADA-COSA.md",
   ],
 };
 
@@ -67,21 +67,29 @@ export function AyudaPage({ platform }: AyudaPageProps) {
         <h2 className="text-lg font-medium text-white">Las 3 plataformas</h2>
         <ul className="space-y-2 text-sm text-neutral-300">
           <li>
-            <strong className="text-white">Admin Console</strong> — administradores y
-            supervisores: eventos, turnos, QR, mapa, nómina, reportes.
+            <strong className="text-white">Admin Console</strong> — administradores,
+            supervisores y también el CEO: eventos, personal, turnos, QR, mapa, nómina, reportes.
           </li>
           <li>
-            <strong className="text-white">App Trabajador</strong> — personal de campo:
+            <strong className="text-white">App Trabajador</strong> — solo rol Empleado:
             turnos, escanear QR, GPS, reportar incidencias.
           </li>
           <li>
-            <strong className="text-white">Master Console</strong> — super administrador:
-            informes globales, administradores, auditoría.
+            <strong className="text-white">Master Console</strong> — CEO / Master App:
+            dirección, operación empresa, informes globales y auditoría.
           </li>
         </ul>
         <p className="text-sm text-neutral-500">
-          Cada plataforma valida tu rol al iniciar sesión. Usa la URL que corresponde a tu
-          puesto.
+          Cada plataforma valida tu rol al iniciar sesión. Detalle de módulos:{" "}
+          <a
+            className="text-accent underline"
+            href={`${import.meta.env.BASE_URL}INFORME-QUE-HACE-CADA-COSA.md`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Informe: qué hace cada cosa
+          </a>
+          .
         </p>
       </section>
 

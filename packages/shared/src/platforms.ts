@@ -15,13 +15,16 @@ export function puedeAccederPlataforma(role: UserRole, platform: AppPlatform): b
     case "master":
       return esRolMaster(role);
     case "admin":
+      // CEO / Master App operan la empresa completa (menos app de empleado).
       return (
+        esRolMaster(role) ||
         normalized === "administrador" ||
         normalized === "recursos_humanos" ||
         normalized === "contador" ||
         normalized === "supervisor_sitio"
       );
     case "worker":
+      // Solo el rol Empleado usa la app de campo.
       return normalized === "trabajador";
     default: {
       const _exhaustive: never = platform;
@@ -59,15 +62,9 @@ export function puedeGestionarPlataforma(role: UserRole): boolean {
   return esRolMaster(role);
 }
 
-/** Admin operativo: eventos, turnos, personal */
+/** Admin operativo: eventos, turnos, personal (incluye dirección CEO/Master). */
 export function puedeOperarEventos(role: UserRole): boolean {
-  const r = normalizeUserRole(role);
-  return (
-    r === "administrador" ||
-    r === "recursos_humanos" ||
-    r === "contador" ||
-    r === "supervisor_sitio"
-  );
+  return puedeAccederPlataforma(role, "admin");
 }
 
 export function puedeVerInformesGlobales(role: UserRole): boolean {
