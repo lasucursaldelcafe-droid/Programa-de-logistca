@@ -16,6 +16,10 @@ import {
   useShifts,
   useWorkers,
 } from "@core/hooks/useDataStore";
+import {
+  normalizeDialNumber,
+  placePhoneCall,
+} from "@core/lib/nativePermissions";
 
 type FilterKind = "todos" | WorkerActivityKind;
 
@@ -81,6 +85,21 @@ export function TrabajadoresActividadPage() {
   const platformUsers = usePlatformUsers();
   const [filter, setFilter] = useState<FilterKind>("todos");
   const [query, setQuery] = useState("");
+  const [callingId, setCallingId] = useState<string | null>(null);
+  const [callError, setCallError] = useState<string | null>(null);
+
+  const handleCall = async (workerId: string, telefono: string) => {
+    setCallError(null);
+    setCallingId(workerId);
+    try {
+      const result = await placePhoneCall(telefono);
+      if (!result.ok) {
+        setCallError(result.error ?? "No se pudo iniciar la llamada.");
+      }
+    } finally {
+      setCallingId(null);
+    }
+  };
 
   const uidByWorkerId = useMemo(() => {
     const map = new Map<string, string>();
@@ -129,8 +148,16 @@ export function TrabajadoresActividadPage() {
     <div className="space-y-6">
       <PageHeader
         title="Trabajadores en vivo"
-        description="Qué hace cada persona de campo ahora: jornada GPS, turnos y alertas."
+        description="Qué hace cada persona de campo ahora: jornada GPS, turnos y alertas. Puedes llamar al celular o abrir el chat de la app."
       />
+
+      {callError ? (
+        <Card>
+          <p className="text-sm text-alert" role="alert">
+            {callError}
+          </p>
+        </Card>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard label="Personal" value={String(counts.total)} />
@@ -185,12 +212,14 @@ export function TrabajadoresActividadPage() {
                 <th className="px-4 py-3 font-medium">Evento / sitio</th>
                 <th className="px-4 py-3 font-medium">GPS</th>
                 <th className="px-4 py-3 font-medium">Entrada</th>
-                <th className="px-4 py-3 font-medium">Chat</th>
+                <th className="px-4 py-3 font-medium">Contacto</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
               {filtered.map((r) => {
                 const peerUid = uidByWorkerId.get(r.workerId);
+                const dialNumber = normalizeDialNumber(r.telefono);
+                const isCalling = callingId === r.workerId;
                 return (
                 <tr key={r.workerId} className="bg-bg/40 hover:bg-white/[0.02]">
                   <td className="px-4 py-3 align-top">
@@ -204,6 +233,9 @@ export function TrabajadoresActividadPage() {
                         {r.perfiles.slice(0, 3).join(" · ")}
                       </p>
                     )}
+                    {dialNumber ? (
+                      <p className="mt-1 font-mono text-[11px] text-neutral-500">{dialNumber}</p>
+                    ) : null}
                   </td>
                   <td className="px-4 py-3 align-top">
                     <Badge
@@ -229,16 +261,30 @@ export function TrabajadoresActividadPage() {
                     {formatEntrada(r.entradaEn)}
                   </td>
                   <td className="px-4 py-3 align-top">
-                    {peerUid ? (
-                      <Link
-                        to={resolveDirectChatPath(pathname, peerUid)}
-                        className="rounded-lg bg-accent/15 px-3 py-1.5 text-xs font-semibold text-accent ring-1 ring-accent/30 hover:bg-accent/25"
-                      >
-                        Abrir chat
-                      </Link>
-                    ) : (
-                      <span className="text-[11px] text-neutral-600">Sin cuenta</span>
-                    )}
+                    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                      {dialNumber ? (
+                        <button
+                          type="button"
+                          disabled={isCalling}
+                          onClick={() => void handleCall(r.workerId, r.telefono)}
+                          className="rounded-lg bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-500/30 hover:bg-emerald-500/25 disabled:opacity-50"
+                        >
+                          {isCalling ? "Abriendo…" : "Llamar celular"}
+                        </button>
+                      ) : (
+                        <span className="text-[11px] text-neutral-600">Sin teléfono</span>
+                      )}
+                      {peerUid ? (
+                        <Link
+                          to={resolveDirectChatPath(pathname, peerUid)}
+                          className="rounded-lg bg-accent/15 px-3 py-1.5 text-center text-xs font-semibold text-accent ring-1 ring-accent/30 hover:bg-accent/25"
+                        >
+                          Chat app
+                        </Link>
+                      ) : (
+                        <span className="text-[11px] text-neutral-600">Sin cuenta chat</span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );

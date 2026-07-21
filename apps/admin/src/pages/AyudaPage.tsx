@@ -27,7 +27,7 @@ const PLATFORM_STEPS: Record<Platform, string[]> = {
   ],
   master: [
     "Revisa el panel global de la operación.",
-    "En Trabajadores en vivo ves qué hace cada persona de campo (jornada, GPS, turnos).",
+    "En Trabajadores en vivo ves qué hace cada persona de campo (jornada, GPS, turnos). Desde ahí puedes llamar al celular o abrir el chat de la app (la APK pedirá permisos del teléfono).",
     "En Chat y videollamadas puedes ver y unirte a las conversaciones del evento.",
     "Gestiona administradores y permisos de plataforma.",
     "Exporta informes CSV para análisis.",

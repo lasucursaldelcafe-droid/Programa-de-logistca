@@ -47,7 +47,7 @@ function statusClass(status: NativePermissionResult["status"]): string {
 
 /**
  * En la APK/app nativa, muestra una sola vez el flujo para conceder
- * GPS, notificaciones, cámara, micrófono, archivos y teléfono.
+ * GPS, notificaciones, cámara, micrófono, archivos y teléfono (llamadas).
  */
 export function NativePermissionsGate({ children }: { children: ReactNode }) {
   const native = isNativePlatform();
@@ -113,9 +113,8 @@ export function NativePermissionsGate({ children }: { children: ReactNode }) {
               Permisos del teléfono
             </h2>
             <p className="mt-2 text-sm text-neutral-400">
-              Para GPS, chat, voz, cámara, notificaciones, archivos y teléfono, Android pide
-              autorización al instalar o al usar la función. Concédelos ahora para que la app
-              funcione completa.
+              Para GPS, chat, voz, cámara, notificaciones, archivos y llamadas al celular del
+              personal, Android pide autorización. Concédelos ahora para que la app funcione completa.
             </p>
 
             <ul className="mt-4 space-y-3">
