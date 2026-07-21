@@ -23,6 +23,7 @@ import {
   toUserFacingError,
   deleteWorker,
   importWorkersBulk,
+  provisionWorkerAccount,
   setWorkerHabilitado,
   updateWorkerEstado,
   useWorkersState,
@@ -62,6 +63,7 @@ export function PersonalPage() {
   const [csvFileName, setCsvFileName] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<WorkerBulkImportResult | null>(null);
+  const [provisioningId, setProvisioningId] = useState<string | null>(null);
 
   const rolesAsignables = user ? rolesPersonalCampo(user.role) : [];
   const adminAsignaRoles = rolesAsignables.length > 0;
@@ -164,6 +166,28 @@ export function PersonalPage() {
 
   async function toggleHabilitado(id: string, habilitado: boolean) {
     await setWorkerHabilitado(id, habilitado, currentUser.nombre);
+  }
+
+  async function activarORestablecerCuenta(workerId: string, force: boolean) {
+    setProvisioningId(workerId);
+    setError(null);
+    setMensaje(null);
+    try {
+      await provisionWorkerAccount(workerId, {
+        actorNombre: currentUser.nombre,
+        sendEmail: false,
+        forcePasswordReset: force,
+      });
+      setMensaje(
+        force
+          ? "Clave restablecida: el acceso es correo + cédula (solo números, sin puntos)."
+          : "Cuenta activada: el acceso es correo + cédula (solo números, sin puntos).",
+      );
+    } catch (err) {
+      setError(toUserFacingError(err, "No se pudo activar la cuenta.").message);
+    } finally {
+      setProvisioningId(null);
+    }
   }
 
   function descargarPlantilla() {
@@ -460,6 +484,19 @@ export function PersonalPage() {
                 }`}
               >
                 {w.habilitado === false ? "Habilitar acceso" : "Inhabilitar acceso"}
+              </button>
+              <button
+                type="button"
+                disabled={provisioningId === w.id}
+                onClick={() => void activarORestablecerCuenta(w.id, Boolean(w.cuentaCreada))}
+                className="rounded-lg border border-accent/40 px-3 py-1.5 text-xs text-accent hover:bg-accent/10 disabled:opacity-50"
+                title="Usuario = correo · Contraseña = cédula sin puntos"
+              >
+                {provisioningId === w.id
+                  ? "Activando…"
+                  : w.cuentaCreada
+                    ? "Clave = cédula"
+                    : "Activar cuenta"}
               </button>
               {confirmDeleteId === w.id ? (
                 <div className="flex items-center gap-1">

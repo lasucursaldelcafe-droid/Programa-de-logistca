@@ -33,6 +33,7 @@ import {
   saveSheetsSession,
   clearSheetsSession,
   loadSheetsSession,
+  workerDocumentPassword,
   type AppUser,
   type UserRole,
 } from "@spe/shared";
@@ -389,7 +390,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
     } catch (err) {
-      throw new Error(formatAuthError(err));
+      // Personal de campo: clave inicial = cédula. Reintentar sin puntos/espacios/guiones.
+      let normalized: string | null = null;
+      try {
+        normalized = workerDocumentPassword(password);
+      } catch {
+        // No parece una cédula — conservar el error original de Auth.
+      }
+      if (normalized && normalized !== password) {
+        try {
+          await signInWithEmailAndPassword(getFirebaseAuth(), email, normalized);
+        } catch (retryErr) {
+          const msg = formatAuthError(retryErr);
+          throw new Error(
+            msg.includes("incorrectos") || msg.includes("Contraseña incorrecta")
+              ? `${msg} Personal de campo: correo + cédula (solo números, sin puntos).`
+              : msg,
+          );
+        }
+      } else {
+        const msg = formatAuthError(err);
+        throw new Error(
+          msg.includes("incorrectos") || msg.includes("Contraseña incorrecta")
+            ? `${msg} Personal de campo: correo + cédula (solo números, sin puntos).`
+            : msg,
+        );
+      }
     }
     const fbUser = getFirebaseAuth().currentUser;
     if (!fbUser) throw new Error("No se pudo iniciar sesión");

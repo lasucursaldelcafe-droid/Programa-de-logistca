@@ -64,7 +64,7 @@ async function sendCredentialsEmail(data: {
 
 async function provisionOneWorker(
   workerId: string,
-  options?: { sendEmail?: boolean },
+  options?: { sendEmail?: boolean; forcePasswordReset?: boolean },
 ): Promise<{ uid: string }> {
   const workerSnap = await db.collection("workers").doc(workerId).get();
   if (!workerSnap.exists) {
@@ -72,7 +72,7 @@ async function provisionOneWorker(
   }
 
   const worker = workerSnap.data()!;
-  if (worker.cuentaCreada === true) {
+  if (worker.cuentaCreada === true && !options?.forcePasswordReset) {
     const existing = await db
       .collection("users")
       .where("workerId", "==", workerId)
@@ -196,7 +196,8 @@ export const provisionWorkerAccount = onCall(
     }
 
     const sendEmail = request.data?.sendEmail !== false;
-    return provisionOneWorker(workerId, { sendEmail });
+    const forcePasswordReset = request.data?.forcePasswordReset === true;
+    return provisionOneWorker(workerId, { sendEmail, forcePasswordReset });
   },
 );
 
