@@ -112,8 +112,26 @@ async function provisionOneWorker(
       uid = existing.uid;
       await auth.updateUser(uid, { password, displayName: String(worker.nombre ?? "") });
     } else {
+      const authCode = (err as { code?: string }).code ?? "";
       const message = err instanceof Error ? err.message : String(err);
-      throw new HttpsError("internal", message);
+      if (authCode === "auth/invalid-email") {
+        throw new HttpsError("invalid-argument", "El correo no es válido.");
+      }
+      if (
+        authCode === "auth/invalid-password" ||
+        authCode === "auth/weak-password" ||
+        /password/i.test(message)
+      ) {
+        throw new HttpsError(
+          "invalid-argument",
+          "El documento (contraseña) no es válido. Usa al menos 6 caracteres sin puntos ni espacios.",
+        );
+      }
+      // Evitar code "internal": el cliente solo muestra "(internal)" y confunde al usuario.
+      throw new HttpsError(
+        "failed-precondition",
+        message || "No se pudo crear la cuenta de acceso en Firebase Auth.",
+      );
     }
   }
 
@@ -222,7 +240,11 @@ export const createPlatformAccountFn = onCall(
       if (code === "auth/email-already-exists") {
         throw new HttpsError("already-exists", "Ya existe una cuenta con ese correo.");
       }
-      throw new HttpsError("internal", err instanceof Error ? err.message : String(err));
+      const message = err instanceof Error ? err.message : String(err);
+      throw new HttpsError(
+        "failed-precondition",
+        message || "No se pudo crear la cuenta administrativa en Firebase Auth.",
+      );
     }
 
     await db.collection("users").doc(uid).set({

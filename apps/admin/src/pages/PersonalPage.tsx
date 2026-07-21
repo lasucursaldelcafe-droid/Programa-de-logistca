@@ -20,6 +20,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { Badge, Card, PerfilTag } from "../components/ui";
 import {
   createWorker,
+  toUserFacingError,
   deleteWorker,
   importWorkersBulk,
   setWorkerHabilitado,
@@ -140,7 +141,7 @@ export function PersonalPage() {
         `${nombreGuardado} registrado/a. Usuario: ${emailGuardado} · Contraseña inicial: documento (sin puntos ni espacios).`,
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo registrar la persona.");
+      setError(toUserFacingError(err, "No se pudo registrar la persona.").message);
     }
   }
 

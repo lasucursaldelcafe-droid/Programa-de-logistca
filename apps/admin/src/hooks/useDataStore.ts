@@ -12,6 +12,7 @@ import {
   setDoc,
   where,
   getDocs,
+  limit,
 } from "firebase/firestore";
 import { FirebaseError } from "firebase/app";
 import {
@@ -68,6 +69,65 @@ import {
   normalizeUserRole,
 } from "@spe/shared";
 import { getFunctions, httpsCallable } from "firebase/functions";
+
+/** Convierte errores opacos de Firebase (p. ej. "(internal)") en mensajes útiles. */
+export function toUserFacingError(
+  err: unknown,
+  fallback = "No se pudo completar la operación.",
+): Error {
+  if (err instanceof FirebaseError) {
+    const code = err.code;
+    const msg = (err.message ?? "").trim();
+    const opaque =
+      !msg ||
+      /^(INTERNAL|NOT_FOUND|UNAVAILABLE|UNKNOWN|PERMISSION_DENIED)$/i.test(msg) ||
+      /^\([a-z_-]+\)$/i.test(msg);
+
+    if (
+      code === "functions/internal" ||
+      code === "internal" ||
+      (/internal/i.test(msg) && opaque)
+    ) {
+      return new Error(
+        "No se pudo crear la cuenta de acceso. Comprueba que el correo sea válido y el documento tenga al menos 6 caracteres (sin puntos). Si el error continúa, el servicio de cuentas no está desplegado: Actions → Configurar Firebase (SPE).",
+      );
+    }
+    if (code === "functions/not-found" || code === "functions/unavailable") {
+      return new Error(
+        "El servicio de creación de cuentas no está disponible. Reintenta; si falla, despliega Firebase Functions.",
+      );
+    }
+    if (code === "permission-denied" || code === "functions/permission-denied") {
+      return new Error(
+        "Sin permiso para registrar. Publica las reglas de Firestore (Actions → Configurar Firebase) con el secret FIREBASE_TOKEN.",
+      );
+    }
+    if (code === "functions/unauthenticated" || code === "unauthenticated") {
+      return new Error("Tu sesión expiró. Vuelve a iniciar sesión e intenta de nuevo.");
+    }
+    if (code === "functions/already-exists" || code === "already-exists") {
+      return new Error(opaque ? "Ya existe una cuenta con esos datos." : msg);
+    }
+    if (code === "functions/failed-precondition" || code === "failed-precondition") {
+      return new Error(opaque ? "Faltan datos (correo o documento) para crear la cuenta." : msg);
+    }
+    if (code === "functions/invalid-argument" || code === "invalid-argument") {
+      return new Error(opaque ? "Datos inválidos. Revisa el formulario." : msg);
+    }
+    if (!opaque) return new Error(msg);
+    return new Error(fallback);
+  }
+  if (err instanceof Error) {
+    const msg = err.message.trim();
+    if (!msg || /^\(internal\)$/i.test(msg) || /^internal$/i.test(msg)) {
+      return new Error(
+        "No se pudo crear la cuenta de acceso. Revisa correo/documento o vuelve a intentar.",
+      );
+    }
+    return err;
+  }
+  return new Error(fallback);
+}
 import type { GeoPosition } from "../lib/geolocation";
 import { isDemoMode } from "../lib/mode";
 import { isSheetsBackend } from "../lib/backend";
@@ -268,22 +328,28 @@ export async function createWorker(
     }
     return id;
   }
-  const ref = await addDoc(collection(getFirestoreDb(), "workers"), {
-    nombre: data.nombre,
-    documento: data.documento,
-    telefono: data.telefono,
-    email: data.email.trim().toLowerCase(),
-    perfiles: data.perfiles,
-    rolPlataforma,
-    experienciaAnios: 0,
-    eventosTrabajados: 0,
-    rating: 0,
-    estado: "sin_asignar" satisfies WorkerEstado,
-    cuentaCreada: false,
-    habilitado: true,
-    certificaciones: [],
-    creadoEn: new Date().toISOString(),
-  });
+
+  let ref;
+  try {
+    ref = await addDoc(collection(getFirestoreDb(), "workers"), {
+      nombre: data.nombre,
+      documento: data.documento,
+      telefono: data.telefono,
+      email: data.email.trim().toLowerCase(),
+      perfiles: data.perfiles,
+      rolPlataforma,
+      experienciaAnios: 0,
+      eventosTrabajados: 0,
+      rating: 0,
+      estado: "sin_asignar" satisfies WorkerEstado,
+      cuentaCreada: false,
+      habilitado: true,
+      certificaciones: [],
+      creadoEn: new Date().toISOString(),
+    });
+  } catch (err) {
+    throw toUserFacingError(err, "No se pudo guardar la ficha de personal.");
+  }
 
   const creadaPor = options?.creadaPor;
   const shouldInvite =
@@ -292,20 +358,27 @@ export async function createWorker(
     data.email.trim().length > 0 &&
     Boolean(creadaPor);
 
-  if (shouldInvite && creadaPor) {
-    await createInvitation({
-      workerId: ref.id,
-      workerNombre: data.nombre,
-      email: data.email.trim().toLowerCase(),
-      role: rolPlataforma,
-      creadaPor,
-      creadaPorNombre: options?.creadaPorNombre ?? actorNombre ?? "Administrador",
-    });
-  } else if (shouldCreateAccount) {
-    await provisionWorkerAccount(ref.id, {
-      actorNombre,
-      sendEmail: options?.enviarCredenciales !== false,
-    });
+  try {
+    if (shouldInvite && creadaPor) {
+      await createInvitation({
+        workerId: ref.id,
+        workerNombre: data.nombre,
+        email: data.email.trim().toLowerCase(),
+        role: rolPlataforma,
+        creadaPor,
+        creadaPorNombre: options?.creadaPorNombre ?? actorNombre ?? "Administrador",
+      });
+    } else if (shouldCreateAccount) {
+      await provisionWorkerAccount(ref.id, {
+        actorNombre,
+        sendEmail: options?.enviarCredenciales !== false,
+      });
+    }
+  } catch (err) {
+    throw toUserFacingError(
+      err,
+      "La persona se guardó, pero no se pudo crear su cuenta de acceso.",
+    );
   }
 
   return ref.id;
@@ -903,11 +976,117 @@ export async function provisionWorkerAccount(
     return;
   }
 
-  const fn = httpsCallable<
-    { workerId: string; sendEmail?: boolean },
-    { uid: string }
-  >(getFunctions(getFirebaseApp(), "us-central1"), "provisionWorkerAccount");
-  await fn({ workerId, sendEmail: options?.sendEmail });
+  try {
+    const fn = httpsCallable<
+      { workerId: string; sendEmail?: boolean },
+      { uid: string }
+    >(getFunctions(getFirebaseApp(), "us-central1"), "provisionWorkerAccount");
+    await fn({ workerId, sendEmail: options?.sendEmail });
+  } catch (err) {
+    // Producción sin Functions desplegadas (o error INTERNAL): Auth REST + Firestore.
+    try {
+      await provisionWorkerAccountViaAuthRest(worker, {
+        sendEmail: options?.sendEmail !== false,
+      });
+    } catch (fallbackErr) {
+      throw toUserFacingError(
+        fallbackErr,
+        toUserFacingError(err, "No se pudo crear la cuenta de acceso.").message,
+      );
+    }
+  }
+}
+
+/** Alta de cuenta de trabajador sin Admin SDK (Identity Toolkit + Firestore). */
+async function provisionWorkerAccountViaAuthRest(
+  worker: Worker,
+  options?: { sendEmail?: boolean },
+): Promise<void> {
+  const password = workerDocumentPassword(worker.documento);
+  const email = worker.email.trim().toLowerCase();
+  const rolPlataforma = worker.rolPlataforma ?? "trabajador";
+  const perfilCompleto = rolPlataforma === "supervisor_sitio";
+
+  const app = getFirebaseApp();
+  const apiKey = app.options.apiKey;
+  if (!apiKey) throw new Error("Firebase apiKey no configurada.");
+
+  const signUp = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        password,
+        displayName: worker.nombre,
+        returnSecureToken: true,
+      }),
+    },
+  );
+  const signUpData = (await signUp.json()) as {
+    localId?: string;
+    error?: { message?: string };
+  };
+
+  let uid = signUpData.localId;
+  if (!signUp.ok || !uid) {
+    const msg = signUpData.error?.message ?? `HTTP ${signUp.status}`;
+    if (msg.includes("EMAIL_EXISTS")) {
+      const existing = await getDocs(
+        query(collection(getFirestoreDb(), "users"), where("email", "==", email), limit(1)),
+      );
+      if (!existing.empty) {
+        const existingDoc = existing.docs[0]!;
+        const data = existingDoc.data();
+        if (data.workerId && data.workerId !== worker.id) {
+          throw new Error("Este correo ya está vinculado a otro trabajador.");
+        }
+        uid = existingDoc.id;
+      } else {
+        throw new Error(
+          "Ya existe una cuenta Auth con ese correo, pero sin perfil en la app. Usa otro correo o pide al administrador que limpie el usuario en Firebase Auth.",
+        );
+      }
+    } else if (msg.includes("INVALID_EMAIL")) {
+      throw new Error("El correo no es válido.");
+    } else if (msg.includes("WEAK_PASSWORD")) {
+      throw new Error("El documento (contraseña) es demasiado corto. Usa al menos 6 caracteres.");
+    } else {
+      throw new Error(`No se pudo crear la cuenta Auth: ${msg}`);
+    }
+  }
+
+  try {
+    await setDoc(
+      doc(getFirestoreDb(), "users", uid),
+      {
+        email,
+        nombre: worker.nombre,
+        role: rolPlataforma,
+        workerId: worker.id,
+        customRoleId: worker.customRoleId ?? "",
+        perfilCompleto,
+        telefono: worker.telefono ?? "",
+        habilitado: worker.habilitado !== false,
+      },
+      { merge: true },
+    );
+    await updateDoc(doc(getFirestoreDb(), "workers", worker.id), { cuentaCreada: true });
+  } catch (err) {
+    throw toUserFacingError(
+      err,
+      "La cuenta Auth se creó, pero no se pudo guardar el perfil en Firestore.",
+    );
+  }
+
+  if (options?.sendEmail !== false) {
+    try {
+      await sendPasswordResetEmail(getFirebaseAuth(), email);
+    } catch {
+      // No bloquear el alta si el correo falla.
+    }
+  }
 }
 
 export async function importWorkersBulk(
@@ -1713,16 +1892,23 @@ export async function createPlatformAccount(
     >(getFunctions(getFirebaseApp(), "us-central1"), "createPlatformAccountFn");
     const result = await fn({ email, password: data.password, nombre, role });
     return result.data.uid;
-  } catch {
-    // Fallback producción: Identity Toolkit REST (sin cambiar sesión) + doc Firestore.
-    return createPlatformAccountViaAuthRest({
-      email,
-      password: data.password,
-      nombre,
-      role,
-      creatorUid: creator.uid,
-      creatorNombre: creator.nombre,
-    });
+  } catch (err) {
+    try {
+      // Fallback producción: Identity Toolkit REST (sin cambiar sesión) + doc Firestore.
+      return await createPlatformAccountViaAuthRest({
+        email,
+        password: data.password,
+        nombre,
+        role,
+        creatorUid: creator.uid,
+        creatorNombre: creator.nombre,
+      });
+    } catch (fallbackErr) {
+      throw toUserFacingError(
+        fallbackErr,
+        toUserFacingError(err, "No se pudo crear la cuenta administrativa.").message,
+      );
+    }
   }
 }
 
