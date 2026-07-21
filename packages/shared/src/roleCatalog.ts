@@ -35,6 +35,7 @@ export const ROLE_CATALOG: Record<UserRole, RoleCatalogEntry> = {
     puedeVer: [
       "Equipo administrativo (crear cuentas)",
       "Trabajadores en vivo (qué hace cada uno)",
+      "Chat y videollamadas (ver y unirse a todos los canales)",
       "Roles y puestos",
       "Informes globales",
       "Auditoría de plataforma",
@@ -51,6 +52,7 @@ export const ROLE_CATALOG: Record<UserRole, RoleCatalogEntry> = {
     puedeVer: [
       "Equipo administrativo (crear cuentas)",
       "Trabajadores en vivo (actividad y GPS)",
+      "Chat y videollamadas (todos los canales del evento)",
       "Roles y puestos personalizados",
       "Informes y auditoría global",
     ],

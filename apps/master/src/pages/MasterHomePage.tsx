@@ -88,7 +88,7 @@ export function MasterHomePage() {
         <MetricCard label="Reportes abiertos" value={String(reportesAbiertos)} tone="alert" />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-3">
         <Card>
           <h2 className="font-display text-lg font-semibold">Cuentas administrativas</h2>
           <p className="mt-2 text-3xl font-bold">{equipoAdmin.length}</p>
@@ -101,6 +101,15 @@ export function MasterHomePage() {
           <p className="mt-2 text-3xl font-bold">{formatCurrencyCOP(nominaTotal)}</p>
           <p className="text-sm text-neutral-400">{payroll.length} registros</p>
         </Card>
+        <Link to="/master/comunicacion" className="block transition hover:opacity-90">
+          <Card className="h-full border-accent/30 bg-accent/5">
+            <h2 className="font-display text-lg font-semibold text-accent">Chat y videollamadas</h2>
+            <p className="mt-2 text-sm text-neutral-300">
+              Ve y únete a las conversaciones del evento: general, empleados o supervisores.
+            </p>
+            <span className="mt-3 inline-block text-sm text-accent underline">Abrir chat →</span>
+          </Card>
+        </Link>
       </div>
 
       <Card>

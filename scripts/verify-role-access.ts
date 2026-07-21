@@ -69,6 +69,7 @@ function main(): void {
   const masterPaths = pathsOf(getMasterNavSections());
   assert(masterPaths.includes("/master/administradores"), "Master debe tener equipo admin");
   assert(masterPaths.includes("/master/trabajadores"), "Master/CEO debe ver trabajadores en vivo");
+  assert(masterPaths.includes("/master/comunicacion"), "Master/CEO debe acceder al chat");
 
   // Contabilidad: finanzas sí, operación de campo no
   const contPaths = pathsOf(getAdminNavSections("contador"));
