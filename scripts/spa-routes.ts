@@ -24,6 +24,7 @@ export const SPA_MIRROR_ROUTES: readonly string[] = [
   "facturacion",
   "inventario",
   "integraciones",
+  "negocio",
   "descargas",
   "pendientes",
   "supervision",
