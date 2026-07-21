@@ -3,6 +3,7 @@ import {
   JERARQUIA_CUENTAS,
   ROLE_CATALOG,
   ROLE_LABEL,
+  esRolMaster,
   puedeAsignarRol,
   puedeCrearCuentasPlataforma,
   rolesAsignablesPor,
@@ -152,8 +153,8 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
 
   const descripcion =
     variant === "master"
-      ? "Aquí modificas o eliminas el rol de cualquier cuenta creada (oficina o campo): por ejemplo pabcolgom@gmail.com o Jhonny. Busca por nombre o correo, cambia el rol o elimina el perfil."
-      : "Crea cuentas de Personas (RH) y Finanzas, modifica el rol de las existentes o elimínalas. El equipo del evento se gestiona en Equipo del evento.";
+      ? "Desde Dirección puedes cambiar el rol de cualquier cuenta o eliminarla (excepto la raíz CEO). Luego recreas el equipo desde aquí."
+      : "Crea cuentas de Personas (RH) y Finanzas, y modifica el rol de las existentes. Solo Dirección puede eliminar perfiles.";
 
   const tituloPagina = variant === "master" ? "Perfiles y roles" : "Equipo de oficina";
   const tituloLista =
@@ -293,10 +294,11 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
                 u.uid !== user.uid &&
                 rolesParaEditar.length > 0 &&
                 (puedeAsignarRol(user.role, u.role) || variant === "master");
+              // Solo Dirección (CEO / Master) elimina perfiles; desde ahí se recrean los demás.
               const puedeEliminar =
+                esRolMaster(user.role) &&
                 u.uid !== user.uid &&
-                !ROLES_RAIZ.includes(u.role) &&
-                (puedeAsignarRol(user.role, u.role) || variant === "master");
+                !ROLES_RAIZ.includes(u.role);
               return (
                 <li
                   key={u.uid}

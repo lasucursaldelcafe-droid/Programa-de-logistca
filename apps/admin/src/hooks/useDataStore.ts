@@ -2680,12 +2680,12 @@ function assertPuedeEliminarPerfil(
   if (target.uid === actor.uid) {
     throw new Error("No puedes eliminar tu propia cuenta.");
   }
+  if (!esRolMaster(actor.role)) {
+    throw new Error("Solo Dirección (CEO) puede eliminar perfiles.");
+  }
   const targetRole = normalizeUserRole(target.role);
   if (ROLES_RAIZ.includes(targetRole)) {
     throw new Error("No se puede eliminar una cuenta raíz (CEO / Master App).");
-  }
-  if (!esRolMaster(actor.role) && !puedeAsignarRol(actor.role, targetRole)) {
-    throw new Error("No puedes eliminar este perfil.");
   }
 }
 

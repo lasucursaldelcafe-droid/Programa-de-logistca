@@ -294,8 +294,9 @@ export const deletePlatformAccountFn = onCall(
 
     const callerSnap = await db.collection("users").doc(request.auth.uid).get();
     const callerRole = String(callerSnap.data()?.role ?? "");
-    if (!callerRole || !PLATFORM_CREATOR_ROLES.has(callerRole)) {
-      throw new HttpsError("permission-denied", "No puedes eliminar perfiles de plataforma.");
+    const canDeleteProfiles = new Set(["ceo", "master_app", "super_admin"]);
+    if (!callerRole || !canDeleteProfiles.has(callerRole)) {
+      throw new HttpsError("permission-denied", "Solo Dirección (CEO) puede eliminar perfiles.");
     }
 
     const targetSnap = await db.collection("users").doc(targetUid).get();
