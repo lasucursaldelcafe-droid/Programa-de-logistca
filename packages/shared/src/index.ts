@@ -14,6 +14,7 @@ export * from "./paths";
 export * from "./sheetsClient";
 export * from "./sheetsSession";
 export * from "./runtimeBootstrap";
+export * from "./uiUpdate";
 export * from "./welcomeMessage";
 export * from "./permissions";
 export * from "./roleTemplates";

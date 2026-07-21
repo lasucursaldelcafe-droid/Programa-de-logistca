@@ -36,6 +36,7 @@ import { OperacionEventoPage } from "./pages/OperacionEventoPage";
 import { PendientesPage } from "./pages/PendientesPage";
 import { MasterRoutes, RedirectMasterToUnifiedConsole } from "./routes/MasterRoutes";
 import { WorkerRoutes } from "./routes/WorkerRoutes";
+import { UiUpdateBanner } from "./components/UiUpdateBanner";
 
 function AdminProtected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -60,7 +61,9 @@ function WorkerOnboardingGate({ children }: { children: React.ReactNode }) {
 
 export function App() {
   return (
-    <Routes>
+    <>
+      <UiUpdateBanner />
+      <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/descargas" element={<DescargasPage />} />
       <Route path="/configurar" element={<ConfigurarDesdeMovilPage />} />
@@ -115,5 +118,6 @@ export function App() {
 
       <Route path="*" element={<RoleHomeRedirect />} />
     </Routes>
+    </>
   );
 }
