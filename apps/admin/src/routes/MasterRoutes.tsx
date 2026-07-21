@@ -9,6 +9,7 @@ import { InformesPage } from "@master/pages/InformesPage";
 import { AuditoriaPage } from "@master/pages/AuditoriaPage";
 import { AyudaPage } from "../pages/AyudaPage";
 import { RolesPage } from "@master/pages/RolesPage";
+import { TrabajadoresActividadPage } from "@master/pages/TrabajadoresActividadPage";
 
 function MasterProtected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -31,6 +32,7 @@ export function MasterRoutes() {
         }
       >
         <Route index element={<MasterHomePage />} />
+        <Route path="trabajadores" element={<TrabajadoresActividadPage />} />
         <Route path="administradores" element={<AdminsPage />} />
         <Route path="roles" element={<RolesPage />} />
         <Route path="informes" element={<InformesPage />} />

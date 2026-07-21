@@ -27,3 +27,4 @@ export * from "./eventFlow";
 export * from "./qrCodeBuilder";
 export * from "./workerCredentials";
 export * from "./workerImport";
+export * from "./workerActivity";

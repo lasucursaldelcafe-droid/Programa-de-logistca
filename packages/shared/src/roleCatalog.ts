@@ -34,11 +34,12 @@ export const ROLE_CATALOG: Record<UserRole, RoleCatalogEntry> = {
     area: "direccion",
     puedeVer: [
       "Equipo administrativo (crear cuentas)",
+      "Trabajadores en vivo (qué hace cada uno)",
       "Roles y puestos",
       "Informes globales",
       "Auditoría de plataforma",
     ],
-    noVe: ["App de campo", "Operación diaria de un solo evento (la delega)"],
+    noVe: ["App de campo del trabajador", "Configurar un evento paso a paso (lo delega al admin)"],
   },
   master_app: {
     id: "master_app",
@@ -49,10 +50,11 @@ export const ROLE_CATALOG: Record<UserRole, RoleCatalogEntry> = {
     area: "direccion",
     puedeVer: [
       "Equipo administrativo (crear cuentas)",
+      "Trabajadores en vivo (actividad y GPS)",
       "Roles y puestos personalizados",
       "Informes y auditoría global",
     ],
-    noVe: ["App de campo", "Marcado de entrada QR"],
+    noVe: ["App de campo del trabajador", "Marcado de entrada QR"],
   },
   super_admin: {
     id: "super_admin",

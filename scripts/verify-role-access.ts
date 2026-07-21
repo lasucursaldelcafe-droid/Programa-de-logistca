@@ -68,6 +68,7 @@ function main(): void {
   // Master solo para raíces
   const masterPaths = pathsOf(getMasterNavSections());
   assert(masterPaths.includes("/master/administradores"), "Master debe tener equipo admin");
+  assert(masterPaths.includes("/master/trabajadores"), "Master/CEO debe ver trabajadores en vivo");
 
   // Contabilidad: finanzas sí, operación de campo no
   const contPaths = pathsOf(getAdminNavSections("contador"));
