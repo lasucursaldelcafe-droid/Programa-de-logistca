@@ -6,7 +6,10 @@ import {
   ROLE_CATALOG,
   ROLE_LABEL,
   WORKER_SELF_PERMISSIONS,
+  comunicacionPath,
+  notificationsPath,
   puedeAccederPlataforma,
+  rewriteWorkerDeepLinkForRole,
   rolesAsignablesPor,
   rolesCuentaPlataforma,
   rolesPersonalCampo,
@@ -126,6 +129,7 @@ function main(): void {
   const supPaths = pathsOf(getAdminNavSections("supervisor_sitio"));
   assert(supPaths.includes("/turnos"), "Supervisor debe ver turnos");
   assert(supPaths.includes("/personal"), "Supervisor puede registrar personal");
+  assert(supPaths.includes("/comunicacion"), "Supervisor debe ver chat en admin");
   assert(!supPaths.includes("/nomina"), "Supervisor no debe ver nómina");
   assert(!supPaths.includes("/negocio"), "Supervisor no debe ver negocio");
   assert(!supPaths.includes("/configuracion"), "Supervisor no crea eventos");
@@ -145,6 +149,33 @@ function main(): void {
   assert(!workerPaths.some((p) => p.startsWith("/panel")), "Empleado no ve panel admin");
   assert(puedeAccederPlataforma("trabajador", "worker"), "Empleado accede a worker");
   assert(!puedeAccederPlataforma("trabajador", "admin"), "Empleado no accede a admin");
+
+  // Chat: supervisor NO usa /worker (rompe PlatformGate); empleado sí.
+  assert(
+    comunicacionPath("supervisor_sitio") === "/comunicacion",
+    "Supervisor debe abrir chat en consola admin",
+  );
+  assert(
+    notificationsPath("supervisor_sitio") === "/notificaciones",
+    "Supervisor debe abrir notificaciones en consola admin",
+  );
+  assert(
+    comunicacionPath("trabajador") === "/worker/comunicacion",
+    "Empleado abre chat en app de campo",
+  );
+  assert(
+    comunicacionPath("ceo") === "/master/comunicacion",
+    "CEO abre chat en consola master",
+  );
+  assert(
+    !puedeAccederPlataforma("supervisor_sitio", "worker"),
+    "Supervisor no debe entrar a app worker",
+  );
+  assert(
+    rewriteWorkerDeepLinkForRole("supervisor_sitio", "/worker/comunicacion", "?dm=x") ===
+      "/comunicacion?dm=x",
+    "Deep link viejo de chat debe reescribirse para supervisor",
+  );
 
   // Etiquetas del catálogo
   for (const role of [...ROOT, ...ADMIN_ROLES, "trabajador"] as UserRole[]) {

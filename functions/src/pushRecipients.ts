@@ -107,8 +107,13 @@ export async function resolveRecipientUids(
 }
 
 function comunicacionLinkForRole(role: string | undefined): string {
-  if (role === "trabajador" || role === "supervisor_sitio") {
+  // Solo Empleado usa la app de campo. Supervisor/oficina → /comunicacion;
+  // dirección → /master/comunicacion.
+  if (role === "trabajador") {
     return "/worker/comunicacion";
+  }
+  if (role === "ceo" || role === "master_app" || role === "super_admin") {
+    return "/master/comunicacion";
   }
   return "/comunicacion";
 }

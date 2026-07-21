@@ -73,9 +73,11 @@ export function UnirseQrPage() {
   useEffect(() => {
     // Si ya tiene sesión de trabajador, ir a marcar entrada con este QR.
     if (!user || !preview) return;
-    if (user.role === "trabajador" || user.role === "supervisor_sitio") {
+    if (user.role === "trabajador") {
       const payload = `spe:qr:${preview.qrId}:${token || params.get("t") || ""}`;
       navigate(`/worker/entrada?qr=${encodeURIComponent(payload)}`, { replace: true });
+    } else if (user.role === "supervisor_sitio") {
+      navigate("/comunicacion", { replace: true });
     }
   }, [user, preview, navigate, token, params]);
 
