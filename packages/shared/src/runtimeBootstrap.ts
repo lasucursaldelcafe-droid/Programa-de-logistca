@@ -5,6 +5,7 @@ import {
   redirectEmbeddedShellToLiveUi,
   resolveCanonicalConfigUrl,
 } from "./platformShell";
+import { noteBootUiVersion } from "./uiUpdate";
 
 export type EffectiveBackend = "firebase";
 
@@ -110,6 +111,7 @@ function applyConfig(config: RuntimeBootstrapConfig): void {
   }
   if (config.googleMapsApiKey) setGoogleMapsApiKey(config.googleMapsApiKey);
   if (config.vapidKey) setVapidKey(config.vapidKey);
+  if (config.uiVersion) noteBootUiVersion(config.uiVersion);
 
   const hasFirebase =
     !!config.firebase &&
