@@ -20,8 +20,8 @@ const PLATFORM_STEPS: Record<Platform, string[]> = {
   ],
   worker: [
     "Activa tu cuenta con el enlace de invitación.",
-    "Completa tu perfil y acepta los turnos asignados.",
-    "Al llegar al sitio, escanea el QR y valida tu ubicación GPS.",
+    "Completa tu perfil y acepta los turnos asignados (Inicio o Mis turnos).",
+    "Al llegar al sitio, pulsa «Ya estoy aquí» para activar la jornada con GPS (o escanea el QR).",
     "Usa Chat / Video: canal general del evento o canal de empleados.",
     "Si hay un problema, usa Reportar para avisar al supervisor.",
   ],
@@ -105,7 +105,8 @@ export function AyudaPage({ platform }: AyudaPageProps) {
           <div>
             <dt className="font-medium text-white">¿El GPS es obligatorio?</dt>
             <dd className="mt-1">
-              Sí, al escanear el QR el sistema valida que estás cerca del sitio asignado.
+              Sí. Con «Ya estoy aquí» o al escanear el QR, el sistema valida que estás dentro
+              del radio del sitio asignado para activar la jornada.
             </dd>
           </div>
         </dl>

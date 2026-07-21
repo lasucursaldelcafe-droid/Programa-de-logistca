@@ -32,3 +32,30 @@ export function findProximoTurnoConfirmado(
     .sort((a, b) => new Date(a.inicio).getTime() - new Date(b.inicio).getTime());
   return candidatos[0] ?? null;
 }
+
+/**
+ * Turno confirmado vigente ahora (ventana inicio–fin).
+ * Sirve para marcar “ya estoy aquí” sin escanear QR.
+ */
+export function findTurnoConfirmadoVigente(
+  shifts: Turno[],
+  workerId: string,
+  now = Date.now(),
+): Turno | null {
+  return (
+    shifts.find(
+      (s) =>
+        s.workerId === workerId &&
+        s.estado === "confirmado" &&
+        new Date(s.inicio).getTime() <= now &&
+        new Date(s.fin).getTime() >= now,
+    ) ?? null
+  );
+}
+
+/** Marcador de asistencia iniciada por GPS (sin QR de sitio). */
+export const GPS_CHECKIN_QR_ID = "gps";
+
+/** Texto de consentimiento cuando la entrada es por GPS / “ya estoy aquí”. */
+export const GPS_CHECKIN_CONSENT =
+  "Recopilamos tu ubicación GPS solo durante la jornada activa para verificar que estás en el sitio asignado y activar tu asistencia.";

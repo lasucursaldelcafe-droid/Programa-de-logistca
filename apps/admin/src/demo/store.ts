@@ -521,7 +521,11 @@ class DemoStore {
     workerId: string;
     workerNombre: string;
     shift: Turno;
-    qr: QrCode;
+    siteId: string;
+    siteNombre: string;
+    eventId: string;
+    eventNombre: string;
+    qrId: string;
     estado: AttendanceEstado;
     entrada: GeoRegistro;
     position: GeoPosition;
@@ -538,11 +542,11 @@ class DemoStore {
         workerId: data.workerId,
         workerNombre: data.workerNombre,
         shiftId: data.shift.id,
-        siteId: data.qr.siteId,
-        siteNombre: data.qr.siteNombre,
-        eventId: data.qr.eventId,
-        eventNombre: data.qr.eventNombre,
-        qrId: data.qr.id,
+        siteId: data.siteId,
+        siteNombre: data.siteNombre,
+        eventId: data.eventId,
+        eventNombre: data.eventNombre,
+        qrId: data.qrId,
         estado: data.estado,
         entrada: data.entrada,
         ubicacionActual: { lat: data.position.lat, lng: data.position.lng },
