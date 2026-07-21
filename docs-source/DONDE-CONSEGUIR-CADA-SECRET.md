@@ -141,9 +141,14 @@ Sin estos secrets, las invitaciones se crean pero el correo no sale (verás `ema
 
 | Secret | Ruta exacta |
 |--------|-------------|
-| `VITE_GOOGLE_MAPS_API_KEY` | [Google Cloud Console](https://console.cloud.google.com/google/maps-apis/credentials) → **Credenciales** → **Crear credenciales** → **Clave de API** → habilitar **Maps JavaScript API** → restringir por dominio HTTP (`*.github.io`, tu dominio de producción) |
+| `VITE_GOOGLE_MAPS_API_KEY` | [Google Cloud Console](https://console.cloud.google.com/google/maps-apis/credentials) → **Credenciales** → **Crear credenciales** → **Clave de API** → habilitar APIs (abajo) → restringir por dominio HTTP (`*.github.io`, tu dominio de producción) |
 
-Sin esta clave, `/mapa` y **Supervisión** usan el mapa esquemático SVG (demo). La geolocalización GPS del trabajador **no depende** de Google Maps.
+**APIs a habilitar en el mismo proyecto** (APIs y servicios → Biblioteca):
+
+1. **Maps JavaScript API** — mapa satélite / pin arrastrable  
+2. **Geocoding API** — botón «Buscar en mapa» y dirección automática  
+
+Sin Geocoding API el mapa igual funciona: marca el punto tocando el mapa o arrastrando el pin. Sin ninguna clave, Supervisión usa el mapa esquemático SVG. La geolocalización GPS del trabajador **no depende** de Google Maps.
 
 **Local:** añade en `apps/admin/.env.local`:
 
