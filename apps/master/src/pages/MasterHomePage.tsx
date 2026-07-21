@@ -51,7 +51,7 @@ export function MasterHomePage() {
             <span className="mt-3 inline-block text-sm text-accent underline">Crear cuentas →</span>
           </Card>
         </Link>
-        <Link to="/personal" className="block transition hover:opacity-90">
+        <Link to="/master/personal" className="block transition hover:opacity-90">
           <Card className="h-full border-positive/20 bg-positive/5">
             <h2 className="font-display text-lg font-semibold text-positive">Personal de campo</h2>
             <p className="mt-2 text-3xl font-bold">{workers.length}</p>
@@ -61,7 +61,7 @@ export function MasterHomePage() {
             <span className="mt-3 inline-block text-sm text-positive underline">Gestionar personal →</span>
           </Card>
         </Link>
-        <Link to="/configuracion" className="block transition hover:opacity-90">
+        <Link to="/master/configuracion" className="block transition hover:opacity-90">
           <Card className="h-full">
             <h2 className="font-display text-lg font-semibold">Configurar evento</h2>
             <p className="mt-2 text-3xl font-bold">{events.length}</p>
@@ -95,7 +95,7 @@ export function MasterHomePage() {
             <span className="mt-3 inline-block text-sm text-positive underline">Ver actividad →</span>
           </Card>
         </Link>
-        <Link to="/reportes" className="block transition hover:opacity-90">
+        <Link to="/master/reportes" className="block transition hover:opacity-90">
           <Card className="h-full">
             <h2 className="font-display text-lg font-semibold">Reportes de campo</h2>
             <p className="mt-2 text-3xl font-bold">{reportesAbiertos}</p>
