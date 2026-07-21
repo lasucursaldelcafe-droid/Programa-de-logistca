@@ -175,13 +175,11 @@ function GoogleSiteMapInner({
 }
 
 function GoogleSiteMap({
-  apiKey,
   lat,
   lng,
   radioMeters,
   onPick,
 }: {
-  apiKey: string;
   lat: number;
   lng: number;
   radioMeters: number;
@@ -189,9 +187,7 @@ function GoogleSiteMap({
 }) {
   return (
     <div className="spe-map-frame relative overflow-hidden rounded-xl border border-accent/30">
-      <APIProvider apiKey={apiKey} language="es" region="CO">
-        <GoogleSiteMapInner lat={lat} lng={lng} radioMeters={radioMeters} onPick={onPick} />
-      </APIProvider>
+      <GoogleSiteMapInner lat={lat} lng={lng} radioMeters={radioMeters} onPick={onPick} />
       <p className="pointer-events-none absolute bottom-2 left-2 right-2 rounded bg-bg/95 px-2 py-1.5 text-center text-xs text-neutral-300">
         <span className="font-medium text-accent">Selecciona el punto:</span> clic en el mapa o arrastra el pin
       </p>
@@ -260,7 +256,7 @@ export function SiteLocationPicker({ value, onChange }: SiteLocationPickerProps)
     }
   }
 
-  return (
+  const body = (
     <div className="space-y-4 sm:col-span-2">
       <label className="block text-sm">
         Dirección del sitio
@@ -297,7 +293,6 @@ export function SiteLocationPicker({ value, onChange }: SiteLocationPickerProps)
 
       {mapsEnabled ? (
         <GoogleSiteMap
-          apiKey={apiKey}
           lat={lat}
           lng={lng}
           radioMeters={radio}
@@ -356,5 +351,13 @@ export function SiteLocationPicker({ value, onChange }: SiteLocationPickerProps)
         </label>
       </div>
     </div>
+  );
+
+  if (!mapsEnabled) return body;
+
+  return (
+    <APIProvider apiKey={apiKey} language="es" region="CO">
+      {body}
+    </APIProvider>
   );
 }

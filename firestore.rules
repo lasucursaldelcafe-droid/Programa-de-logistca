@@ -47,6 +47,14 @@ service cloud.firestore {
     function currentWorkerId() {
       return userDoc().data.workerId;
     }
+    /** Empleado o supervisor de sitio con ficha de personal (misma jornada GPS). */
+    function isFieldStaff() {
+      return isWorker()
+        || (signedIn()
+          && role() == 'supervisor_sitio'
+          && currentWorkerId() is string
+          && currentWorkerId().size() > 0);
+    }
 
     match /users/{userId} {
       allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
@@ -103,9 +111,10 @@ service cloud.firestore {
 
     match /attendance/{attendanceId} {
       allow read: if signedIn();
-      allow create: if isWorker();
+      allow create: if isFieldStaff()
+        && request.resource.data.workerId == currentWorkerId();
       allow update: if isAdmin() || isSupervisor()
-        || (isWorker()
+        || (isFieldStaff()
           && resource.data.workerId == currentWorkerId());
       allow delete: if isAdmin();
     }
@@ -113,7 +122,8 @@ service cloud.firestore {
     match /consents/{consentId} {
       allow read: if signedIn()
         && (isAdmin() || isSupervisor() || resource.data.workerId == currentWorkerId());
-      allow create: if isWorker();
+      allow create: if isFieldStaff()
+        && request.resource.data.workerId == currentWorkerId();
       allow update, delete: if isAdmin();
     }
 
