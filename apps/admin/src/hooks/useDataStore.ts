@@ -410,22 +410,46 @@ export async function updateWorkerEstado(
   await updateDoc(doc(getFirestoreDb(), "workers", id), { estado });
 }
 
-export async function deleteWorker(id: string, actorNombre?: string): Promise<void> {
+export async function deleteWorker(
+  id: string,
+  actorNombre?: string,
+  opts?: { forceCloseJornada?: boolean },
+): Promise<void> {
   if (isDemoMode()) {
+    if (opts?.forceCloseJornada) {
+      const open = demoStore.attendances.filter(
+        (a) => a.workerId === id && a.estado !== "cerrado",
+      );
+      for (const att of open) {
+        const pos = att.ubicacionActual ?? { lat: 0, lng: 0 };
+        demoStore.checkOut(att.id, pos);
+      }
+    }
     demoStore.removeWorker(id, actorNombre);
     return;
+  }
+
+  if (isSheetsBackend()) {
+    throw new Error("Eliminar personal no está disponible con backend Google Sheets.");
   }
 
   const db = getFirestoreDb();
   const activeSnap = await getDocs(
     query(collection(db, "attendance"), where("workerId", "==", id)),
   );
-  const hasActive = activeSnap.docs.some((d) => {
+  const openDocs = activeSnap.docs.filter((d) => {
     const data = d.data() as Attendance;
     return data.estado !== "cerrado";
   });
-  if (hasActive) {
-    throw new Error("No se puede eliminar: tiene una jornada activa. Cierra la jornada primero.");
+  if (openDocs.length > 0) {
+    if (!opts?.forceCloseJornada) {
+      throw new Error(
+        "No se puede eliminar: tiene una jornada activa. Cierra la jornada primero o confirma forzar el cierre.",
+      );
+    }
+    for (const d of openDocs) {
+      await adminCloseAttendance(d.id);
+    }
   }
 
   const shiftSnap = await getDocs(
@@ -437,6 +461,16 @@ export async function deleteWorker(id: string, actorNombre?: string): Promise<vo
     query(collection(db, "invitations"), where("workerId", "==", id)),
   );
   await Promise.all(invSnap.docs.map((d) => deleteDoc(d.ref)));
+
+  // Desvincular cuentas de plataforma asociadas (no borra Auth; solo la ficha users).
+  const usersSnap = await getDocs(
+    query(collection(db, "users"), where("workerId", "==", id)),
+  );
+  await Promise.all(
+    usersSnap.docs.map((d) =>
+      updateDoc(d.ref, { workerId: deleteField(), habilitado: false }),
+    ),
+  );
 
   await deleteDoc(doc(db, "workers", id));
 }
@@ -513,6 +547,40 @@ export async function updateShiftEstado(id: string, estado: ShiftEstado): Promis
       siteNombre: shift.siteNombre,
     });
   }
+}
+
+/** Actualiza horario / sitio / evento de un turno (dirección y oficina). */
+export async function updateShift(
+  id: string,
+  patch: Partial<
+    Pick<
+      Turno,
+      | "inicio"
+      | "fin"
+      | "siteId"
+      | "siteNombre"
+      | "eventId"
+      | "eventNombre"
+      | "workerId"
+      | "workerNombre"
+      | "estado"
+    >
+  >,
+): Promise<void> {
+  const clean = omitUndefinedFields(patch);
+  if (Object.keys(clean).length === 0) return;
+
+  if (isDemoMode()) {
+    demoStore.updateShift(id, clean);
+    return;
+  }
+  if (isSheetsBackend()) {
+    const shift = await sheetsGetById<Turno>("shifts", id);
+    if (!shift) throw new Error("Turno no encontrado");
+    await sheetsUpsertRecord("shifts", { ...shift, ...clean });
+    return;
+  }
+  await updateDoc(doc(getFirestoreDb(), "shifts", id), clean);
 }
 
 export async function deleteShift(id: string): Promise<void> {
@@ -1812,6 +1880,206 @@ export async function checkOut(attendanceId: string, position: GeoPosition): Pro
     siteNombre: attendance.siteNombre,
     attendanceId,
   });
+}
+
+/**
+ * Cierra una jornada desde dirección/oficina (sin GPS del empleado).
+ * Usa la última ubicación conocida o el centro del sitio.
+ */
+export async function adminCloseAttendance(attendanceId: string): Promise<void> {
+  if (isDemoMode()) {
+    const att = demoStore.attendances.find((a) => a.id === attendanceId);
+    if (!att || att.estado === "cerrado") return;
+    const site = demoStore.sites.find((s) => s.id === att.siteId);
+    const position =
+      att.ubicacionActual ??
+      (site ? { lat: site.lat, lng: site.lng } : { lat: 0, lng: 0 });
+    demoStore.checkOut(attendanceId, position);
+    await notifyCheckOut({
+      workerId: att.workerId,
+      workerNombre: att.workerNombre ?? att.workerId,
+      siteNombre: att.siteNombre,
+      attendanceId,
+    });
+    return;
+  }
+
+  if (isSheetsBackend()) {
+    const att = await sheetsGetById<Attendance>("attendance", attendanceId);
+    if (!att || att.estado === "cerrado") return;
+    const site = await getSiteById(att.siteId);
+    let position = { lat: 0, lng: 0 };
+    if (att.ubicacionActual && typeof att.ubicacionActual === "object") {
+      const u = att.ubicacionActual as { lat?: number; lng?: number };
+      if (typeof u.lat === "number" && typeof u.lng === "number") {
+        position = { lat: u.lat, lng: u.lng };
+      }
+    } else if (site) {
+      position = { lat: site.lat, lng: site.lng };
+    }
+    await checkOut(attendanceId, position);
+    return;
+  }
+
+  const snap = await getDoc(doc(getFirestoreDb(), "attendance", attendanceId));
+  if (!snap.exists()) throw new Error("Jornada no encontrada");
+  const attendance = { id: snap.id, ...snap.data() } as Attendance;
+  if (attendance.estado === "cerrado") return;
+
+  const siteSnap = await getDoc(doc(getFirestoreDb(), "sites", attendance.siteId));
+  const site = siteSnap.exists() ? (siteSnap.data() as Sitio) : null;
+  const position =
+    attendance.ubicacionActual ??
+    (site ? { lat: site.lat, lng: site.lng } : { lat: 0, lng: 0 });
+
+  await checkOut(attendanceId, position);
+}
+
+/**
+ * Abre una jornada para un trabajador desde dirección/oficina
+ * (p. ej. CEO confirma que la persona ya está en sitio).
+ */
+export async function adminOpenAttendance(data: {
+  workerId: string;
+  workerNombre: string;
+  shiftId: string;
+  shifts: Turno[];
+}): Promise<string> {
+  const shift =
+    data.shifts.find(
+      (s) =>
+        s.id === data.shiftId &&
+        s.workerId === data.workerId &&
+        (s.estado === "confirmado" || s.estado === "pendiente"),
+    ) ?? null;
+  if (!shift) {
+    throw new Error("Turno no encontrado o no pertenece a esa persona.");
+  }
+
+  if (isDemoMode()) {
+    const existing = getActiveAttendance(demoStore.attendances, data.workerId);
+    if (existing) {
+      throw new Error("Esa persona ya tiene una jornada abierta.");
+    }
+  } else if (isSheetsBackend()) {
+    const open = (await sheetsListAll<Attendance>("attendance")).find(
+      (a) => a.workerId === data.workerId && a.estado !== "cerrado",
+    );
+    if (open) throw new Error("Esa persona ya tiene una jornada abierta.");
+  } else {
+    const openSnap = await getDocs(
+      query(
+        collection(getFirestoreDb(), "attendance"),
+        where("workerId", "==", data.workerId),
+      ),
+    );
+    const hasOpen = openSnap.docs.some((d) => d.data().estado !== "cerrado");
+    if (hasOpen) throw new Error("Esa persona ya tiene una jornada abierta.");
+  }
+
+  // Si el turno aún está pendiente, confirmarlo al abrir la jornada.
+  if (shift.estado === "pendiente") {
+    await updateShiftEstado(shift.id, "confirmado");
+  }
+
+  const site = await getSiteById(shift.siteId);
+  if (!site) throw new Error("Sitio del turno no encontrado");
+
+  const position = { lat: site.lat, lng: site.lng };
+  const siteNombre = shift.siteNombre || site.nombre;
+  const eventNombre = shift.eventNombre || "";
+  const estado: AttendanceEstado = "activo";
+  const entrada = {
+    timestamp: new Date().toISOString(),
+    lat: position.lat,
+    lng: position.lng,
+    dentroGeocerca: true,
+  };
+
+  if (isDemoMode()) {
+    const attendanceId = demoStore.checkIn({
+      workerId: data.workerId,
+      workerNombre: data.workerNombre,
+      shift,
+      siteId: shift.siteId,
+      siteNombre,
+      eventId: shift.eventId,
+      eventNombre,
+      qrId: GPS_CHECKIN_QR_ID,
+      estado,
+      entrada,
+      position,
+    });
+    await notifyCheckIn({
+      workerId: data.workerId,
+      workerNombre: data.workerNombre,
+      siteNombre,
+      eventNombre,
+      attendanceId,
+      dentroGeocerca: true,
+    });
+    return attendanceId;
+  }
+
+  if (isSheetsBackend()) {
+    const attendanceId = `att-${Date.now().toString(36)}`;
+    await sheetsUpsertRecord("attendance", {
+      id: attendanceId,
+      workerId: data.workerId,
+      workerNombre: data.workerNombre,
+      shiftId: shift.id,
+      siteId: shift.siteId,
+      siteNombre,
+      eventId: shift.eventId,
+      eventNombre,
+      qrId: GPS_CHECKIN_QR_ID,
+      estado,
+      entrada: JSON.stringify(entrada),
+      ubicacionActual: JSON.stringify(position),
+      alertasGeocerca: "",
+      creadoEn: new Date().toISOString(),
+    });
+    const worker = await getWorkerById(data.workerId);
+    if (worker) {
+      await sheetsUpsertRecord("workers", { ...worker, estado: "en_sitio" });
+    }
+    await notifyCheckIn({
+      workerId: data.workerId,
+      workerNombre: data.workerNombre,
+      siteNombre,
+      eventNombre,
+      attendanceId,
+      dentroGeocerca: true,
+    });
+    return attendanceId;
+  }
+
+  const ref = await addDoc(collection(getFirestoreDb(), "attendance"), {
+    workerId: data.workerId,
+    workerNombre: data.workerNombre,
+    shiftId: shift.id,
+    siteId: shift.siteId,
+    siteNombre,
+    eventId: shift.eventId,
+    eventNombre,
+    qrId: GPS_CHECKIN_QR_ID,
+    estado,
+    entrada,
+    ubicacionActual: position,
+    alertasGeocerca: [],
+    creadoEn: new Date().toISOString(),
+  });
+
+  await updateDoc(doc(getFirestoreDb(), "workers", data.workerId), { estado: "en_sitio" });
+  await notifyCheckIn({
+    workerId: data.workerId,
+    workerNombre: data.workerNombre,
+    siteNombre,
+    eventNombre,
+    attendanceId: ref.id,
+    dentroGeocerca: true,
+  });
+  return ref.id;
 }
 
 export async function updateAttendanceLocation(

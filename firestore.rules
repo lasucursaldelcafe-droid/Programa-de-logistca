@@ -111,8 +111,10 @@ service cloud.firestore {
 
     match /attendance/{attendanceId} {
       allow read: if signedIn();
-      allow create: if isFieldStaff()
-        && request.resource.data.workerId == currentWorkerId();
+      // Campo crea su propia jornada; dirección/oficina puede abrir/cerrar jornadas de otros.
+      allow create: if (isFieldStaff()
+          && request.resource.data.workerId == currentWorkerId())
+        || isAdmin();
       allow update: if isAdmin() || isSupervisor()
         || (isFieldStaff()
           && resource.data.workerId == currentWorkerId());

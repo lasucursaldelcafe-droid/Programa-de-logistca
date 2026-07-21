@@ -1,8 +1,22 @@
 import { useMemo, useState } from "react";
-import { ATTENDANCE_LABEL, type Attendance, type Evento, type Sitio } from "@spe/shared";
+import {
+  ATTENDANCE_LABEL,
+  puedeGestionarTurnos,
+  type Attendance,
+  type Evento,
+  type Sitio,
+} from "@spe/shared";
 import { Badge, Card } from "./ui";
 import { LiveMap, liveMapUsesGoogle } from "./LiveMap";
 import { isGoogleMapsEnabled } from "../lib/googleMaps";
+import { useAuth } from "../contexts/AuthContext";
+import {
+  adminCloseAttendance,
+  adminOpenAttendance,
+  toUserFacingError,
+  useShifts,
+  useWorkers,
+} from "../hooks/useDataStore";
 
 type SupervisionView = "general" | "individual";
 type IndividualMode = "sitio" | "persona";
@@ -18,16 +32,38 @@ function activasDeEvento(attendances: Attendance[]): Attendance[] {
 }
 
 export function EventSupervisionPanel({ evento, sites, attendances }: EventSupervisionPanelProps) {
+  const { user } = useAuth();
+  const shifts = useShifts();
+  const workers = useWorkers();
+  const canManage = Boolean(user && puedeGestionarTurnos(user.role));
+
   const [view, setView] = useState<SupervisionView>("general");
   const [individualMode, setIndividualMode] = useState<IndividualMode>("sitio");
   const [selectedSiteId, setSelectedSiteId] = useState("");
   const [selectedAttendanceId, setSelectedAttendanceId] = useState("");
+  const [openShiftId, setOpenShiftId] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [mensaje, setMensaje] = useState<string | null>(null);
 
-  const activas = useMemo(() => activasDeEvento(attendances), [attendances]);
+  const activas = useMemo(
+    () => activasDeEvento(attendances).filter((a) => a.eventId === evento.id),
+    [attendances, evento.id],
+  );
   const alertas = useMemo(
     () => activas.filter((a) => a.estado === "fuera_geocerca" || a.estado === "revision_manual"),
     [activas],
   );
+
+  const turnosDisponibles = useMemo(() => {
+    const activosWorkerIds = new Set(activas.map((a) => a.workerId));
+    return shifts.filter(
+      (s) =>
+        s.eventId === evento.id &&
+        (s.estado === "confirmado" || s.estado === "pendiente") &&
+        !activosWorkerIds.has(s.workerId),
+    );
+  }, [shifts, evento.id, activas]);
 
   const selectedSite = sites.find((s) => s.id === selectedSiteId) ?? sites[0] ?? null;
   const selectedAttendance =
@@ -70,6 +106,60 @@ export function EventSupervisionPanel({ evento, sites, attendances }: EventSuper
       active ? "bg-accent text-bg" : "border border-border text-neutral-400 hover:border-accent/40"
     }`;
 
+  async function cerrarJornada(attendanceId: string, nombre: string) {
+    if (!window.confirm(`¿Cerrar la jornada de ${nombre}?`)) return;
+    setBusyId(attendanceId);
+    setError(null);
+    setMensaje(null);
+    try {
+      await adminCloseAttendance(attendanceId);
+      setMensaje(`Jornada de ${nombre} cerrada.`);
+    } catch (err) {
+      setError(toUserFacingError(err, "No se pudo cerrar la jornada.").message);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function abrirJornada(e: React.FormEvent) {
+    e.preventDefault();
+    if (!openShiftId) return;
+    const shift = shifts.find((s) => s.id === openShiftId);
+    if (!shift) return;
+    const worker = workers.find((w) => w.id === shift.workerId);
+    setBusyId(`open-${openShiftId}`);
+    setError(null);
+    setMensaje(null);
+    try {
+      await adminOpenAttendance({
+        workerId: shift.workerId,
+        workerNombre: worker?.nombre ?? shift.workerNombre ?? shift.workerId,
+        shiftId: shift.id,
+        shifts,
+      });
+      setOpenShiftId("");
+      setMensaje(`Jornada abierta para ${worker?.nombre ?? shift.workerNombre}.`);
+    } catch (err) {
+      setError(toUserFacingError(err, "No se pudo abrir la jornada.").message);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  function JornadaActions({ a }: { a: Attendance }) {
+    if (!canManage) return null;
+    return (
+      <button
+        type="button"
+        disabled={busyId === a.id}
+        onClick={() => void cerrarJornada(a.id, a.workerNombre ?? a.workerId)}
+        className="rounded-lg border border-alert/40 px-2 py-1 text-xs text-alert hover:bg-alert/10 disabled:opacity-50"
+      >
+        {busyId === a.id ? "…" : "Cerrar jornada"}
+      </button>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -93,6 +183,56 @@ export function EventSupervisionPanel({ evento, sites, attendances }: EventSuper
           </button>
         </div>
       </div>
+
+      {error && (
+        <p className="rounded-lg border border-alert/40 bg-alert/10 px-3 py-2 text-sm text-alert">
+          {error}
+        </p>
+      )}
+      {mensaje && (
+        <p className="rounded-lg border border-positive/40 bg-positive/10 px-3 py-2 text-sm text-positive">
+          {mensaje}
+        </p>
+      )}
+
+      {canManage && (
+        <Card className="space-y-3">
+          <h3 className="font-display text-lg font-semibold">Gestionar jornadas</h3>
+          <p className="text-sm text-neutral-500">
+            Dirección y oficina pueden abrir o cerrar jornadas sin estar en la app de campo.
+          </p>
+          <form onSubmit={(e) => void abrirJornada(e)} className="flex flex-wrap items-end gap-2">
+            <label className="min-w-[200px] flex-1 text-sm">
+              Abrir jornada (turno del evento)
+              <select
+                value={openShiftId}
+                onChange={(e) => setOpenShiftId(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-border bg-bg px-3 py-2"
+                required
+              >
+                <option value="">Seleccionar turno…</option>
+                {turnosDisponibles.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.workerNombre} · {s.siteNombre} ({s.estado})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="submit"
+              disabled={!openShiftId || busyId?.startsWith("open-")}
+              className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
+            >
+              {busyId?.startsWith("open-") ? "Abriendo…" : "Abrir jornada"}
+            </button>
+          </form>
+          {turnosDisponibles.length === 0 && (
+            <p className="text-xs text-neutral-500">
+              No hay turnos pendientes/confirmados sin jornada, o ya están todos activos.
+            </p>
+          )}
+        </Card>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Card className="p-4">
@@ -171,10 +311,13 @@ export function EventSupervisionPanel({ evento, sites, attendances }: EventSuper
                             className="flex flex-wrap items-center justify-between gap-2 text-sm"
                           >
                             <span>{a.workerNombre}</span>
-                            <Badge
-                              label={ATTENDANCE_LABEL[a.estado]}
-                              tone={a.estado === "fuera_geocerca" ? "rechazado" : "confirmado"}
-                            />
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Badge
+                                label={ATTENDANCE_LABEL[a.estado]}
+                                tone={a.estado === "fuera_geocerca" ? "rechazado" : "confirmado"}
+                              />
+                              <JornadaActions a={a} />
+                            </div>
                           </li>
                         ))}
                       </ul>
@@ -282,10 +425,13 @@ export function EventSupervisionPanel({ evento, sites, attendances }: EventSuper
                           </div>
                         )}
                       </div>
-                      <Badge
-                        label={ATTENDANCE_LABEL[a.estado]}
-                        tone={a.estado === "fuera_geocerca" ? "rechazado" : "confirmado"}
-                      />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge
+                          label={ATTENDANCE_LABEL[a.estado]}
+                          tone={a.estado === "fuera_geocerca" ? "rechazado" : "confirmado"}
+                        />
+                        <JornadaActions a={a} />
+                      </div>
                     </li>
                   ))
                 )}
@@ -322,6 +468,11 @@ export function EventSupervisionPanel({ evento, sites, attendances }: EventSuper
                   </div>
                 )}
               </dl>
+              {canManage && (
+                <div className="mt-4">
+                  <JornadaActions a={selectedAttendance} />
+                </div>
+              )}
             </Card>
           )}
         </>

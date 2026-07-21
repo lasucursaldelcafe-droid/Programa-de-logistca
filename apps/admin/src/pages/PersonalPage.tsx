@@ -213,8 +213,9 @@ export function PersonalPage() {
     setDeletingId(id);
     setError(null);
     try {
-      await deleteWorker(id, currentUser.nombre);
+      await deleteWorker(id, currentUser.nombre, { forceCloseJornada: true });
       setConfirmDeleteId(null);
+      setMensaje("Personal eliminado. Si tenía jornada abierta, se cerró automáticamente.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo eliminar.");
     } finally {
@@ -592,11 +593,14 @@ export function PersonalPage() {
                     : "Activar cuenta"}
               </button>
               {confirmDeleteId === w.id ? (
-                <div className="flex items-center gap-1">
+                <div className="flex flex-col items-end gap-1 sm:flex-row sm:items-center">
+                  <p className="max-w-[14rem] text-right text-[11px] text-alert/90">
+                    Cierra jornadas abiertas y borra la ficha. ¿Continuar?
+                  </p>
                   <button
                     type="button"
                     disabled={deletingId === w.id}
-                    onClick={() => eliminar(w.id)}
+                    onClick={() => void eliminar(w.id)}
                     className="rounded-lg bg-alert px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
                   >
                     {deletingId === w.id ? "Eliminando…" : "Confirmar"}
