@@ -106,8 +106,14 @@ export function useNotifications(user: AppUser | null): AppNotification[] {
       query(collection(getFirestoreDb(), "notifications"), orderBy("timestamp", "desc")),
       (snap) =>
         setNotifications(
-          snap.docs.map((d) => ({ id: d.id, ...d.data() } as AppNotification)),
+          snap.docs.map((d) =>
+            parseNotification({ id: d.id, ...(d.data() as Record<string, unknown>) }),
+          ),
         ),
+      (err) => {
+        console.error("No se pudieron cargar notificaciones:", err);
+        setNotifications([]);
+      },
     );
     return unsub;
   }, [user]);
@@ -149,31 +155,36 @@ export async function sendNotification(data: {
   actorNombre?: string;
   accionTurno?: boolean;
 }): Promise<void> {
-  const payload: Omit<AppNotification, "id"> = {
+  // Firestore rechaza undefined en campos opcionales.
+  const payload: Record<string, unknown> = {
     tipo: data.tipo,
     titulo: data.titulo,
     mensaje: data.mensaje,
     timestamp: new Date().toISOString(),
     urgente: data.urgente ?? false,
     destinatarios: data.destinatarios,
-    shiftId: data.shiftId,
-    eventId: data.eventId,
-    siteId: data.siteId,
-    attendanceId: data.attendanceId,
-    actorUid: data.actorUid,
-    actorNombre: data.actorNombre,
-    leidaPor: [],
+    leidaPor: [] as string[],
     accionTurno: data.accionTurno ?? false,
   };
+  if (data.shiftId) payload.shiftId = data.shiftId;
+  if (data.eventId) payload.eventId = data.eventId;
+  if (data.siteId) payload.siteId = data.siteId;
+  if (data.attendanceId) payload.attendanceId = data.attendanceId;
+  if (data.actorUid) payload.actorUid = data.actorUid;
+  if (data.actorNombre) payload.actorNombre = data.actorNombre;
 
   if (isDemoMode()) {
-    demoStore.addNotification(payload);
+    demoStore.addNotification(payload as Omit<AppNotification, "id">);
     return;
   }
 
   if (isSheetsBackend()) {
     const id = `notif-${Date.now().toString(36)}`;
-    await sheetsUpsertRecord("notifications", serializeNotification(id, payload), "id");
+    await sheetsUpsertRecord(
+      "notifications",
+      serializeNotification(id, payload as Omit<AppNotification, "id">),
+      "id",
+    );
     return;
   }
 

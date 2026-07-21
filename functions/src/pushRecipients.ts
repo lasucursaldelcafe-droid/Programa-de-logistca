@@ -86,6 +86,19 @@ export async function resolveRecipientUids(
       continue;
     }
 
+    // Auth UID directo (p. ej. chat 1:1)
+    if (entry.startsWith("uid:")) {
+      const uid = entry.slice("uid:".length).trim();
+      if (uid) uids.add(uid);
+      continue;
+    }
+
+    const asUser = await db.collection("users").doc(entry).get();
+    if (asUser.exists) {
+      uids.add(entry);
+      continue;
+    }
+
     const uid = await findUidByWorkerId(db, entry);
     if (uid) uids.add(uid);
   }
@@ -152,10 +165,27 @@ export async function resolveChatRecipientUids(
     eventId?: string | null;
     audience?: string | null;
     senderUid: string;
+    participantUids?: string[] | null;
   },
 ): Promise<string[]> {
   const uids = new Set<string>();
   const { channelId, senderUid } = data;
+
+  if (channelId.startsWith("dm-")) {
+    const participants =
+      data.participantUids && data.participantUids.length > 0
+        ? data.participantUids
+        : (() => {
+            const rest = channelId.slice("dm-".length);
+            const idx = rest.indexOf("_");
+            if (idx <= 0) return [] as string[];
+            return [rest.slice(0, idx), rest.slice(idx + 1)].filter(Boolean);
+          })();
+    for (const uid of participants) {
+      if (uid && uid !== senderUid) uids.add(uid);
+    }
+    return [...uids];
+  }
 
   if (channelId === "general") {
     const tokens = await db.collection("fcmTokens").get();
@@ -204,7 +234,6 @@ export async function resolveChatRecipientUids(
           if (uid !== senderUid) uids.add(uid);
         }
       } else {
-        // Evento general: todo el personal del evento + no-trabajadores
         for (const uid of await uidsFromWorkerIds(db, await workerIdsForEvent(db, eventId))) {
           if (uid !== senderUid) uids.add(uid);
         }

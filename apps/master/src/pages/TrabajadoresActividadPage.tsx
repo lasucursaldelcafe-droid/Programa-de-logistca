@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import {
   WORKER_ACTIVITY_KIND_LABEL,
   buildWorkerActivityRows,
+  resolveDirectChatPath,
   type WorkerActivityKind,
 } from "@spe/shared";
 import { Badge, Card } from "@core/components/ui";
@@ -9,6 +11,7 @@ import { PageHeader } from "@core/components/nav/PageHeader";
 import { MetricCard } from "@core/components/dashboard/MetricCard";
 import {
   useAttendances,
+  usePlatformUsers,
   useReportes,
   useShifts,
   useWorkers,
@@ -70,12 +73,22 @@ function formatEntrada(iso: string | undefined): string {
  * (jornada GPS, alertas, turnos pendientes o sin actividad).
  */
 export function TrabajadoresActividadPage() {
+  const { pathname } = useLocation();
   const workers = useWorkers();
   const attendances = useAttendances();
   const shifts = useShifts();
   const reportes = useReportes();
+  const platformUsers = usePlatformUsers();
   const [filter, setFilter] = useState<FilterKind>("todos");
   const [query, setQuery] = useState("");
+
+  const uidByWorkerId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const u of platformUsers) {
+      if (u.workerId) map.set(u.workerId, u.uid);
+    }
+    return map;
+  }, [platformUsers]);
 
   const rows = useMemo(
     () => buildWorkerActivityRows({ workers, attendances, shifts, reportes }),
@@ -172,10 +185,13 @@ export function TrabajadoresActividadPage() {
                 <th className="px-4 py-3 font-medium">Evento / sitio</th>
                 <th className="px-4 py-3 font-medium">GPS</th>
                 <th className="px-4 py-3 font-medium">Entrada</th>
+                <th className="px-4 py-3 font-medium">Chat</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
-              {filtered.map((r) => (
+              {filtered.map((r) => {
+                const peerUid = uidByWorkerId.get(r.workerId);
+                return (
                 <tr key={r.workerId} className="bg-bg/40 hover:bg-white/[0.02]">
                   <td className="px-4 py-3 align-top">
                     <p className="font-medium text-white">{r.nombre}</p>
@@ -212,8 +228,21 @@ export function TrabajadoresActividadPage() {
                   <td className="px-4 py-3 align-top text-xs text-neutral-500">
                     {formatEntrada(r.entradaEn)}
                   </td>
+                  <td className="px-4 py-3 align-top">
+                    {peerUid ? (
+                      <Link
+                        to={resolveDirectChatPath(pathname, peerUid)}
+                        className="rounded-lg bg-accent/15 px-3 py-1.5 text-xs font-semibold text-accent ring-1 ring-accent/30 hover:bg-accent/25"
+                      >
+                        Abrir chat
+                      </Link>
+                    ) : (
+                      <span className="text-[11px] text-neutral-600">Sin cuenta</span>
+                    )}
+                  </td>
                 </tr>
-              ))}
+              );
+              })}
             </tbody>
           </table>
         </div>

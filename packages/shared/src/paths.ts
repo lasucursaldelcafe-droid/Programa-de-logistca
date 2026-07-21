@@ -20,6 +20,19 @@ export function comunicacionPath(role: UserRole): string {
   return "/comunicacion";
 }
 
+/** Ruta de chat según pathname actual (admin / worker / master). */
+export function resolveComunicacionPath(pathname: string): string {
+  if (pathname.startsWith("/worker")) return workerPath("comunicacion");
+  if (pathname.startsWith("/master")) return "/master/comunicacion";
+  return "/comunicacion";
+}
+
+/** Abre chat 1:1 con el Auth UID del empleado. */
+export function resolveDirectChatPath(pathname: string, peerUid: string): string {
+  const base = resolveComunicacionPath(pathname);
+  return `${base}?dm=${encodeURIComponent(peerUid)}`;
+}
+
 /** Resuelve enlace según contexto actual (admin vs worker). */
 export function resolveTurnosPath(pathname: string): string {
   return pathname.startsWith("/worker") ? workerPath("turnos") : "/turnos";

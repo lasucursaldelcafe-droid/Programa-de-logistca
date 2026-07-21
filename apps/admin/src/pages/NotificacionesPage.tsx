@@ -5,6 +5,8 @@ import {
   NOTIFICATION_TIPO_LABEL,
   puedeEnviarNotificacion,
   notificationUnreadFor,
+  resolveComunicacionPath,
+  resolveDirectChatPath,
   resolveTurnosPath,
   type BreakTipo,
 } from "@spe/shared";
@@ -487,6 +489,18 @@ export function NotificacionesPage() {
                           Ver turnos
                         </Link>
                       </>
+                    )}
+                    {n.tipo === "chat_mensaje" && (
+                      <Link
+                        to={
+                          n.actorUid
+                            ? resolveDirectChatPath(pathname, n.actorUid)
+                            : resolveComunicacionPath(pathname)
+                        }
+                        className="text-xs text-accent hover:underline"
+                      >
+                        Abrir chat
+                      </Link>
                     )}
                   </div>
                 </div>
