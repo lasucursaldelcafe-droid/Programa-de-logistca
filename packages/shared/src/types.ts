@@ -219,6 +219,7 @@ export type NotificationTipo =
   | "emergencia"
   | "break_recordatorio"
   | "alta_qr"
+  | "chat_mensaje"
   | "sistema";
 
 export type BreakTipo = "almuerzo" | "break" | "receso";
@@ -292,8 +293,10 @@ export interface ChatMessage {
   senderNombre: string;
   senderRole: UserRole | string;
   eventId?: string | null;
-  /** audiencia del canal: evento | empleados | supervisores */
-  audience?: "evento" | "empleados" | "supervisores" | null;
+  /** audiencia del canal: evento | empleados | supervisores | directo */
+  audience?: "evento" | "empleados" | "supervisores" | "directo" | null;
+  /** Participantes Auth UID en chat 1:1 (dm-…). */
+  participantUids?: string[];
   createdAt: string;
 }
 
@@ -406,6 +409,7 @@ export const NOTIFICATION_TIPO_LABEL: Record<NotificationTipo, string> = {
   emergencia: "Emergencia",
   break_recordatorio: "Recordatorio break",
   alta_qr: "Alta por QR",
+  chat_mensaje: "Mensaje de chat",
   sistema: "Sistema",
 };
 

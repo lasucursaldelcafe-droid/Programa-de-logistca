@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { ROLE_LABEL, type ChatAudience, type ChatMessage } from "@spe/shared";
+import { ROLE_LABEL, type ChatAudienceOrDm, type ChatMessage } from "@spe/shared";
 import { useAuth } from "../../contexts/AuthContext";
 import { sendChatMessage } from "../../hooks/useComunicacion";
 
@@ -7,7 +7,8 @@ interface ChatPanelProps {
   channelId: string;
   channelLabel: string;
   eventId?: string;
-  audience?: ChatAudience;
+  audience?: ChatAudienceOrDm;
+  peerUid?: string;
   messages: ChatMessage[];
   canSend?: boolean;
 }
@@ -17,6 +18,7 @@ export function ChatPanel({
   channelLabel,
   eventId,
   audience,
+  peerUid,
   messages,
   canSend = true,
 }: ChatPanelProps) {
@@ -45,6 +47,7 @@ export function ChatPanel({
         senderRole: user.role,
         eventId,
         audience,
+        peerUid,
       });
       setText("");
     } catch (err) {
@@ -54,12 +57,24 @@ export function ChatPanel({
     }
   }
 
+  const placeholder =
+    audience === "directo"
+      ? "Mensaje privado…"
+      : audience === "empleados"
+        ? "Mensaje a empleados…"
+        : audience === "supervisores"
+          ? "Mensaje a supervisores…"
+          : "Mensaje al evento…";
+
   return (
     <div className="flex h-[min(70vh,560px)] flex-col rounded-2xl border border-border bg-surface">
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
         {messages.length === 0 ? (
           <p className="text-center text-sm text-neutral-500">
-            Sin mensajes aún. Escribe el primero para el canal «{channelLabel}».
+            Sin mensajes aún. Escribe el primero para «{channelLabel}».
+            {audience === "directo"
+              ? " El empleado recibirá una notificación al enviarlo."
+              : ""}
           </p>
         ) : (
           messages.map((m) => {
@@ -78,7 +93,8 @@ export function ChatPanel({
                 >
                   {!mine && (
                     <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-400">
-                      {m.senderNombre} · {ROLE_LABEL[m.senderRole as keyof typeof ROLE_LABEL] ?? m.senderRole}
+                      {m.senderNombre} ·{" "}
+                      {ROLE_LABEL[m.senderRole as keyof typeof ROLE_LABEL] ?? m.senderRole}
                     </div>
                   )}
                   <p className="whitespace-pre-wrap break-words">{m.text}</p>
@@ -110,13 +126,7 @@ export function ChatPanel({
             type="text"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={
-              audience === "empleados"
-                ? "Mensaje a empleados…"
-                : audience === "supervisores"
-                  ? "Mensaje a supervisores…"
-                  : "Mensaje al evento…"
-            }
+            placeholder={placeholder}
             maxLength={2000}
             className="min-w-0 flex-1 rounded-xl border border-border bg-bg px-3 py-2 text-sm text-white placeholder:text-neutral-500"
             disabled={!user || sending || !canSend}

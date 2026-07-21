@@ -1,8 +1,9 @@
-import { Capacitor } from "@capacitor/core";
+import { Capacitor, registerPlugin } from "@capacitor/core";
 import { Preferences } from "@capacitor/preferences";
 import { isNativePlatform } from "./platform";
 
-export const NATIVE_PERMISSIONS_PROMPTED_KEY = "spe_native_permissions_prompted_v1";
+/** v2: incluye solicitud real de CALL_PHONE / marcador. */
+export const NATIVE_PERMISSIONS_PROMPTED_KEY = "spe_native_permissions_prompted_v2";
 
 export type NativePermissionId =
   | "location"
@@ -20,6 +21,14 @@ export interface NativePermissionResult {
   status: NativePermissionStatus;
   detail?: string;
 }
+
+interface PhoneCallPlugin {
+  checkPermissions(): Promise<{ phone?: string }>;
+  requestPermissions(): Promise<{ phone?: string }>;
+  dial(options: { number: string }): Promise<void>;
+}
+
+const PhoneCall = registerPlugin<PhoneCallPlugin>("PhoneCall");
 
 export const NATIVE_PERMISSION_ITEMS: Array<{
   id: NativePermissionId;
@@ -53,8 +62,8 @@ export const NATIVE_PERMISSION_ITEMS: Array<{
   },
   {
     id: "phone",
-    label: "Teléfono",
-    description: "Estado de llamadas para no interrumpir operación en sitio.",
+    label: "Teléfono / llamadas",
+    description: "Llamar al celular del personal desde Trabajadores en vivo.",
   },
 ];
 
@@ -62,6 +71,16 @@ function normalizeStatus(value: string | undefined): NativePermissionStatus {
   if (value === "granted" || value === "denied" || value === "prompt") return value;
   if (value === "limited") return "granted";
   return "unavailable";
+}
+
+/** Normaliza un número para `tel:` (deja dígitos y + inicial). */
+export function normalizeDialNumber(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const hasPlus = trimmed.startsWith("+");
+  const digits = trimmed.replace(/\D/g, "");
+  if (digits.length < 7) return null;
+  return hasPlus ? `+${digits}` : digits;
 }
 
 async function requestLocation(): Promise<NativePermissionResult> {
@@ -194,20 +213,93 @@ async function requestMicrophone(): Promise<NativePermissionResult> {
 }
 
 /**
- * Teléfono: en Android el permiso vive en el manifest.
- * En runtime no hay API web estable; marcamos como listo en nativo
- * (el sistema pedirá acceso si alguna función lo requiere).
+ * Teléfono: en Android solicita CALL_PHONE + READ_PHONE_STATE vía plugin nativo.
+ * En web se omite (las llamadas usan el marcador del sistema con `tel:`).
  */
-async function requestPhone(): Promise<NativePermissionResult> {
+export async function requestPhonePermission(): Promise<NativePermissionResult> {
   if (!isNativePlatform()) {
-    return { id: "phone", label: "Teléfono", status: "skipped" };
+    return { id: "phone", label: "Teléfono / llamadas", status: "skipped" };
   }
+
+  try {
+    if (Capacitor.isPluginAvailable("PhoneCall")) {
+      const current = await PhoneCall.checkPermissions();
+      const status =
+        current.phone === "granted"
+          ? current
+          : await PhoneCall.requestPermissions();
+      return {
+        id: "phone",
+        label: "Teléfono / llamadas",
+        status: normalizeStatus(status.phone),
+        detail:
+          status.phone === "granted"
+            ? "Puedes llamar al personal desde Trabajadores en vivo."
+            : undefined,
+      };
+    }
+  } catch (err) {
+    return {
+      id: "phone",
+      label: "Teléfono / llamadas",
+      status: "unavailable",
+      detail: err instanceof Error ? err.message : "No disponible",
+    };
+  }
+
   return {
     id: "phone",
-    label: "Teléfono",
+    label: "Teléfono / llamadas",
     status: "granted",
-    detail: "Declarado en la app; el sistema lo pedirá si hace falta.",
+    detail: "El sistema abrirá el marcador al llamar.",
   };
+}
+
+async function requestPhone(): Promise<NativePermissionResult> {
+  return requestPhonePermission();
+}
+
+/**
+ * Abre el marcador hacia el número del trabajador.
+ * En nativo pide permiso de teléfono si aún no está concedido, luego dial.
+ */
+export async function placePhoneCall(rawNumber: string): Promise<{ ok: boolean; error?: string }> {
+  const number = normalizeDialNumber(rawNumber);
+  if (!number) {
+    return { ok: false, error: "Este trabajador no tiene un teléfono válido." };
+  }
+
+  if (isNativePlatform()) {
+    const perm = await requestPhonePermission();
+    if (perm.status === "denied") {
+      return {
+        ok: false,
+        error: "Activa el permiso de teléfono en Ajustes para poder llamar.",
+      };
+    }
+
+    try {
+      if (Capacitor.isPluginAvailable("PhoneCall")) {
+        await PhoneCall.dial({ number });
+        return { ok: true };
+      }
+    } catch (err) {
+      return {
+        ok: false,
+        error: err instanceof Error ? err.message : "No se pudo abrir el marcador.",
+      };
+    }
+  }
+
+  try {
+    window.location.href = `tel:${number}`;
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "No se pudo iniciar la llamada.",
+    };
+  }
 }
 
 export async function hasPromptedNativePermissions(): Promise<boolean> {
