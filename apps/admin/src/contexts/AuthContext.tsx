@@ -88,30 +88,55 @@ function provisionalPlatformAdmin(firebaseUser: User): AppUser | null {
   };
 }
 
+function invitationFromData(
+  normalizedEmail: string,
+  data: Record<string, unknown>,
+): PendingInvitation {
+  return {
+    email: normalizedEmail,
+    role: normalizeUserRole(String(data.role ?? "trabajador")),
+    workerId: typeof data.workerId === "string" ? data.workerId : undefined,
+    workerNombre: String(data.workerNombre ?? normalizedEmail),
+    customRoleId: typeof data.customRoleId === "string" ? data.customRoleId : undefined,
+  };
+}
+
 async function findPendingInvitation(email: string): Promise<PendingInvitation | null> {
   const normalized = email.trim().toLowerCase();
   if (!normalized) return null;
+  const db = getFirestoreDb();
+
+  // 1) Query indexada (si el índice está publicado)
   try {
     const snap = await getDocs(
       query(
-        collection(getFirestoreDb(), "invitations"),
+        collection(db, "invitations"),
         where("email", "==", normalized),
         where("estado", "==", "pendiente"),
       ),
     );
-    if (snap.empty) return null;
     const data = snap.docs[0]?.data();
-    if (!data) return null;
-    return {
-      email: normalized,
-      role: normalizeUserRole(String(data.role ?? "trabajador")),
-      workerId: typeof data.workerId === "string" ? data.workerId : undefined,
-      workerNombre: String(data.workerNombre ?? normalized),
-      customRoleId: typeof data.customRoleId === "string" ? data.customRoleId : undefined,
-    };
+    if (data) return invitationFromData(normalized, data);
+  } catch {
+    // índice ausente / reglas — continuar con fallback
+  }
+
+  // 2) Fallback: invitations son de lectura pública; filtrar en cliente
+  try {
+    const all = await getDocs(collection(db, "invitations"));
+    for (const d of all.docs) {
+      const data = d.data();
+      const invEmail = String(data.email ?? "")
+        .trim()
+        .toLowerCase();
+      if (invEmail !== normalized) continue;
+      if (String(data.estado ?? "") !== "pendiente") continue;
+      return invitationFromData(normalized, data);
+    }
   } catch {
     return null;
   }
+  return null;
 }
 
 async function writeUserProfile(
