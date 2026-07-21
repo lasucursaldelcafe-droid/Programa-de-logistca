@@ -28,6 +28,8 @@ export const SPA_MIRROR_ROUTES: readonly string[] = [
   "pendientes",
   "supervision",
   "comunicacion",
+  "equipo-admin",
+  "informes",
   "master",
   "master/administradores",
   "master/trabajadores",

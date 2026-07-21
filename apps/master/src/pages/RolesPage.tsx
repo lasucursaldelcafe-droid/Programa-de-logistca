@@ -332,7 +332,7 @@ export function RolesPage() {
               <p className="font-medium text-neutral-200">Asigna al registrar personal</p>
               <p className="mt-1 text-neutral-400">
                 El administrador operativo elige el puesto en{" "}
-                <Link to="/personal" className="text-accent underline">
+                <Link to="/master/personal" className="text-accent underline">
                   Personal → Nuevo trabajador
                 </Link>
                 . No hace falta volver aquí para cada persona.
