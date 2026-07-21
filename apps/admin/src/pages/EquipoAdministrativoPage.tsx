@@ -15,6 +15,7 @@ import { PermissionDenied } from "../components/FeedbackStates";
 import {
   createPlatformAccount,
   toUserFacingError,
+  updatePlatformUserRole,
   usePlatformUsers,
 } from "../hooks/useDataStore";
 
@@ -35,6 +36,7 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
   const [error, setError] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [updatingRoleUid, setUpdatingRoleUid] = useState<string | null>(null);
 
   const rolesDisponibles = useMemo(
     () => (user ? rolesCuentaPlataforma(user.role) : []),
@@ -83,10 +85,25 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
     }
   }
 
+  async function onChangeRole(targetUid: string, role: UserRole) {
+    if (!user) return;
+    setUpdatingRoleUid(targetUid);
+    setError(null);
+    setMensaje(null);
+    try {
+      await updatePlatformUserRole(targetUid, role, user);
+      setMensaje(`Rol actualizado a «${ROLE_LABEL[role]}».`);
+    } catch (err) {
+      setError(toUserFacingError(err, "No se pudo cambiar el rol.").message);
+    } finally {
+      setUpdatingRoleUid(null);
+    }
+  }
+
   const descripcion =
     variant === "master"
-      ? "Al inicio solo existen CEO y Master App. Desde aquí creas el equipo administrativo; cada rol verá solo su área."
-      : "Crea cuentas de Recursos Humanos y Contabilidad. El personal de campo se registra en Personal de campo.";
+      ? "Al inicio solo existen CEO y Master App. Desde aquí creas el equipo administrativo y puedes cambiar el rol de las cuentas ya creadas."
+      : "Crea cuentas de Recursos Humanos y Contabilidad, y modifica el rol de las existentes. El personal de campo se gestiona en Personal de campo.";
 
   return (
     <div className="space-y-8">
@@ -205,14 +222,45 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
                 key={u.uid}
                 className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-bg px-4 py-3"
               >
-                <div>
+                <div className="min-w-0 flex-1">
                   <div className="font-medium">{u.nombre}</div>
                   <div className="font-mono text-xs text-neutral-500">{u.email}</div>
                   <div className="mt-1 text-xs text-neutral-500">{resumenRol(u.role)}</div>
                 </div>
-                <span className="rounded-full bg-neutral-800 px-3 py-1 text-xs">
-                  {ROLE_LABEL[u.role]}
-                </span>
+                {rolesDisponibles.length > 0 ? (
+                  <label className="flex flex-col gap-1 text-xs text-neutral-400">
+                    <span>Rol</span>
+                    <select
+                      value={u.role}
+                      disabled={updatingRoleUid === u.uid || u.uid === user.uid}
+                      onChange={(e) =>
+                        void onChangeRole(u.uid, e.target.value as UserRole)
+                      }
+                      className="rounded-lg border border-border bg-bg px-3 py-1.5 text-sm text-neutral-100 disabled:opacity-50"
+                      title={
+                        u.uid === user.uid
+                          ? "No puedes cambiar tu propio rol"
+                          : "Cambiar rol de esta cuenta"
+                      }
+                    >
+                      {!rolesDisponibles.includes(u.role) && (
+                        <option value={u.role}>{ROLE_LABEL[u.role]}</option>
+                      )}
+                      {rolesDisponibles.map((rol) => (
+                        <option key={rol} value={rol}>
+                          {ROLE_LABEL[rol]}
+                        </option>
+                      ))}
+                    </select>
+                    {updatingRoleUid === u.uid && (
+                      <span className="text-accent">Guardando…</span>
+                    )}
+                  </label>
+                ) : (
+                  <span className="rounded-full bg-neutral-800 px-3 py-1 text-xs">
+                    {ROLE_LABEL[u.role]}
+                  </span>
+                )}
               </li>
             ))}
           </ul>

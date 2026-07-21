@@ -69,6 +69,7 @@ import {
   type WorkerImportRow,
   puedeAsignarRol,
   rolesCuentaPlataforma,
+  rolesPersonalCampo,
   normalizeUserRole,
   GPS_CHECKIN_QR_ID,
   GPS_CHECKIN_CONSENT,
@@ -2322,6 +2323,166 @@ export function usePlatformUsers(): AppUser[] {
 
   const demoUsers = useDemoSnapshot(() => demoStore.platformUsers);
   return isDemoMode() ? demoUsers : users;
+}
+
+const ROLES_RAIZ: UserRole[] = ["ceo", "master_app"];
+
+function assertPuedeCambiarRolUsuario(
+  actor: Pick<AppUser, "uid" | "role">,
+  target: { uid: string; role: UserRole },
+  newRole: UserRole,
+): UserRole {
+  const role = normalizeUserRole(newRole);
+  if (target.uid === actor.uid) {
+    throw new Error("No puedes cambiar tu propio rol.");
+  }
+  if (ROLES_RAIZ.includes(normalizeUserRole(target.role))) {
+    throw new Error("No se puede cambiar el rol de una cuenta raíz (CEO / Master App).");
+  }
+  if (ROLES_RAIZ.includes(role)) {
+    throw new Error("No se puede asignar un rol raíz.");
+  }
+  if (!puedeAsignarRol(actor.role, normalizeUserRole(target.role))) {
+    throw new Error("No puedes modificar el rol de este usuario.");
+  }
+  if (!puedeAsignarRol(actor.role, role)) {
+    throw new Error("No tienes permiso para asignar ese rol.");
+  }
+  return role;
+}
+
+/** Cambia el rol de una cuenta ya creada (equipo administrativo u operativa). */
+export async function updatePlatformUserRole(
+  userId: string,
+  newRole: UserRole,
+  actor: Pick<AppUser, "uid" | "nombre" | "role">,
+): Promise<void> {
+  if (isDemoMode()) {
+    const target = demoStore.platformUsers.find((u) => u.uid === userId);
+    if (!target) throw new Error("Usuario no encontrado.");
+    const role = assertPuedeCambiarRolUsuario(actor, target, newRole);
+    if (role === target.role) return;
+    if (!rolesCuentaPlataforma(actor.role).includes(role)) {
+      throw new Error("Este rol se asigna desde Personal de campo.");
+    }
+    demoStore.updatePlatformUserRole(userId, role, actor.nombre);
+    return;
+  }
+
+  if (isSheetsBackend()) {
+    throw new Error("Cambio de rol no disponible con backend Sheets.");
+  }
+
+  const userRef = doc(getFirestoreDb(), "users", userId);
+  const snap = await getDoc(userRef);
+  if (!snap.exists()) throw new Error("Usuario no encontrado.");
+  const data = snap.data();
+  const currentRole = normalizeUserRole(String(data.role ?? "trabajador"));
+  const role = assertPuedeCambiarRolUsuario(
+    actor,
+    { uid: userId, role: currentRole },
+    newRole,
+  );
+  if (!rolesCuentaPlataforma(actor.role).includes(role)) {
+    throw new Error("Este rol se asigna desde Personal de campo.");
+  }
+  if (role === currentRole) return;
+
+  await updateDoc(
+    userRef,
+    omitUndefinedFields({
+      role,
+      customRoleId: deleteField(),
+    }),
+  );
+
+  const workerId = typeof data.workerId === "string" ? data.workerId : null;
+  if (workerId && (role === "trabajador" || role === "supervisor_sitio")) {
+    await updateDoc(
+      doc(getFirestoreDb(), "workers", workerId),
+      omitUndefinedFields({
+        rolPlataforma: role,
+        customRoleId: deleteField(),
+      }),
+    );
+  }
+}
+
+/** Cambia el rol de campo de un trabajador y sincroniza la cuenta Auth/Firestore si existe. */
+export async function updateWorkerPlatformRole(
+  workerId: string,
+  newRole: Extract<UserRole, "trabajador" | "supervisor_sitio">,
+  actor: Pick<AppUser, "uid" | "nombre" | "role">,
+): Promise<void> {
+  const role = normalizeUserRole(newRole);
+  if (role !== "trabajador" && role !== "supervisor_sitio") {
+    throw new Error("Rol de campo inválido.");
+  }
+  if (!rolesPersonalCampo(actor.role).includes(role)) {
+    throw new Error("No tienes permiso para asignar ese rol de campo.");
+  }
+
+  if (isDemoMode()) {
+    const worker = demoStore.workers.find((w) => w.id === workerId);
+    if (!worker) throw new Error("Trabajador no encontrado.");
+    if ((worker.rolPlataforma ?? "trabajador") !== role) {
+      demoStore.updateWorker(
+        workerId,
+        { rolPlataforma: role, customRoleId: undefined },
+        actor.nombre,
+      );
+    }
+    const linked = demoStore.accounts.find((a) => a.user.workerId === workerId);
+    if (linked && linked.user.role !== role) {
+      assertPuedeCambiarRolUsuario(actor, linked.user, role);
+      demoStore.updatePlatformUserRole(linked.user.uid, role, actor.nombre);
+    }
+    return;
+  }
+
+  if (isSheetsBackend()) {
+    throw new Error("Cambio de rol no disponible con backend Sheets.");
+  }
+
+  const workerRef = doc(getFirestoreDb(), "workers", workerId);
+  const workerSnap = await getDoc(workerRef);
+  if (!workerSnap.exists()) throw new Error("Trabajador no encontrado.");
+
+  const currentCampo = normalizeUserRole(
+    String(workerSnap.data().rolPlataforma ?? "trabajador"),
+  );
+  if (currentCampo !== role) {
+    await updateDoc(
+      workerRef,
+      omitUndefinedFields({
+        rolPlataforma: role,
+        customRoleId: deleteField(),
+      }),
+    );
+  }
+
+  const usersSnap = await getDocs(
+    query(collection(getFirestoreDb(), "users"), where("workerId", "==", workerId), limit(1)),
+  );
+  if (!usersSnap.empty) {
+    const userDoc = usersSnap.docs[0]!;
+    const currentRole = normalizeUserRole(String(userDoc.data().role ?? "trabajador"));
+    const nextRole = assertPuedeCambiarRolUsuario(
+      actor,
+      { uid: userDoc.id, role: currentRole },
+      role,
+    );
+    if (nextRole !== currentRole) {
+      await updateDoc(
+        userDoc.ref,
+        omitUndefinedFields({
+          role: nextRole,
+          customRoleId: deleteField(),
+          perfilCompleto: nextRole === "supervisor_sitio",
+        }),
+      );
+    }
+  }
 }
 
 export async function createPlatformAccount(
