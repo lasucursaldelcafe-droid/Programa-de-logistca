@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   ESTADO_LABEL,
   PERFILES_LABEL,
@@ -49,9 +50,11 @@ const PERFILES: PerfilTrabajo[] = [
 
 export function PersonalPage() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const { workers, loading } = useWorkersState();
   const platformUsers = usePlatformUsers();
   const customRoles = useCustomRoles();
+  const altaRef = useRef<HTMLDivElement>(null);
   const [form, setForm] = useState({
     nombre: "",
     documento: "",
@@ -71,6 +74,17 @@ export function PersonalPage() {
   const [importResult, setImportResult] = useState<WorkerBulkImportResult | null>(null);
   const [provisioningId, setProvisioningId] = useState<string | null>(null);
   const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null);
+  const [highlightAlta, setHighlightAlta] = useState(searchParams.get("nuevo") === "1");
+  const filtroSinCuenta = searchParams.get("filtro") === "sin_cuenta";
+
+  useEffect(() => {
+    if (searchParams.get("nuevo") === "1") {
+      setHighlightAlta(true);
+      queueMicrotask(() => {
+        altaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  }, [searchParams]);
 
   const esDireccion = user ? esRolMaster(user.role) : false;
   /** Dirección puede asignar cualquier rol; el resto solo roles de campo. */
@@ -116,6 +130,14 @@ export function PersonalPage() {
     () => new Map(customRoles.map((r) => [r.id, r.modoAcceso])),
     [customRoles],
   );
+
+  const workersVisibles = useMemo(() => {
+    if (!filtroSinCuenta) return workers;
+    return workers.filter((w) => {
+      const cuenta = cuentaPorWorkerId.get(w.id);
+      return !cuenta || cuenta.habilitado === false;
+    });
+  }, [workers, filtroSinCuenta, cuentaPorWorkerId]);
 
   const parsedImport = useMemo(() => {
     if (!csvContent) return null;
@@ -308,11 +330,18 @@ export function PersonalPage() {
         </p>
       )}
 
-      <Card>
-        <h2 className="font-display text-lg font-semibold">Nueva persona</h2>
-        <p className="mt-1 text-sm text-neutral-400">
-          El correo será el usuario de acceso. La contraseña inicial es el número de documento (sin puntos ni espacios).
-        </p>
+      <Card className={highlightAlta ? "ring-2 ring-accent/50" : ""}>
+        <div ref={altaRef} id="alta-personal">
+          <h2 className="font-display text-lg font-semibold">Nueva persona</h2>
+          {highlightAlta && (
+            <p className="mt-1 text-xs text-accent">
+              Alta rápida desde el resumen — completa los datos y registra.
+            </p>
+          )}
+          <p className="mt-1 text-sm text-neutral-400">
+            El correo será el usuario de acceso. La contraseña inicial es el número de documento (sin puntos ni espacios).
+          </p>
+        </div>
         <form onSubmit={crearTrabajador} className="mt-4 grid gap-3 sm:grid-cols-2">
           {(["nombre", "documento", "telefono", "email"] as const).map((field) => (
             <label key={field} className="text-sm capitalize">
@@ -493,10 +522,19 @@ export function PersonalPage() {
       </Card>
 
       <div className="grid gap-4">
-        {workers.length === 0 && (
-          <p className="text-sm text-neutral-500">No hay personal registrado.</p>
+        {filtroSinCuenta && (
+          <p className="rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-sm text-accent">
+            Mostrando solo personal sin cuenta de acceso activa.
+          </p>
         )}
-        {workers.map((w) => (
+        {workersVisibles.length === 0 && (
+          <p className="text-sm text-neutral-500">
+            {filtroSinCuenta
+              ? "Todo el personal listado ya tiene cuenta, o no hay registros."
+              : "No hay personal registrado."}
+          </p>
+        )}
+        {workersVisibles.map((w) => (
           <Card key={w.id} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="font-display text-lg font-semibold">{w.nombre}</div>

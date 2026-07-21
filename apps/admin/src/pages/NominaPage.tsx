@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   PAYROLL_ESTADO_LABEL,
   PERFILES_LABEL,
@@ -25,6 +26,7 @@ import {
 
 export function NominaPage() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const workers = useWorkers();
   const events = useEvents();
   const attendances = useAttendances();
@@ -33,11 +35,21 @@ export function NominaPage() {
   const audit = usePayrollAudit();
 
   const esAdmin = user && puedeGestionarNomina(user.role);
-  const [filtroEvento, setFiltroEvento] = useState("");
+  const [filtroEvento, setFiltroEvento] = useState(() => searchParams.get("evento") ?? "");
   const [filtroTrabajador, setFiltroTrabajador] = useState("");
-  const [filtroEstado, setFiltroEstado] = useState<"" | "pendiente" | "pagado">("");
+  const [filtroEstado, setFiltroEstado] = useState<"" | "pendiente" | "pagado">(() => {
+    const e = searchParams.get("estado");
+    return e === "pendiente" || e === "pagado" ? e : "";
+  });
   const [calculando, setCalculando] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
+
+  useEffect(() => {
+    const e = searchParams.get("estado");
+    if (e === "pendiente" || e === "pagado") setFiltroEstado(e);
+    const ev = searchParams.get("evento");
+    if (ev) setFiltroEvento(ev);
+  }, [searchParams]);
 
   const misEntradas = useMemo(() => {
     let list = entries;

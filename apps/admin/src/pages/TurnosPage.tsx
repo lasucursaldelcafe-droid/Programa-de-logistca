@@ -1,5 +1,5 @@
-import { Link, useLocation } from "react-router-dom";
-import { useMemo, useState } from "react";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   SHIFT_LABEL,
   findTurnoConfirmadoVigente,
@@ -10,6 +10,7 @@ import {
 } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
 import { Badge, Card } from "../components/ui";
+import { EmptyState } from "../components/EmptyState";
 import {
   createShift,
   deleteShift,
@@ -29,16 +30,25 @@ function toLocalInput(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+const ESTADOS_VALIDOS: ShiftEstado[] = ["pendiente", "confirmado", "rechazado", "completado"];
+
+function parseEstadoParam(raw: string | null): ShiftEstado | "" {
+  if (!raw) return "";
+  return ESTADOS_VALIDOS.includes(raw as ShiftEstado) ? (raw as ShiftEstado) : "";
+}
+
 export function TurnosPage() {
   const { user } = useAuth();
   const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
   const shifts = useShifts();
   const workers = useWorkers();
   const events = useEvents();
   const sites = useSites();
+  const formRef = useRef<HTMLDivElement>(null);
   const [form, setForm] = useState({
     workerId: "",
-    eventId: "",
+    eventId: searchParams.get("evento") ?? "",
     siteId: "",
     inicio: "",
     fin: "",
@@ -53,12 +63,24 @@ export function TurnosPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
+  const [filtroEstado, setFiltroEstado] = useState<ShiftEstado | "">(
+    () => parseEstadoParam(searchParams.get("estado")),
+  );
+  const [highlightNuevo, setHighlightNuevo] = useState(searchParams.get("nuevo") === "1");
 
   const esAdmin = user && puedeGestionarTurnos(user.role);
-  const misTurnos =
+  const misTurnosBase =
     user?.role === "trabajador" && user.workerId
       ? shifts.filter((s) => s.workerId === user.workerId)
       : shifts;
+
+  const misTurnos = useMemo(() => {
+    let list = misTurnosBase;
+    const evento = searchParams.get("evento");
+    if (evento) list = list.filter((t) => t.eventId === evento);
+    if (filtroEstado) list = list.filter((t) => t.estado === filtroEstado);
+    return list;
+  }, [misTurnosBase, searchParams, filtroEstado]);
 
   const turnoVigente =
     user?.role === "trabajador" && user.workerId
@@ -71,6 +93,21 @@ export function TurnosPage() {
   );
 
   const entradaPath = resolveEntradaPath(pathname);
+
+  useEffect(() => {
+    const estado = parseEstadoParam(searchParams.get("estado"));
+    setFiltroEstado(estado);
+    const evento = searchParams.get("evento") ?? "";
+    if (evento) {
+      setForm((f) => (f.eventId ? f : { ...f, eventId: evento }));
+    }
+    if (searchParams.get("nuevo") === "1") {
+      setHighlightNuevo(true);
+      queueMicrotask(() => {
+        formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  }, [searchParams]);
 
   async function crearTurno(e: React.FormEvent) {
     e.preventDefault();
@@ -92,8 +129,9 @@ export function TurnosPage() {
         fin: new Date(form.fin).toISOString(),
         estado: "pendiente" satisfies ShiftEstado,
       });
-      setForm({ workerId: "", eventId: "", siteId: "", inicio: "", fin: "" });
+      setForm({ workerId: "", eventId: form.eventId, siteId: "", inicio: "", fin: "" });
       setMensaje("Turno creado.");
+      setHighlightNuevo(false);
     } catch (err) {
       setError(toUserFacingError(err, "No se pudo crear el turno.").message);
     }
@@ -211,8 +249,15 @@ export function TurnosPage() {
       )}
 
       {esAdmin && (
-        <Card>
-          <h2 className="font-display text-lg font-semibold">Asignar turno</h2>
+        <Card className={highlightNuevo ? "ring-2 ring-accent/50" : ""}>
+          <div ref={formRef} id="asignar-turno">
+            <h2 className="font-display text-lg font-semibold">Asignar turno</h2>
+            {highlightNuevo && (
+              <p className="mt-1 text-xs text-accent">
+                Configuración rápida desde el resumen — completa y guarda.
+              </p>
+            )}
+          </div>
           <form onSubmit={(e) => void crearTurno(e)} className="mt-4 grid gap-3 sm:grid-cols-2">
             <label className="text-sm">
               Trabajador
@@ -295,6 +340,32 @@ export function TurnosPage() {
       )}
 
       <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="text-sm text-neutral-400">
+            Estado
+            <select
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(parseEstadoParam(e.target.value))}
+              className="ml-2 rounded-lg border border-border bg-bg px-3 py-1.5 text-sm text-neutral-200"
+            >
+              <option value="">Todos</option>
+              {ESTADOS_VALIDOS.map((e) => (
+                <option key={e} value={e}>
+                  {SHIFT_LABEL[e]}
+                </option>
+              ))}
+            </select>
+          </label>
+          {filtroEstado && (
+            <button
+              type="button"
+              onClick={() => setFiltroEstado("")}
+              className="rounded-lg px-2 py-1 text-xs text-accent hover:underline"
+            >
+              Quitar filtro
+            </button>
+          )}
+        </div>
         {misTurnos.map((t) => {
           const sitesDelEvento = sites.filter((s) => s.eventId === t.eventId);
           const editing = editingId === t.id;
@@ -449,7 +520,19 @@ export function TurnosPage() {
           );
         })}
         {misTurnos.length === 0 && (
-          <p className="text-sm text-neutral-500">No hay turnos para mostrar.</p>
+          <EmptyState
+            title={filtroEstado ? `Sin turnos «${SHIFT_LABEL[filtroEstado]}»` : "No hay turnos"}
+            description={
+              filtroEstado
+                ? "Prueba otro estado o asigna un turno nuevo."
+                : "Asigna el primero desde el formulario de arriba."
+            }
+            action={
+              esAdmin
+                ? { to: `${pathname}?nuevo=1`, label: "Asignar turno" }
+                : undefined
+            }
+          />
         )}
       </div>
     </div>
