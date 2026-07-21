@@ -4,7 +4,7 @@ import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { defineSecret } from "firebase-functions/params";
 import { logger } from "firebase-functions";
 import { db } from "./initAdmin";
-import { resolveRecipientUids, resolveChatRecipientUids, comunicacionLinkForUid } from "./pushRecipients";
+import { resolveRecipientUids, resolveChatRecipientUids, comunicacionLinkForUid, collectFcmTokensForUids, absoluteAppLink, notificationsLinkForUid } from "./pushRecipients";
 import { mailConfigured, sendMail } from "./mail";
 import { buildInvitationEmail, buildShiftAssignedEmail, resolveAppUrl } from "./emailTemplates";
 export { provisionWorkerAccount, importWorkersBulk, createPlatformAccountFn } from "./provisionWorkers";
@@ -139,6 +139,7 @@ export const onNotificationCreated = onDocumentCreated(
   {
     document: "notifications/{notificationId}",
     region: "us-central1",
+    secrets: [speAppUrl],
   },
   async (event) => {
     const snap = event.data;
@@ -149,6 +150,7 @@ export const onNotificationCreated = onDocumentCreated(
     const titulo = (data.titulo as string | undefined)?.trim() || "Personal Eventos";
     const mensaje = (data.mensaje as string | undefined)?.trim() || "";
     const urgente = data.urgente === true;
+    const appBase = resolveAppUrl(speAppUrl.value());
 
     try {
       const uids = await resolveRecipientUids(db, {
@@ -166,12 +168,8 @@ export const onNotificationCreated = onDocumentCreated(
         return;
       }
 
-      const tokens: string[] = [];
-      for (const uid of uids) {
-        const tokenDoc = await db.collection("fcmTokens").doc(uid).get();
-        const token = tokenDoc.data()?.token as string | undefined;
-        if (token?.trim()) tokens.push(token.trim());
-      }
+      const recipients = await collectFcmTokensForUids(db, uids);
+      const tokens = recipients.map((r) => r.token);
 
       if (tokens.length === 0) {
         await snap.ref.update({
@@ -182,27 +180,41 @@ export const onNotificationCreated = onDocumentCreated(
         return;
       }
 
-      const response = await getMessaging().sendEachForMulticast({
-        tokens,
-        notification: {
-          title: titulo,
-          body: mensaje,
-        },
-        data: {
-          notificationId,
-          tipo: String(data.tipo ?? "sistema"),
-          urgente: urgente ? "1" : "0",
-        },
-        webpush: {
-          notification: {
-            icon: "/favicon.ico",
-            requireInteraction: urgente,
-          },
-          fcmOptions: {
-            link: "/notificaciones",
-          },
-        },
-      });
+      // Un enlace genérico; el click en SW usa data.link si lo enriquecemos por mensaje.
+      // Multicast no permite link distinto por token → usamos /notificaciones genérico
+      // y data.link relativo; el cliente resuelve con origin+BASE.
+      const defaultLink = absoluteAppLink(appBase, "/notificaciones");
+
+      const messages = await Promise.all(
+        recipients.map(async (r) => {
+          const path = await notificationsLinkForUid(db, r.uid);
+          const link = absoluteAppLink(appBase, path);
+          return {
+            token: r.token,
+            notification: {
+              title: titulo,
+              body: mensaje,
+            },
+            data: {
+              notificationId,
+              tipo: String(data.tipo ?? "sistema"),
+              urgente: urgente ? "1" : "0",
+              link,
+            },
+            webpush: {
+              notification: {
+                icon: "favicon.ico",
+                requireInteraction: urgente,
+              },
+              fcmOptions: {
+                link,
+              },
+            },
+          };
+        }),
+      );
+
+      const response = await getMessaging().sendEach(messages);
 
       const successCount = response.successCount;
       const failCount = response.failureCount;
@@ -223,6 +235,8 @@ export const onNotificationCreated = onDocumentCreated(
         successCount,
         failCount,
         destinatarios: uids.length,
+        tokens: tokens.length,
+        defaultLink,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -238,6 +252,7 @@ export const onChatMessageCreated = onDocumentCreated(
   {
     document: "chatMessages/{messageId}",
     region: "us-central1",
+    secrets: [speAppUrl],
   },
   async (event) => {
     const snap = event.data;
@@ -250,6 +265,7 @@ export const onChatMessageCreated = onDocumentCreated(
     const text = (data.text as string | undefined)?.trim() || "";
     const channelLabel = (data.channelLabel as string | undefined)?.trim() || "Chat";
     const channelId = data.channelId as string;
+    const appBase = resolveAppUrl(speAppUrl.value());
 
     if (!senderUid || !text) return;
 
@@ -269,12 +285,7 @@ export const onChatMessageCreated = onDocumentCreated(
         return;
       }
 
-      const recipients: Array<{ uid: string; token: string }> = [];
-      for (const uid of uids) {
-        const tokenDoc = await db.collection("fcmTokens").doc(uid).get();
-        const token = tokenDoc.data()?.token as string | undefined;
-        if (token?.trim()) recipients.push({ uid, token: token.trim() });
-      }
+      const recipients = await collectFcmTokensForUids(db, uids);
 
       if (recipients.length === 0) {
         logger.info("Chat sin tokens FCM", { messageId, channelId, uids: uids.length });
@@ -285,24 +296,27 @@ export const onChatMessageCreated = onDocumentCreated(
       const body = text.length > 200 ? `${text.slice(0, 197)}…` : text;
 
       const messages = await Promise.all(
-        recipients.map(async (r) => ({
-          token: r.token,
-          notification: { title, body },
-          data: {
-            tipo: "chat",
-            channelId,
-            messageId,
-            ...(channelId.startsWith("dm-") ? { dm: "1" } : {}),
-          },
-          webpush: {
-            notification: { icon: "/favicon.ico" },
-            fcmOptions: {
-              link: channelId.startsWith("dm-")
-                ? `${await comunicacionLinkForUid(db, r.uid)}?dm=${encodeURIComponent(senderUid)}`
-                : await comunicacionLinkForUid(db, r.uid),
+        recipients.map(async (r) => {
+          const path = channelId.startsWith("dm-")
+            ? `${await comunicacionLinkForUid(db, r.uid)}?dm=${encodeURIComponent(senderUid)}`
+            : await comunicacionLinkForUid(db, r.uid);
+          const link = absoluteAppLink(appBase, path);
+          return {
+            token: r.token,
+            notification: { title, body },
+            data: {
+              tipo: "chat",
+              channelId,
+              messageId,
+              link,
+              ...(channelId.startsWith("dm-") ? { dm: "1" } : {}),
             },
-          },
-        })),
+            webpush: {
+              notification: { icon: "favicon.ico" },
+              fcmOptions: { link },
+            },
+          };
+        }),
       );
 
       const response = await getMessaging().sendEach(messages);

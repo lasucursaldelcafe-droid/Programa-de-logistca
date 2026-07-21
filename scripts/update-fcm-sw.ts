@@ -100,11 +100,40 @@ const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
   const title = payload.notification?.title ?? "Personal Eventos";
+  const link =
+    (payload.data && payload.data.link) ||
+    (payload.fcmOptions && payload.fcmOptions.link) ||
+    "/";
   const options = {
     body: payload.notification?.body ?? "",
-    icon: "/favicon.ico",
+    icon: "favicon.ico",
+    data: Object.assign({}, payload.data || {}, { link: link }),
   };
   self.registration.showNotification(title, options);
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const link =
+    (event.notification.data && event.notification.data.link) || "/";
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (let i = 0; i < clientList.length; i++) {
+        const client = clientList[i];
+        if (client.url && "focus" in client) {
+          client.focus();
+          if (typeof client.navigate === "function" && link) {
+            return client.navigate(link);
+          }
+          return undefined;
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(link);
+      }
+      return undefined;
+    }),
+  );
 });
 `;
 }
