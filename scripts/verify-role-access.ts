@@ -73,9 +73,10 @@ function main(): void {
   assert(masterPaths.includes("/master/administradores"), "Master debe tener equipo admin");
   assert(masterPaths.includes("/master/trabajadores"), "Master/CEO debe ver trabajadores en vivo");
   assert(masterPaths.includes("/master/comunicacion"), "Master/CEO debe acceder al chat");
-  assert(masterPaths.includes("/personal"), "CEO/Master debe gestionar personal desde menú");
-  assert(masterPaths.includes("/configuracion"), "CEO/Master debe configurar eventos");
-  assert(masterPaths.includes("/reportes"), "CEO/Master debe ver reportes de campo");
+  assert(masterPaths.includes("/master/personal"), "CEO/Master debe gestionar personal en la misma consola");
+  assert(masterPaths.includes("/master/configuracion"), "CEO/Master debe configurar eventos en la misma consola");
+  assert(masterPaths.includes("/master/reportes"), "CEO/Master debe ver reportes de campo en la misma consola");
+  assert(masterPaths.includes("/master/panel"), "CEO/Master debe ver panel operativo sin salir de /master");
 
   // CEO: empresa completa vía admin; nunca app de empleado
   assert(puedeAccederPlataforma("ceo", "admin"), "CEO debe acceder a consola admin");

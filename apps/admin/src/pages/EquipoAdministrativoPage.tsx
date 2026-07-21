@@ -3,7 +3,9 @@ import {
   JERARQUIA_CUENTAS,
   ROLE_CATALOG,
   ROLE_LABEL,
+  puedeAsignarRol,
   puedeCrearCuentasPlataforma,
+  rolesAsignablesPor,
   rolesCuentaPlataforma,
   resumenRol,
   type UserRole,
@@ -18,6 +20,8 @@ import {
   updatePlatformUserRole,
   usePlatformUsers,
 } from "../hooks/useDataStore";
+
+const ROLES_RAIZ: UserRole[] = ["ceo", "master_app"];
 
 interface EquipoAdministrativoPageProps {
   /** Vista desde consola Master (CEO/Master App) */
@@ -38,18 +42,30 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
   const [busy, setBusy] = useState(false);
   const [updatingRoleUid, setUpdatingRoleUid] = useState<string | null>(null);
 
-  const rolesDisponibles = useMemo(
+  /** Roles para crear cuentas de oficina (sin ficha de trabajador). */
+  const rolesParaCrear = useMemo(
     () => (user ? rolesCuentaPlataforma(user.role) : []),
     [user],
   );
 
-  const equipoAdmin = useMemo(
-    () =>
-      platformUsers.filter((u) =>
-        rolesCuentaPlataforma("ceo").includes(u.role),
-      ),
-    [platformUsers],
+  /** Roles que se pueden asignar al editar perfiles existentes (oficina + campo). */
+  const rolesParaEditar = useMemo(
+    () => (user ? rolesAsignablesPor(user.role) : []),
+    [user],
   );
+
+  const perfilesEditables = useMemo(() => {
+    if (!user) return [];
+    return platformUsers.filter((u) => {
+      const role = u.role;
+      if (ROLES_RAIZ.includes(role)) return false;
+      if (variant === "master") {
+        // Dirección: todos los perfiles creados (oficina y campo), excepto raíces.
+        return true;
+      }
+      return rolesCuentaPlataforma("ceo").includes(role);
+    });
+  }, [platformUsers, user, variant]);
 
   if (!user || !puedeCrearCuentasPlataforma(user.role)) {
     return (
@@ -76,7 +92,7 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
         nombre: "",
         email: "",
         password: "",
-        role: rolesDisponibles[0] ?? "administrador",
+        role: rolesParaCrear[0] ?? "administrador",
       });
     } catch (err) {
       setError(toUserFacingError(err, "No se pudo crear la cuenta.").message);
@@ -102,8 +118,13 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
 
   const descripcion =
     variant === "master"
-      ? "Al inicio solo existen Dirección general y Dirección técnica. Desde aquí creas el equipo de oficina y puedes cambiar el rol de las cuentas ya creadas."
+      ? "Una sola consola: crea el equipo de oficina y cambia el rol de cualquier perfil creado (oficina o campo), excepto Dirección general / técnica."
       : "Crea cuentas de Personas (RH) y Finanzas, y modifica el rol de las existentes. El equipo del evento se gestiona en Equipo del evento.";
+
+  const tituloLista =
+    variant === "master"
+      ? `Todos los perfiles (${perfilesEditables.length})`
+      : `Cuentas administrativas (${perfilesEditables.length})`;
 
   return (
     <div className="space-y-8">
@@ -121,11 +142,11 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
         </ol>
       </Card>
 
-      {rolesDisponibles.length > 0 && (
+      {rolesParaCrear.length > 0 && (
         <Card>
           <h2 className="font-display text-lg font-semibold">Roles que puedes crear ahora</h2>
           <ul className="mt-3 space-y-2 text-sm">
-            {rolesDisponibles.map((rol) => (
+            {rolesParaCrear.map((rol) => (
               <li key={rol} className="rounded-lg border border-border bg-bg px-3 py-2">
                 <span className="font-medium text-accent">{ROLE_LABEL[rol]}</span>
                 <span className="mt-0.5 block text-neutral-400">{resumenRol(rol)}</span>
@@ -185,7 +206,7 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
               onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as UserRole }))}
               className="w-full rounded-lg border border-border bg-bg px-3 py-2"
             >
-              {rolesDisponibles.map((rol) => (
+              {rolesParaCrear.map((rol) => (
                 <option key={rol} value={rol}>
                   {ROLE_LABEL[rol]}
                 </option>
@@ -198,7 +219,7 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
           <div className="sm:col-span-2">
             <button
               type="submit"
-              disabled={busy || rolesDisponibles.length === 0}
+              disabled={busy || rolesParaCrear.length === 0}
               className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
             >
               {busy ? "Creando…" : "Crear cuenta"}
@@ -208,61 +229,66 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
       </Card>
 
       <Card>
-        <h2 className="font-display text-lg font-semibold">
-          Cuentas administrativas ({equipoAdmin.length})
-        </h2>
-        {equipoAdmin.length === 0 ? (
+        <h2 className="font-display text-lg font-semibold">{tituloLista}</h2>
+        {variant === "master" && (
+          <p className="mt-2 text-sm text-neutral-400">
+            Puedes cambiar el rol de cualquier cuenta creada (oficina o campo). Las cuentas raíz no aparecen aquí.
+          </p>
+        )}
+        {perfilesEditables.length === 0 ? (
           <p className="mt-3 text-sm text-neutral-500">
-            Aún no hay cuentas administrativas. Crea la primera arriba.
+            Aún no hay perfiles para editar. Crea la primera cuenta arriba o registra personal de campo.
           </p>
         ) : (
           <ul className="mt-4 space-y-3">
-            {equipoAdmin.map((u) => (
-              <li
-                key={u.uid}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-bg px-4 py-3"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="font-medium">{u.nombre}</div>
-                  <div className="font-mono text-xs text-neutral-500">{u.email}</div>
-                  <div className="mt-1 text-xs text-neutral-500">{resumenRol(u.role)}</div>
-                </div>
-                {rolesDisponibles.length > 0 ? (
-                  <label className="flex w-full flex-col gap-1 text-xs text-neutral-400 sm:w-auto sm:min-w-[11rem]">
-                    <span>Rol</span>
-                    <select
-                      value={u.role}
-                      disabled={updatingRoleUid === u.uid || u.uid === user.uid}
-                      onChange={(e) =>
-                        void onChangeRole(u.uid, e.target.value as UserRole)
-                      }
-                      className="w-full rounded-lg border border-border bg-bg px-3 py-1.5 text-sm text-neutral-100 disabled:opacity-50"
-                      title={
-                        u.uid === user.uid
-                          ? "No puedes cambiar tu propio rol"
-                          : "Cambiar rol de esta cuenta"
-                      }
-                    >
-                      {!rolesDisponibles.includes(u.role) && (
-                        <option value={u.role}>{ROLE_LABEL[u.role]}</option>
+            {perfilesEditables.map((u) => {
+              const puedeEditar =
+                u.uid !== user.uid &&
+                rolesParaEditar.length > 0 &&
+                (puedeAsignarRol(user.role, u.role) || variant === "master");
+              return (
+                <li
+                  key={u.uid}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-bg px-4 py-3"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium">{u.nombre}</div>
+                    <div className="font-mono text-xs text-neutral-500">{u.email}</div>
+                    <div className="mt-1 text-xs text-neutral-500">{resumenRol(u.role)}</div>
+                  </div>
+                  {puedeEditar ? (
+                    <label className="flex w-full flex-col gap-1 text-xs text-neutral-400 sm:w-auto sm:min-w-[11rem]">
+                      <span>Rol</span>
+                      <select
+                        value={u.role}
+                        disabled={updatingRoleUid === u.uid}
+                        onChange={(e) =>
+                          void onChangeRole(u.uid, e.target.value as UserRole)
+                        }
+                        className="w-full rounded-lg border border-border bg-bg px-3 py-1.5 text-sm text-neutral-100 disabled:opacity-50"
+                        title="Cambiar rol de esta cuenta"
+                      >
+                        {!rolesParaEditar.includes(u.role) && (
+                          <option value={u.role}>{ROLE_LABEL[u.role]}</option>
+                        )}
+                        {rolesParaEditar.map((rol) => (
+                          <option key={rol} value={rol}>
+                            {ROLE_LABEL[rol]}
+                          </option>
+                        ))}
+                      </select>
+                      {updatingRoleUid === u.uid && (
+                        <span className="text-accent">Guardando…</span>
                       )}
-                      {rolesDisponibles.map((rol) => (
-                        <option key={rol} value={rol}>
-                          {ROLE_LABEL[rol]}
-                        </option>
-                      ))}
-                    </select>
-                    {updatingRoleUid === u.uid && (
-                      <span className="text-accent">Guardando…</span>
-                    )}
-                  </label>
-                ) : (
-                  <span className="rounded-full bg-neutral-800 px-3 py-1 text-xs">
-                    {ROLE_LABEL[u.role]}
-                  </span>
-                )}
-              </li>
-            ))}
+                    </label>
+                  ) : (
+                    <span className="rounded-full bg-neutral-800 px-3 py-1 text-xs">
+                      {u.uid === user.uid ? "Tu cuenta" : ROLE_LABEL[u.role]}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </Card>

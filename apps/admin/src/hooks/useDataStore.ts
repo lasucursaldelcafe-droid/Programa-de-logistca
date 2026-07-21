@@ -67,6 +67,7 @@ import {
   workerDocumentPassword,
   type WorkerBulkImportResult,
   type WorkerImportRow,
+  esRolMaster,
   puedeAsignarRol,
   rolesCuentaPlataforma,
   rolesPersonalCampo,
@@ -2336,13 +2337,15 @@ function assertPuedeCambiarRolUsuario(
   if (target.uid === actor.uid) {
     throw new Error("No puedes cambiar tu propio rol.");
   }
-  if (ROLES_RAIZ.includes(normalizeUserRole(target.role))) {
+  const targetRole = normalizeUserRole(target.role);
+  if (ROLES_RAIZ.includes(targetRole)) {
     throw new Error("No se puede cambiar el rol de una cuenta raíz (CEO / Master App).");
   }
   if (ROLES_RAIZ.includes(role)) {
     throw new Error("No se puede asignar un rol raíz.");
   }
-  if (!puedeAsignarRol(actor.role, normalizeUserRole(target.role))) {
+  // Dirección puede modificar cualquier perfil creado; el resto solo los de su jerarquía.
+  if (!esRolMaster(actor.role) && !puedeAsignarRol(actor.role, targetRole)) {
     throw new Error("No puedes modificar el rol de este usuario.");
   }
   if (!puedeAsignarRol(actor.role, role)) {
@@ -2351,7 +2354,7 @@ function assertPuedeCambiarRolUsuario(
   return role;
 }
 
-/** Cambia el rol de una cuenta ya creada (equipo administrativo u operativa). */
+/** Cambia el rol de una cuenta ya creada (oficina o campo). */
 export async function updatePlatformUserRole(
   userId: string,
   newRole: UserRole,
@@ -2362,9 +2365,6 @@ export async function updatePlatformUserRole(
     if (!target) throw new Error("Usuario no encontrado.");
     const role = assertPuedeCambiarRolUsuario(actor, target, newRole);
     if (role === target.role) return;
-    if (!rolesCuentaPlataforma(actor.role).includes(role)) {
-      throw new Error("Este rol se asigna desde Personal de campo.");
-    }
     demoStore.updatePlatformUserRole(userId, role, actor.nombre);
     return;
   }
@@ -2383,9 +2383,6 @@ export async function updatePlatformUserRole(
     { uid: userId, role: currentRole },
     newRole,
   );
-  if (!rolesCuentaPlataforma(actor.role).includes(role)) {
-    throw new Error("Este rol se asigna desde Personal de campo.");
-  }
   if (role === currentRole) return;
 
   await updateDoc(

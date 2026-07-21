@@ -34,14 +34,18 @@ import { ConfigurarDesdeMovilPage } from "./pages/ConfigurarDesdeMovilPage";
 import { DescargasPage } from "./pages/DescargasPage";
 import { OperacionEventoPage } from "./pages/OperacionEventoPage";
 import { PendientesPage } from "./pages/PendientesPage";
-import { MasterRoutes } from "./routes/MasterRoutes";
+import { MasterRoutes, RedirectMasterToUnifiedConsole } from "./routes/MasterRoutes";
 import { WorkerRoutes } from "./routes/WorkerRoutes";
 
 function AdminProtected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return <LoadingScreen label="Verificando sesión…" />;
   if (!user) return <Navigate to="/login" replace />;
-  return <PlatformGate platform="admin">{children}</PlatformGate>;
+  return (
+    <RedirectMasterToUnifiedConsole>
+      <PlatformGate platform="admin">{children}</PlatformGate>
+    </RedirectMasterToUnifiedConsole>
+  );
 }
 
 function WorkerOnboardingGate({ children }: { children: React.ReactNode }) {
