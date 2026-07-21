@@ -83,9 +83,17 @@ function main() {
     bootstrap.googleMapsApiKey ||
     "";
 
+  const uiVersion =
+    process.env.SPE_UI_VERSION?.trim() ||
+    process.env.GITHUB_SHA?.trim()?.slice(0, 12) ||
+    process.env.VITE_SPE_UI_VERSION?.trim() ||
+    `local-${new Date().toISOString().slice(0, 10)}`;
+
   const config = {
     backend: "firebase",
     demoMode: false,
+    preferLiveUi: process.env.SPE_PREFER_LIVE_UI !== "0",
+    uiVersion,
     canonicalAppUrl: process.env.VITE_SPE_CANONICAL_URL?.trim() || DEFAULT_CANONICAL,
     setupCompletado: {
       firebaseSecrets: hasFirebase,
@@ -104,6 +112,8 @@ function main() {
   console.log(`✓ ${RUNTIME_PATH}`);
   console.log(`  Firebase: ${hasFirebase ? firebase.projectId : "pendiente"}`);
   console.log(`  FCM VAPID: ${vapidKey ? "configurado" : "pendiente"}`);
+  console.log(`  UI version: ${uiVersion}`);
+  console.log(`  Live UI: ${config.preferLiveUi ? "sí" : "no"}`);
   console.log(`  Canonical: ${config.canonicalAppUrl}`);
 }
 

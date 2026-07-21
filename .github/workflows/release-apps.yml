@@ -16,6 +16,9 @@ env:
   APP_VERSION: "0.2.4"
   VITE_USE_FIREBASE_EMULATORS: "false"
   NATIVE_BUILD: "true"
+  SPE_LIVE_UI: "1"
+  SPE_UI_VERSION: ${{ github.sha }}
+  VITE_SPE_UI_VERSION: ${{ github.sha }}
   VITE_SPE_CANONICAL_URL: "https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/"
   VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
   VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
