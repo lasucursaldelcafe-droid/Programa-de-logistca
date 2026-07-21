@@ -8,6 +8,7 @@ import {
   chatAudienceDescription,
   isDmChannelId,
   listEventChatChannels,
+  ROLE_LABEL,
   type ChatAudience,
 } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
@@ -87,9 +88,49 @@ export function ComunicacionPage() {
       .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
   }, [platformUsers, user?.uid]);
 
+  /** Pares para chat 1:1: campo + dirección/oficina para quien puede iniciar DM. */
+  const peersDirecto = useMemo(() => {
+    if (!user) return [];
+    if (!canStartDirectChat(user.role)) {
+      // Empleado: puede escribir a supervisión / dirección (no a todos los peers de campo).
+      return platformUsers
+        .filter(
+          (u) =>
+            u.uid !== user.uid &&
+            u.habilitado !== false &&
+            (u.role === "supervisor_sitio" ||
+              u.role === "ceo" ||
+              u.role === "master_app" ||
+              u.role === "administrador" ||
+              u.role === "recursos_humanos"),
+        )
+        .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+    }
+
+    const byUid = new Map<string, (typeof platformUsers)[number]>();
+    for (const u of empleadosConCuenta) byUid.set(u.uid, u);
+    for (const u of platformUsers) {
+      if (u.uid === user.uid || u.habilitado === false) continue;
+      if (
+        u.role === "ceo" ||
+        u.role === "master_app" ||
+        u.role === "administrador" ||
+        u.role === "recursos_humanos" ||
+        u.role === "contador" ||
+        u.role === "supervisor_sitio" ||
+        u.role === "trabajador"
+      ) {
+        byUid.set(u.uid, u);
+      }
+    }
+    return [...byUid.values()].sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+  }, [empleadosConCuenta, platformUsers, user]);
+
   const peerUser = useMemo(
-    () => empleadosConCuenta.find((u) => u.uid === peerUid) ?? platformUsers.find((u) => u.uid === peerUid),
-    [empleadosConCuenta, platformUsers, peerUid],
+    () =>
+      peersDirecto.find((u) => u.uid === peerUid) ??
+      platformUsers.find((u) => u.uid === peerUid),
+    [peersDirecto, platformUsers, peerUid],
   );
 
   const canDirect = user ? canStartDirectChat(user.role) || Boolean(user.workerId) : false;
@@ -162,7 +203,7 @@ export function ComunicacionPage() {
     <div className="mx-auto max-w-4xl space-y-5">
       <PageHeader
         title="Comunicación"
-        description="Chat por evento o directo con un empleado. Al enviar un mensaje se muestra una alerta al destinatario."
+        description="Mismo chat en dirección, oficina y supervisión: elige el mismo evento (o un chat directo) para ver los mensajes."
       />
 
       <div className="flex flex-wrap items-end gap-3">
@@ -184,7 +225,7 @@ export function ComunicacionPage() {
                 mode === "directo" ? "bg-accent text-black" : "text-neutral-400 hover:text-white"
               }`}
             >
-              Chat con empleado
+              Chat directo
             </button>
           </div>
         )}
@@ -224,7 +265,7 @@ export function ComunicacionPage() {
       {mode === "directo" ? (
         <Card>
           <label className="block text-sm">
-            <span className="mb-1 block text-neutral-300">Empleado</span>
+            <span className="mb-1 block text-neutral-300">Persona</span>
             <select
               value={peerUid}
               onChange={(e) => {
@@ -234,23 +275,22 @@ export function ComunicacionPage() {
               }}
               className="w-full max-w-md rounded-lg border border-border bg-bg px-3 py-2"
             >
-              <option value="">Seleccionar empleado…</option>
-              {empleadosConCuenta.map((u) => (
+              <option value="">Seleccionar persona…</option>
+              {peersDirecto.map((u) => (
                 <option key={u.uid} value={u.uid}>
-                  {u.nombre}
-                  {u.role === "supervisor_sitio" ? " (supervisor)" : ""} — {u.email}
+                  {u.nombre} ({ROLE_LABEL[u.role]}) — {u.email}
                 </option>
               ))}
             </select>
           </label>
-          {empleadosConCuenta.length === 0 && (
+          {peersDirecto.length === 0 && (
             <p className="mt-2 text-xs text-neutral-500">
-              No hay empleados con cuenta activa. Invita personal y activa su acceso.
+              No hay cuentas activas para chat directo.
             </p>
           )}
           {peerUid && !peerUser && (
             <p className="mt-2 text-xs text-alert">
-              No se encontró la cuenta del empleado (uid en el enlace). Elige uno de la lista.
+              No se encontró la cuenta (uid en el enlace). Elige una de la lista.
             </p>
           )}
         </Card>
@@ -260,13 +300,13 @@ export function ComunicacionPage() {
         <Card>
           <p className="text-sm text-neutral-400">
             Selecciona un evento para abrir los canales de chat (general, empleados o supervisores),
-            o usa «Chat con empleado» para un mensaje 1:1.
+            o usa «Chat directo» para un mensaje 1:1.
           </p>
         </Card>
       ) : mode === "directo" && !dmChannelId ? (
         <Card>
           <p className="text-sm text-neutral-400">
-            Elige un empleado para abrir el chat privado. Al enviar, recibirá una notificación.
+            Elige a quién escribir (dirección, oficina o campo). Al enviar, recibirá una notificación.
           </p>
         </Card>
       ) : (

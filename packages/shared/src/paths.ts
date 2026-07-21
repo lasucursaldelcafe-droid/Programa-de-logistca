@@ -1,4 +1,5 @@
 import type { UserRole } from "./types";
+import { esRolMaster, normalizeUserRole } from "./accounts";
 
 /** Rutas del panel trabajador en la app unificada. */
 export function workerPath(segment = ""): string {
@@ -6,17 +7,21 @@ export function workerPath(segment = ""): string {
   return clean ? `/worker/${clean}` : "/worker";
 }
 
+/**
+ * Solo el rol Empleado usa /worker/*.
+ * Supervisor y oficina van a consola admin; dirección a /master.
+ */
 export function notificationsPath(role: UserRole): string {
-  if (role === "trabajador" || role === "supervisor_sitio") {
-    return workerPath("notificaciones");
-  }
+  const r = normalizeUserRole(role);
+  if (r === "trabajador") return workerPath("notificaciones");
+  if (esRolMaster(r)) return "/master/notificaciones";
   return "/notificaciones";
 }
 
 export function comunicacionPath(role: UserRole): string {
-  if (role === "trabajador" || role === "supervisor_sitio") {
-    return workerPath("comunicacion");
-  }
+  const r = normalizeUserRole(role);
+  if (r === "trabajador") return workerPath("comunicacion");
+  if (esRolMaster(r)) return "/master/comunicacion";
   return "/comunicacion";
 }
 
@@ -40,4 +45,41 @@ export function resolveTurnosPath(pathname: string): string {
 
 export function resolveEntradaPath(_pathname: string): string {
   return workerPath("entrada");
+}
+
+/**
+ * Si un rol no-empleado abre un deep link viejo de /worker/*,
+ * reescribe a la ruta correcta de su consola (admin o master).
+ */
+export function rewriteWorkerDeepLinkForRole(
+  role: UserRole,
+  workerPathname: string,
+  search = "",
+): string | null {
+  if (normalizeUserRole(role) === "trabajador") return null;
+  const path = workerPathname.replace(/\/$/, "") || "/worker";
+  const qs = search.startsWith("?") || search === "" ? search : `?${search}`;
+
+  if (path === "/worker/comunicacion" || path.endsWith("/comunicacion")) {
+    return `${comunicacionPath(role)}${qs}`;
+  }
+  if (path === "/worker/notificaciones" || path.endsWith("/notificaciones")) {
+    return `${notificationsPath(role)}${qs}`;
+  }
+  if (path === "/worker/ayuda" || path.endsWith("/ayuda")) {
+    return esRolMaster(role) ? `/master/ayuda${qs}` : `/ayuda${qs}`;
+  }
+  if (path === "/worker/turnos" || path.endsWith("/turnos")) {
+    return `/turnos${qs}`;
+  }
+  if (path === "/worker" || path === "/worker/entrada" || path === "/worker/reportar") {
+    return `${rutaHomeCompat(role)}${qs}`;
+  }
+  return `${rutaHomeCompat(role)}${qs}`;
+}
+
+function rutaHomeCompat(role: UserRole): string {
+  if (esRolMaster(role)) return "/master";
+  if (normalizeUserRole(role) === "trabajador") return "/worker";
+  return "/panel";
 }
