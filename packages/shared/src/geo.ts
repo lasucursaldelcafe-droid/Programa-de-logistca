@@ -29,11 +29,51 @@ export function formatQrPayload(qrId: string, token: string): string {
   return `spe:qr:${qrId}:${token}`;
 }
 
+/**
+ * URL pública que abre el alta/onboarding al escanear con la cámara del teléfono.
+ * Ejemplo: https://…/Programa-de-logistca/unirse-qr?qr=…&t=…
+ */
+export function formatQrJoinUrl(
+  appBaseUrl: string,
+  qrId: string,
+  token: string,
+  opts?: { useHashRouter?: boolean },
+): string {
+  const base = appBaseUrl.replace(/\/?$/, "/");
+  const qs = `qr=${encodeURIComponent(qrId)}&t=${encodeURIComponent(token)}`;
+  if (opts?.useHashRouter) {
+    return `${base}#/unirse-qr?${qs}`;
+  }
+  return `${base}unirse-qr?${qs}`;
+}
+
 export function parseQrPayload(raw: string): { qrId: string; token: string } | null {
   const trimmed = raw.trim();
-  const match = trimmed.match(/^spe:qr:([^:]+):([a-zA-Z0-9_-]+)$/);
-  if (!match) return null;
-  return { qrId: match[1]!, token: match[2]! };
+  const legacy = trimmed.match(/^spe:qr:([^:]+):([a-zA-Z0-9_-]+)$/);
+  if (legacy) {
+    return { qrId: legacy[1]!, token: legacy[2]! };
+  }
+
+  // URL de onboarding: …/unirse-qr?qr=…&t=… (también con hash router)
+  try {
+    const asUrl = trimmed.includes("://")
+      ? new URL(trimmed)
+      : trimmed.startsWith("/unirse-qr") || trimmed.includes("unirse-qr?")
+        ? new URL(trimmed, "https://spe.local/")
+        : null;
+    if (asUrl) {
+      const hash = asUrl.hash.startsWith("#") ? asUrl.hash.slice(1) : asUrl.hash;
+      const hashQuery = hash.includes("?") ? hash.slice(hash.indexOf("?") + 1) : "";
+      const params = new URLSearchParams(asUrl.search || hashQuery);
+      const qrId = params.get("qr")?.trim();
+      const token = params.get("t")?.trim();
+      if (qrId && token) return { qrId, token };
+    }
+  } catch {
+    // ignore
+  }
+
+  return null;
 }
 
 export function getRotatingToken(

@@ -2,6 +2,7 @@ import {
   buildInvitationLinks,
   buildWorkerActivationUrl,
   buildWorkerJoinUrl,
+  formatQrJoinUrl,
 } from "@spe/shared";
 import { isNativePlatform } from "./platform";
 import { isElectron } from "./platform";
@@ -16,6 +17,13 @@ function resolveAppBase(appBaseUrl?: string): string {
     return `${window.location.origin}${base.endsWith("/") ? base : `${base}/`}`;
   }
   return "/";
+}
+
+/** URL embebida en el QR de sitio (abre alta de usuario + puesto). */
+export function buildSiteQrJoinUrl(qrId: string, token: string, appBaseUrl?: string): string {
+  const base = resolveAppBase(appBaseUrl);
+  const useHash = isElectron() || isNativePlatform();
+  return formatQrJoinUrl(base, qrId, token, { useHashRouter: useHash });
 }
 
 /** URL de activación (web o app nativa). Rutas en la raíz: /activar/:token */

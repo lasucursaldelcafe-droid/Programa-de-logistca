@@ -28,6 +28,7 @@ import { IntegracionesPage } from "./pages/IntegracionesPage";
 import { SupervisionPage } from "./pages/SupervisionPage";
 import { ActivarCuentaPage } from "./pages/ActivarCuentaPage";
 import { UnirseEmpresaPage } from "./pages/UnirseEmpresaPage";
+import { UnirseQrPage } from "./pages/UnirseQrPage";
 import { CompletarPerfilPage } from "./pages/CompletarPerfilPage";
 import { ConfigurarDesdeMovilPage } from "./pages/ConfigurarDesdeMovilPage";
 import { DescargasPage } from "./pages/DescargasPage";
@@ -61,6 +62,7 @@ export function App() {
       <Route path="/configurar" element={<ConfigurarDesdeMovilPage />} />
       <Route path="/ayuda" element={<AyudaPage platform="admin" />} />
       <Route path="/unirse" element={<UnirseEmpresaPage />} />
+      <Route path="/unirse-qr" element={<UnirseQrPage />} />
       <Route path="/activar/:token" element={<ActivarCuentaPage />} />
       <Route
         path="/completar-perfil"

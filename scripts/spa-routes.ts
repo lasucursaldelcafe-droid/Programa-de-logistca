@@ -7,6 +7,7 @@ export const SPA_MIRROR_ROUTES: readonly string[] = [
   "configurar",
   "ayuda",
   "unirse",
+  "unirse-qr",
   "completar-perfil",
   "panel",
   "operacion",

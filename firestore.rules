@@ -95,7 +95,9 @@ service cloud.firestore {
     }
 
     match /qrCodes/{qrId} {
-      allow read: if signedIn();
+      // Lectura pública de QR activos: onboarding por cámara sin sesión previa
+      // (la Cloud Function valida el token; esto solo permite mostrar sitio/evento).
+      allow read: if resource.data.activo == true || signedIn();
       allow write: if isAdmin() || isSupervisor();
     }
 
