@@ -1,10 +1,21 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 /**
- * App unificada SPE (Android): bundle embebido de apps/admin/dist.
- * Los datos se sincronizan con web/Windows vía Firebase Firestore (mismo proyecto).
- * Config remota: spe-runtime-config.json en GitHub Pages.
+ * App unificada SPE (Android).
+ *
+ * - Datos: siempre Firebase Firestore (sync en tiempo real con web/Windows).
+ * - UI: por defecto carga GitHub Pages (SPE_LIVE_UI ≠ "0") para actualizarse sola
+ *   en cada deploy. Bundle embebido queda como fallback offline (SPE_LIVE_UI=0).
+ * - Config remota: spe-runtime-config.json en Pages.
  */
+const CANONICAL_APP_URL =
+  process.env.SPE_REMOTE_URL?.trim() ||
+  process.env.VITE_SPE_CANONICAL_URL?.trim() ||
+  "https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/";
+
+/** En desarrollo local (`SPE_LIVE_UI=0`) usa solo el bundle embebido. */
+const LIVE_UI = process.env.SPE_LIVE_UI !== "0" && process.env.CAPACITOR_DEV !== "1";
+
 const config: CapacitorConfig = {
   appId: "com.spe.personaleventos",
   appName: "SPE Eventos",
@@ -14,6 +25,12 @@ const config: CapacitorConfig = {
   },
   server: {
     androidScheme: "https",
+    ...(LIVE_UI
+      ? {
+          url: CANONICAL_APP_URL.replace(/\/?$/, "/"),
+          cleartext: false,
+        }
+      : {}),
   },
   plugins: {
     Geolocation: {

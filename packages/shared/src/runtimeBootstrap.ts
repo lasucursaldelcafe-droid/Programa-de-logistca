@@ -1,6 +1,8 @@
 import { configureFirebase, isFirebaseConfigured, type FirebaseClientConfig } from "./firebase";
 import {
   isEmbeddedAppShell,
+  isPackagedNativeShell,
+  redirectEmbeddedShellToLiveUi,
   resolveCanonicalConfigUrl,
 } from "./platformShell";
 
@@ -11,6 +13,13 @@ export interface RuntimeBootstrapConfig {
   demoMode?: boolean;
   googleMapsApiKey?: string;
   canonicalAppUrl?: string;
+  /** Id de UI publicada (Pages). Cambia en cada deploy. */
+  uiVersion?: string;
+  /**
+   * Si true (default), APK/Electron embebidos redirigen a la web publicada
+   * cuando hay red, para que la UI siempre coincida con Pages.
+   */
+  preferLiveUi?: boolean;
   vapidKey?: string;
   firebase?: Partial<FirebaseClientConfig>;
   setupCompletado?: {
@@ -201,13 +210,17 @@ export async function bootstrapRuntimeConfig(
   }
 
   let remoteCanonical: string | undefined;
+  let preferLiveUi = true;
+  let fetchedRemote = false;
 
   for (const url of configUrls) {
     try {
       const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) continue;
       const remote = (await res.json()) as RuntimeBootstrapConfig;
+      fetchedRemote = true;
       if (remote.canonicalAppUrl) remoteCanonical = remote.canonicalAppUrl;
+      if (remote.preferLiveUi === false) preferLiveUi = false;
       applyConfig({ ...remote, backend: "firebase", demoMode: false });
       if (isFirebaseConfigured()) break;
     } catch {
@@ -223,11 +236,19 @@ export async function bootstrapRuntimeConfig(
       );
       if (res.ok) {
         const remote = (await res.json()) as RuntimeBootstrapConfig;
+        fetchedRemote = true;
+        if (remote.preferLiveUi === false) preferLiveUi = false;
+        if (remote.canonicalAppUrl) remoteCanonical = remote.canonicalAppUrl;
         applyConfig({ ...remote, backend: "firebase", demoMode: false });
       }
     } catch {
       /* sin config remota */
     }
+  }
+
+  // UI en vivo: APK/Electron empaquetados con red usan siempre GitHub Pages.
+  if (preferLiveUi && fetchedRemote && isPackagedNativeShell()) {
+    redirectEmbeddedShellToLiveUi(remoteCanonical);
   }
 }
 

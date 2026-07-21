@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require("electron");
+const { app, BrowserWindow, net } = require("electron");
 const path = require("node:path");
 
 const isDev = process.env.ELECTRON_DEV === "1";
@@ -8,15 +8,77 @@ const REMOTE_APP_URL =
   process.env.SPE_REMOTE_URL ||
   "https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/";
 
-/** Por defecto: bundle embebido (offline UI) + Firebase sync. SPE_REMOTE=1 fuerza WebView remoto. */
-const USE_REMOTE_WEB = process.env.SPE_REMOTE === "1";
-const USE_OFFLINE_BUNDLE = !USE_REMOTE_WEB;
+/**
+ * Sync automático de UI:
+ * - Default: carga GitHub Pages (siempre la última versión publicada).
+ * - SPE_REMOTE=0: fuerza bundle embebido (offline).
+ * - Sin red: fallback al bundle embebido.
+ */
+const FORCE_OFFLINE_BUNDLE = process.env.SPE_REMOTE === "0";
+const FORCE_REMOTE = process.env.SPE_REMOTE === "1";
 
 function resolveIndexHtml() {
   if (app.isPackaged) {
     return path.join(process.resourcesPath, "web", "index.html");
   }
   return path.join(__dirname, "..", "..", "admin", "dist", "index.html");
+}
+
+function canReachRemote(url, timeoutMs = 5000) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const done = (ok) => {
+      if (settled) return;
+      settled = true;
+      resolve(ok);
+    };
+    try {
+      const request = net.request({ url, method: "GET" });
+      const timer = setTimeout(() => {
+        try {
+          request.abort();
+        } catch {
+          /* ignore */
+        }
+        done(false);
+      }, timeoutMs);
+      request.on("response", (response) => {
+        clearTimeout(timer);
+        done(response.statusCode >= 200 && response.statusCode < 500);
+      });
+      request.on("error", () => {
+        clearTimeout(timer);
+        done(false);
+      });
+      request.end();
+    } catch {
+      done(false);
+    }
+  });
+}
+
+async function loadApp(win) {
+  if (isDev && process.env.VITE_DEV_SERVER_URL) {
+    await win.loadURL(process.env.VITE_DEV_SERVER_URL);
+    win.webContents.openDevTools({ mode: "detach" });
+    return;
+  }
+
+  if (FORCE_OFFLINE_BUNDLE) {
+    await win.loadFile(resolveIndexHtml());
+    return;
+  }
+
+  const preferRemote = FORCE_REMOTE || !FORCE_OFFLINE_BUNDLE;
+  if (preferRemote) {
+    const online = await canReachRemote(REMOTE_APP_URL);
+    if (online) {
+      await win.loadURL(REMOTE_APP_URL);
+      return;
+    }
+  }
+
+  await win.loadFile(resolveIndexHtml());
 }
 
 function createWindow() {
@@ -35,14 +97,7 @@ function createWindow() {
     },
   });
 
-  if (isDev && process.env.VITE_DEV_SERVER_URL) {
-    win.loadURL(process.env.VITE_DEV_SERVER_URL);
-    win.webContents.openDevTools({ mode: "detach" });
-  } else if (USE_REMOTE_WEB) {
-    win.loadURL(REMOTE_APP_URL);
-  } else {
-    win.loadFile(resolveIndexHtml());
-  }
+  void loadApp(win);
 }
 
 app.whenReady().then(() => {

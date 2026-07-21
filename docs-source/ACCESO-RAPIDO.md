@@ -1,15 +1,21 @@
 # Acceso rápido — Personal Eventos (producción)
 
-## Sincronización entre plataformas
+## Sincronización automática entre versiones
 
-Web, Windows, Android y Linux usan **el mismo proyecto Firebase** (`programalog-ccc12`). Los datos (eventos, personal, turnos, asistencia) se actualizan en **tiempo real** en todas las plataformas.
+Web, Windows, Android y Linux usan **el mismo proyecto Firebase** (`programalog-ccc12`).
 
-| Plataforma | Cómo sincroniza |
-|------------|-----------------|
-| **Web** | Firebase Firestore directo |
-| **Windows / Linux** | App embebida + Firebase (misma cuenta) |
-| **Android** | App embebida + Firebase (misma cuenta) |
-| **iOS** | PWA en Safari (misma web) |
+| Qué | Cómo se mantiene al día |
+|-----|-------------------------|
+| **Datos** (eventos, personal, turnos, asistencia) | Firestore en **tiempo real** en todas las plataformas |
+| **UI / código** | GitHub Pages es la fuente. Web se actualiza en cada push a `main`. **APK y Electron** cargan esa misma web cuando hay red (`preferLiveUi`), así no hace falta reinstalar para ver cambios. Sin red usan el bundle embebido. |
+| **Config** (Firebase, Maps, FCM) | `spe-runtime-config.json` en Pages (`cache: no-store`) |
+
+| Plataforma | Sync |
+|------------|------|
+| **Web** | Pages + Firestore |
+| **Windows / Linux** | Electron → Pages (fallback offline) + Firestore |
+| **Android** | Capacitor → Pages (fallback con `SPE_LIVE_UI=0`) + Firestore |
+| **iOS** | PWA Safari (misma web) |
 
 Usa **las mismas credenciales** en todas. No hace falta configurar nada extra en cada dispositivo.
 
