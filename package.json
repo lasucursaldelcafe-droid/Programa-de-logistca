@@ -58,6 +58,7 @@
     "deploy:firestore": "node scripts/deploy-firestore.mjs",
     "verify:prod-login": "node scripts/verify-prod-login.mjs",
     "ensure:prod-ceo": "node scripts/ensure-prod-ceo.mjs",
+    "purge:non-ceo": "node scripts/purge-non-ceo-profiles.mjs",
     "desbloquear:operacion": "node scripts/desbloquear-operacion.mjs",
     "repair:user-profile": "node scripts/repair-user-profile.mjs",
     "fix:sheets-token": "node scripts/fix-sheets-token.mjs",
