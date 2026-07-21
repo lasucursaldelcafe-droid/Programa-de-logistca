@@ -19,6 +19,12 @@ const config: CapacitorConfig = {
     Geolocation: {
       permissions: ["location"],
     },
+    Camera: {
+      // Solicitud explícita desde NativePermissionsGate / nativePermissions.ts
+    },
+    PushNotifications: {
+      presentationOptions: ["badge", "sound", "alert"],
+    },
   },
 };
 

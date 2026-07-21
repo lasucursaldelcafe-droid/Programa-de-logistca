@@ -4,4 +4,12 @@
     <string name="title_activity_main">Personal Eventos</string>
     <string name="package_name">com.spe.personaleventos</string>
     <string name="custom_url_scheme">com.spe.personaleventos</string>
+
+    <!-- Textos de permisos (rationale / Play Console) -->
+    <string name="permission_location_rationale">SPE Eventos usa tu ubicación para marcar entrada, verificar que estás en el sitio del evento y mostrar el mapa en vivo.</string>
+    <string name="permission_camera_rationale">SPE Eventos usa la cámara para videollamadas y evidencias de operación.</string>
+    <string name="permission_microphone_rationale">SPE Eventos usa el micrófono para chat de voz y videollamadas con el equipo.</string>
+    <string name="permission_notifications_rationale">SPE Eventos envía notificaciones de turnos, chat y novedades del evento.</string>
+    <string name="permission_storage_rationale">SPE Eventos accede a fotos y archivos para adjuntar evidencias y documentos.</string>
+    <string name="permission_phone_rationale">SPE Eventos puede leer el estado del teléfono para no interrumpir la operación durante una llamada.</string>
 </resources>

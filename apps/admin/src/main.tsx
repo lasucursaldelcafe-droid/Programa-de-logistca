@@ -4,6 +4,7 @@ import { BrowserRouter, HashRouter } from "react-router-dom";
 import { bootstrapRuntimeConfig, configureFirebase, purgeLegacyClientStorage, needsHashRouter } from "@spe/shared";
 import { AuthProvider } from "./contexts/AuthContext";
 import { PermissionsProvider } from "./contexts/PermissionsContext";
+import { NativePermissionsGate } from "./components/NativePermissionsGate";
 import { App } from "./App";
 import "./index.css";
 
@@ -34,7 +35,9 @@ async function boot() {
       <Router {...routerProps}>
         <AuthProvider>
           <PermissionsProvider>
-            <App />
+            <NativePermissionsGate>
+              <App />
+            </NativePermissionsGate>
           </PermissionsProvider>
         </AuthProvider>
       </Router>
