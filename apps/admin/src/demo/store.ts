@@ -411,6 +411,48 @@ class DemoStore {
     return uid;
   }
 
+  updatePlatformUserRole(userId: string, role: AppUser["role"], actorNombre?: string): void {
+    const account = this.accounts.find((a) => a.user.uid === userId);
+    if (!account) throw new Error("Usuario no encontrado.");
+    if (account.user.role === "ceo" || account.user.role === "master_app") {
+      throw new Error("No se puede cambiar el rol de una cuenta raíz.");
+    }
+    const prevRole = account.user.role;
+    this.accounts = this.accounts.map((a) =>
+      a.user.uid === userId
+        ? {
+            ...a,
+            user: {
+              ...a.user,
+              role,
+              customRoleId: undefined,
+              perfilCompleto:
+                role === "supervisor_sitio" ||
+                role === "administrador" ||
+                role === "recursos_humanos" ||
+                role === "contador" ||
+                role === "ceo" ||
+                role === "master_app",
+            },
+          }
+        : a,
+    );
+    if (account.user.workerId && (role === "trabajador" || role === "supervisor_sitio")) {
+      this.updateWorker(
+        account.user.workerId,
+        { rolPlataforma: role, customRoleId: undefined },
+        actorNombre,
+      );
+      return;
+    }
+    this.recordChange("user.role", userId, {
+      targetLabel: account.user.nombre,
+      actorNombre,
+      detail: `${prevRole} → ${role}`,
+    });
+    this.notify();
+  }
+
   provisionWorkerAccount(workerId: string, actorNombre?: string): void {
     const worker = this.workers.find((w) => w.id === workerId);
     if (!worker) throw new Error("Trabajador no encontrado");

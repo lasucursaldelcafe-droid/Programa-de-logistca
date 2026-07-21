@@ -26,6 +26,7 @@ import {
   provisionWorkerAccount,
   setWorkerHabilitado,
   updateWorkerEstado,
+  updateWorkerPlatformRole,
   useWorkersState,
 } from "../hooks/useDataStore";
 import { getCustomRolesForBase, useCustomRoles } from "../hooks/useCustomRoles";
@@ -64,6 +65,7 @@ export function PersonalPage() {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<WorkerBulkImportResult | null>(null);
   const [provisioningId, setProvisioningId] = useState<string | null>(null);
+  const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null);
 
   const rolesAsignables = user ? rolesPersonalCampo(user.role) : [];
   const adminAsignaRoles = rolesAsignables.length > 0;
@@ -149,6 +151,20 @@ export function PersonalPage() {
 
   async function cambiarEstado(id: string, estado: WorkerEstado) {
     await updateWorkerEstado(id, estado, currentUser.nombre);
+  }
+
+  async function cambiarRolCampo(id: string, rol: RolCampo) {
+    setUpdatingRoleId(id);
+    setError(null);
+    setMensaje(null);
+    try {
+      await updateWorkerPlatformRole(id, rol, currentUser);
+      setMensaje(`Rol de campo actualizado a «${ROLE_LABEL[rol]}».`);
+    } catch (err) {
+      setError(toUserFacingError(err, "No se pudo cambiar el rol.").message);
+    } finally {
+      setUpdatingRoleId(null);
+    }
   }
 
   async function eliminar(id: string) {
@@ -445,10 +461,14 @@ export function PersonalPage() {
                 {w.documento} · {w.email}
               </div>
               <div className="mt-1 text-xs text-neutral-500">
-                Rol: {ROLE_LABEL[w.rolPlataforma ?? "trabajador"]}
+                {!adminAsignaRoles && (
+                  <>Rol: {ROLE_LABEL[w.rolPlataforma ?? "trabajador"]} · </>
+                )}
                 {w.customRoleId && roleNameById.get(w.customRoleId)
-                  ? ` · ${roleNameById.get(w.customRoleId)}`
-                  : ""}
+                  ? `Plantilla: ${roleNameById.get(w.customRoleId)}`
+                  : adminAsignaRoles
+                    ? "Sin plantilla personalizada"
+                    : ""}
                 {w.customRoleId && roleModeById.get(w.customRoleId)
                   ? ` (${ROLE_ACCESS_MODE_LABEL[roleModeById.get(w.customRoleId)!]})`
                   : ""}
@@ -462,6 +482,25 @@ export function PersonalPage() {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              {adminAsignaRoles && (
+                <label className="flex flex-col gap-0.5 text-[10px] uppercase tracking-wide text-neutral-500">
+                  Rol
+                  <select
+                    value={w.rolPlataforma ?? "trabajador"}
+                    disabled={updatingRoleId === w.id}
+                    onChange={(e) =>
+                      void cambiarRolCampo(w.id, e.target.value as RolCampo)
+                    }
+                    className="rounded-lg border border-border bg-bg px-2 py-1 text-xs normal-case tracking-normal text-neutral-100 disabled:opacity-50"
+                  >
+                    {rolesAsignables.map((rol) => (
+                      <option key={rol} value={rol}>
+                        {ROLE_LABEL[rol]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <Badge label={ESTADO_LABEL[w.estado]} tone={w.estado} />
               <select
                 value={w.estado}
