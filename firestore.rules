@@ -236,7 +236,17 @@ service cloud.firestore {
         && request.resource.data.text.size() > 0
         && request.resource.data.text.size() <= 2000
         && request.resource.data.channelId is string
-        && request.resource.data.createdAt is string;
+        && request.resource.data.createdAt is string
+        && (
+          !("audience" in request.resource.data)
+          || request.resource.data.audience == null
+          || request.resource.data.audience in ["evento", "empleados", "supervisores"]
+        )
+        // Empleados de campo no escriben en canal de supervisores
+        && !(
+          request.resource.data.audience == "supervisores"
+          && role() == "trabajador"
+        );
       allow update, delete: if isAdmin();
     }
   }

@@ -15,7 +15,7 @@ const PLATFORM_STEPS: Record<Platform, string[]> = {
     "Registra personal y envía invitaciones desde Cuentas.",
     "Crea turnos con trabajador, sitio y horario.",
     "Monitorea el mapa en vivo y atiende reportes de incidencias.",
-    "Usa Comunicación para chat interno y videollamadas con el equipo.",
+    "Usa Comunicación: canal general del evento, solo empleados o solo supervisores.",
     "Cierra nómina al final del evento.",
   ],
   worker: [

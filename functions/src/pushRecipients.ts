@@ -100,12 +100,57 @@ function comunicacionLinkForRole(role: string | undefined): string {
   return "/comunicacion";
 }
 
+type ChatAudience = "evento" | "empleados" | "supervisores";
+
+function parseEventChatChannelId(
+  channelId: string,
+): { eventId: string; audience: ChatAudience } | null {
+  const trimmed = channelId.trim();
+  if (!trimmed.startsWith("event-")) return null;
+  const rest = trimmed.slice("event-".length);
+  if (rest.endsWith("--empleados")) {
+    return { eventId: rest.slice(0, -"--empleados".length), audience: "empleados" };
+  }
+  if (rest.endsWith("--supervisores")) {
+    return { eventId: rest.slice(0, -"--supervisores".length), audience: "supervisores" };
+  }
+  return { eventId: rest, audience: "evento" };
+}
+
+async function uidsByRoles(db: Firestore, roles: string[]): Promise<string[]> {
+  const allowed = new Set(roles);
+  const snap = await db.collection("users").get();
+  return snap.docs
+    .filter((d) => allowed.has(String(d.data().role ?? "")))
+    .map((d) => d.id);
+}
+
+async function workerUidsForEventByPlatformRole(
+  db: Firestore,
+  eventId: string,
+  platformRoles: Array<"trabajador" | "supervisor_sitio">,
+): Promise<string[]> {
+  const workerIds = await workerIdsForEvent(db, eventId);
+  if (workerIds.length === 0) return [];
+  const allowed = new Set(platformRoles);
+  const uids: string[] = [];
+  for (const workerId of workerIds) {
+    const workerDoc = await db.collection("workers").doc(workerId).get();
+    const rol = String(workerDoc.data()?.rolPlataforma ?? "trabajador");
+    if (!allowed.has(rol as "trabajador" | "supervisor_sitio")) continue;
+    const uid = await findUidByWorkerId(db, workerId);
+    if (uid) uids.push(uid);
+  }
+  return uids;
+}
+
 /** Destinatarios push para un mensaje de chat (excluye al remitente). */
 export async function resolveChatRecipientUids(
   db: Firestore,
   data: {
     channelId: string;
     eventId?: string | null;
+    audience?: string | null;
     senderUid: string;
   },
 ): Promise<string[]> {
@@ -120,14 +165,52 @@ export async function resolveChatRecipientUids(
     return [...uids];
   }
 
-  if (channelId.startsWith("event-")) {
-    const eventId = data.eventId ?? channelId.slice("event-".length);
+  const parsed = parseEventChatChannelId(channelId);
+  if (parsed || channelId.startsWith("event-")) {
+    const eventId = data.eventId ?? parsed?.eventId ?? channelId.slice("event-".length);
+    const audience = (data.audience as ChatAudience | undefined) ?? parsed?.audience ?? "evento";
+
     if (eventId) {
-      for (const uid of await uidsFromWorkerIds(db, await workerIdsForEvent(db, eventId))) {
-        if (uid !== senderUid) uids.add(uid);
-      }
-      for (const uid of await adminUids(db)) {
-        if (uid !== senderUid) uids.add(uid);
+      if (audience === "supervisores") {
+        for (const uid of await workerUidsForEventByPlatformRole(db, eventId, [
+          "supervisor_sitio",
+        ])) {
+          if (uid !== senderUid) uids.add(uid);
+        }
+        for (const uid of await uidsByRoles(db, [
+          "ceo",
+          "master_app",
+          "super_admin",
+          "administrador",
+          "recursos_humanos",
+          "supervisor_sitio",
+        ])) {
+          if (uid !== senderUid) uids.add(uid);
+        }
+      } else if (audience === "empleados") {
+        for (const uid of await workerUidsForEventByPlatformRole(db, eventId, [
+          "trabajador",
+          "supervisor_sitio",
+        ])) {
+          if (uid !== senderUid) uids.add(uid);
+        }
+        for (const uid of await uidsByRoles(db, [
+          "ceo",
+          "master_app",
+          "super_admin",
+          "administrador",
+          "recursos_humanos",
+        ])) {
+          if (uid !== senderUid) uids.add(uid);
+        }
+      } else {
+        // Evento general: todo el personal del evento + no-trabajadores
+        for (const uid of await uidsFromWorkerIds(db, await workerIdsForEvent(db, eventId))) {
+          if (uid !== senderUid) uids.add(uid);
+        }
+        for (const uid of await adminUids(db)) {
+          if (uid !== senderUid) uids.add(uid);
+        }
       }
     }
     return [...uids];

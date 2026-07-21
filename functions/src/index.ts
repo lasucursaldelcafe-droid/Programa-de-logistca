@@ -257,6 +257,7 @@ export const onChatMessageCreated = onDocumentCreated(
       const uids = await resolveChatRecipientUids(db, {
         channelId,
         eventId: data.eventId as string | null | undefined,
+        audience: data.audience as string | null | undefined,
         senderUid,
       });
 

@@ -1,6 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  canAccessChatAudience,
+  canSendInChatAudience,
+  chatAudienceDescription,
+  listEventChatChannels,
+  type ChatAudience,
+} from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
-import { chatChannelId, useChatMessages } from "../hooks/useComunicacion";
+import { useChatMessages } from "../hooks/useComunicacion";
 import { useEventoOperacion } from "../hooks/useEventoOperacion";
 import { ChatPanel } from "../components/comunicacion/ChatPanel";
 import { VideoCallPanel } from "../components/comunicacion/VideoCallPanel";
@@ -15,14 +22,33 @@ export function ComunicacionPage() {
   const { user } = useAuth();
   const { events, eventId, setEventId, evento } = useEventoOperacion();
   const [tab, setTab] = useState<Tab>("chat");
+  const [audience, setAudience] = useState<ChatAudience>("evento");
 
-  const channelId = chatChannelId(eventId || null);
-  const channelLabel = useMemo(() => {
-    if (!eventId) return "General";
-    return evento?.nombre ?? "Evento";
-  }, [eventId, evento]);
+  const channels = useMemo(() => {
+    if (!eventId || !user) return [];
+    const nombre = evento?.nombre ?? "Evento";
+    return listEventChatChannels(eventId, nombre, user.role);
+  }, [eventId, evento?.nombre, user]);
 
+  useEffect(() => {
+    if (!user || channels.length === 0) return;
+    if (!canAccessChatAudience(user.role, audience)) {
+      const first = channels[0]?.audience;
+      if (first) setAudience(first);
+    }
+  }, [user, channels, audience]);
+
+  const activeChannel = useMemo(
+    () => channels.find((c) => c.audience === audience) ?? channels[0] ?? null,
+    [channels, audience],
+  );
+
+  const channelId = activeChannel?.channelId ?? "";
+  const channelLabel = activeChannel?.label ?? "Selecciona un evento";
   const messages = useChatMessages(channelId);
+  const canSend = user && activeChannel
+    ? canSendInChatAudience(user.role, activeChannel.audience)
+    : false;
 
   if (!user) return null;
 
@@ -47,7 +73,7 @@ export function ComunicacionPage() {
     <div className="mx-auto max-w-4xl space-y-5">
       <PageHeader
         title="Comunicación"
-        description="Chat y videollamadas del equipo. El canal sigue el evento seleccionado en Operación."
+        description="Chat entre empleados, supervisores o el evento general. Elige el evento y el canal."
       />
 
       <div className="flex flex-wrap items-end gap-3">
@@ -55,7 +81,7 @@ export function ComunicacionPage() {
           events={events}
           eventId={eventId}
           onChange={setEventId}
-          label="Canal del evento"
+          label="Evento"
           className="min-w-[220px]"
         />
 
@@ -81,24 +107,66 @@ export function ComunicacionPage() {
         </div>
       </div>
 
-      <p className="text-xs text-neutral-500">
-        Canal activo: <span className="text-neutral-300">{channelLabel}</span> — cambia el evento
-        aquí o en Operación por evento; se sincroniza en mapa y chat.
-      </p>
-
-      {tab === "chat" ? (
-        <ChatPanel
-          channelId={channelId}
-          channelLabel={channelLabel}
-          eventId={eventId || undefined}
-          messages={messages}
-        />
+      {!eventId ? (
+        <Card>
+          <p className="text-sm text-neutral-400">
+            Selecciona un evento para abrir los canales de chat (general, empleados o supervisores).
+          </p>
+        </Card>
       ) : (
-        <VideoCallPanel
-          channelId={channelId}
-          channelLabel={channelLabel}
-          userName={user.nombre}
-        />
+        <>
+          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Canal de chat">
+            {channels.map((ch) => (
+              <button
+                key={ch.channelId}
+                type="button"
+                role="tab"
+                aria-selected={activeChannel?.audience === ch.audience}
+                onClick={() => setAudience(ch.audience)}
+                className={`rounded-xl px-3 py-2 text-left text-sm transition ${
+                  activeChannel?.audience === ch.audience
+                    ? "bg-accent/20 text-accent ring-1 ring-accent/40"
+                    : "border border-border text-neutral-400 hover:border-accent/40 hover:text-neutral-200"
+                }`}
+              >
+                <span className="block font-semibold">
+                  {ch.audience === "evento"
+                    ? "Evento general"
+                    : ch.audience === "empleados"
+                      ? "Empleados"
+                      : "Supervisores"}
+                </span>
+                <span className="mt-0.5 block text-[11px] opacity-80">
+                  {chatAudienceDescription(ch.audience)}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <p className="text-xs text-neutral-500">
+            Canal activo: <span className="text-neutral-300">{channelLabel}</span>
+            {activeChannel?.audience === "supervisores" && user.role === "trabajador"
+              ? " — no tienes acceso a este canal."
+              : null}
+          </p>
+
+          {activeChannel && tab === "chat" ? (
+            <ChatPanel
+              channelId={activeChannel.channelId}
+              channelLabel={activeChannel.label}
+              eventId={eventId}
+              audience={activeChannel.audience}
+              messages={messages}
+              canSend={canSend}
+            />
+          ) : activeChannel && tab === "video" ? (
+            <VideoCallPanel
+              channelId={activeChannel.channelId}
+              channelLabel={activeChannel.label}
+              userName={user.nombre}
+            />
+          ) : null}
+        </>
       )}
     </div>
   );

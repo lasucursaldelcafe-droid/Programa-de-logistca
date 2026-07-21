@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { ROLE_LABEL, type ChatMessage } from "@spe/shared";
+import { ROLE_LABEL, type ChatAudience, type ChatMessage } from "@spe/shared";
 import { useAuth } from "../../contexts/AuthContext";
 import { sendChatMessage } from "../../hooks/useComunicacion";
 
@@ -7,10 +7,19 @@ interface ChatPanelProps {
   channelId: string;
   channelLabel: string;
   eventId?: string;
+  audience?: ChatAudience;
   messages: ChatMessage[];
+  canSend?: boolean;
 }
 
-export function ChatPanel({ channelId, channelLabel, eventId, messages }: ChatPanelProps) {
+export function ChatPanel({
+  channelId,
+  channelLabel,
+  eventId,
+  audience,
+  messages,
+  canSend = true,
+}: ChatPanelProps) {
   const { user } = useAuth();
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -23,7 +32,7 @@ export function ChatPanel({ channelId, channelLabel, eventId, messages }: ChatPa
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!user || !text.trim()) return;
+    if (!user || !text.trim() || !canSend) return;
     setSending(true);
     setError(null);
     try {
@@ -35,6 +44,7 @@ export function ChatPanel({ channelId, channelLabel, eventId, messages }: ChatPa
         senderNombre: user.nombre,
         senderRole: user.role,
         eventId,
+        audience,
       });
       setText("");
     } catch (err) {
@@ -90,19 +100,30 @@ export function ChatPanel({ channelId, channelLabel, eventId, messages }: ChatPa
 
       <form onSubmit={(e) => void onSubmit(e)} className="border-t border-border p-3">
         {error && <p className="mb-2 text-xs text-alert">{error}</p>}
+        {!canSend && (
+          <p className="mb-2 text-xs text-neutral-500">
+            No puedes escribir en este canal con tu rol actual.
+          </p>
+        )}
         <div className="flex gap-2">
           <input
             type="text"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Mensaje al equipo…"
+            placeholder={
+              audience === "empleados"
+                ? "Mensaje a empleados…"
+                : audience === "supervisores"
+                  ? "Mensaje a supervisores…"
+                  : "Mensaje al evento…"
+            }
             maxLength={2000}
             className="min-w-0 flex-1 rounded-xl border border-border bg-bg px-3 py-2 text-sm text-white placeholder:text-neutral-500"
-            disabled={!user || sending}
+            disabled={!user || sending || !canSend}
           />
           <button
             type="submit"
-            disabled={!user || sending || !text.trim()}
+            disabled={!user || sending || !text.trim() || !canSend}
             className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
           >
             {sending ? "…" : "Enviar"}

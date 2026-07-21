@@ -88,7 +88,7 @@ const WELCOME_BY_ROLE: Record<UserRole, Omit<WelcomeContent, "saludo">> = {
   trabajador: {
     titulo: "¡Bienvenido, Empleado de campo!",
     mensaje:
-      "Tu app es de campo: turnos, escanear QR, reportar y chat. No tienes acceso a la consola administrativa.",
+      "Tu app es de campo: turnos, escanear QR, reportar y chat (general o empleados). No tienes acceso a la consola administrativa.",
     puntos: [
       "Confirma tus turnos y llega a tiempo al sitio indicado.",
       "Marca entrada escaneando el QR.",
