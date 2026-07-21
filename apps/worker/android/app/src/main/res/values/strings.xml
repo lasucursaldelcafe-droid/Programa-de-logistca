@@ -7,7 +7,7 @@
 
     <!-- Textos de permisos (rationale / Play Console) -->
     <string name="permission_location_rationale">SPE Eventos usa tu ubicación para marcar entrada, verificar que estás en el sitio del evento y mostrar el mapa en vivo.</string>
-    <string name="permission_camera_rationale">SPE Eventos usa la cámara para videollamadas y evidencias de operación.</string>
+    <string name="permission_camera_rationale">SPE Eventos usa la cámara para leer códigos QR del sitio, videollamadas y evidencias de operación.</string>
     <string name="permission_microphone_rationale">SPE Eventos usa el micrófono para chat de voz y videollamadas con el equipo.</string>
     <string name="permission_notifications_rationale">SPE Eventos envía notificaciones de turnos, chat y novedades del evento.</string>
     <string name="permission_storage_rationale">SPE Eventos accede a fotos y archivos para adjuntar evidencias y documentos.</string>

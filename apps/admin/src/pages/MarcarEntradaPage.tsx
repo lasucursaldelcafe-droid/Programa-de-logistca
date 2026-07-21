@@ -8,8 +8,10 @@ import {
 } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
 import { Badge, Card } from "../components/ui";
+import { ScanQrButton } from "../components/ScanQrButton";
 import { TematicaEventoCard } from "../components/TematicaEventoCard";
 import { getCurrentPosition } from "../lib/geolocation";
+import { normalizeScannedQr } from "../lib/qrScanner";
 import { useGeofenceMonitor } from "../hooks/useGeofenceMonitor";
 import {
   checkInWithQr,
@@ -79,16 +81,17 @@ export function MarcarEntradaPage() {
     e.preventDefault();
     setError(null);
     const trimmed = rawQr.trim();
-    const parsed = parseQrPayload(trimmed);
+    const normalized = normalizeScannedQr(trimmed) ?? (parseQrPayload(trimmed) ? trimmed : null);
+    const parsed = normalized ? parseQrPayload(normalized) : parseQrPayload(trimmed);
     const qr = parsed
       ? qrCodes.find((q) => q.id === parsed.qrId)
       : qrCodes.find((q) => trimmed.includes(q.id));
-    if (qr) {
-      setPendingQr(trimmed);
+    if (qr && (normalized || trimmed)) {
+      setPendingQr(normalized ?? trimmed);
       setConsentAccepted(false);
       return;
     }
-    setError("Pega un código QR válido del sitio (o el enlace unirse-qr).");
+    setError("Escanea o pega un código QR válido del sitio (o el enlace unirse-qr).");
   }
 
   async function confirmarEntrada() {
@@ -258,13 +261,32 @@ export function MarcarEntradaPage() {
       )}
 
       <Card>
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-neutral-200">Escanear con la cámara</p>
+          <p className="text-xs text-neutral-500">
+            Usa la cámara del teléfono para leer el QR del sitio e iniciar la jornada.
+          </p>
+          <ScanQrButton
+            label="Escanear QR del sitio"
+            onScanned={(normalized) => {
+              setError(null);
+              setRawQr(normalized);
+              setPendingQr(normalized);
+              setConsentAccepted(false);
+            }}
+            onError={(message) => setError(message)}
+          />
+        </div>
+
+        <div className="my-5 border-t border-border" />
+
         <form onSubmit={iniciarCheckin} className="space-y-4">
           <label className="block text-sm">
-            <span className="mb-1 block text-neutral-300">Código QR del sitio</span>
+            <span className="mb-1 block text-neutral-300">O pega el código / enlace</span>
             <input
               value={rawQr}
               onChange={(e) => setRawQr(e.target.value)}
-              placeholder="spe:qr:ID_DEL_SITIO:token"
+              placeholder="spe:qr:… o enlace unirse-qr"
               className="w-full rounded-lg border border-border bg-bg px-3 py-2 font-mono text-xs"
               required
             />
@@ -272,9 +294,9 @@ export function MarcarEntradaPage() {
           {error && <p className="text-sm text-alert">{error}</p>}
           <button
             type="submit"
-            className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black"
+            className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-neutral-200 hover:bg-white/5"
           >
-            Continuar
+            Continuar con texto
           </button>
         </form>
         <p className="mt-4 text-xs text-neutral-500">

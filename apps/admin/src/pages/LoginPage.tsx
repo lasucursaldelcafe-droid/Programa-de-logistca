@@ -9,8 +9,10 @@ import {
   getRuntimeBackendLabel,
 } from "@spe/shared";
 import { BiometricLoginButton } from "../components/BiometricLogin";
+import { ScanQrButton } from "../components/ScanQrButton";
 import { isBiometricAvailable, saveBiometricCredentials } from "../lib/biometricAuth";
 import { sendPasswordReset } from "../hooks/useDataStore";
+import { scannedQrToJoinPath } from "../lib/qrScanner";
 
 const buildEnv = {
   demoMode: false,
@@ -218,6 +220,23 @@ export function LoginPage() {
           ¿Olvidaste tu contraseña?
         </button>
       </form>
+
+      <div className="mt-6 border-t border-border pt-4">
+        <p className="mb-2 text-xs text-neutral-500">
+          ¿Te dieron un QR del sitio? Escanéalo con la cámara para registrarte o marcar entrada.
+        </p>
+        <ScanQrButton
+          label="Escanear QR del sitio"
+          className="w-full rounded-lg border border-accent/40 bg-accent/10 px-4 py-2.5 text-sm font-semibold text-accent hover:bg-accent/20 disabled:opacity-50"
+          onScanned={(_normalized, raw) => {
+            setError(null);
+            const path = scannedQrToJoinPath(raw);
+            if (path) navigate(path);
+            else setError("QR leído, pero no se pudo abrir el registro.");
+          }}
+          onError={setError}
+        />
+      </div>
     </AuthShell>
   );
 }
