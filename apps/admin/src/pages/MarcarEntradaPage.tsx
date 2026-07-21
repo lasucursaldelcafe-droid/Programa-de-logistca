@@ -13,9 +13,9 @@ import { useAuth } from "../contexts/AuthContext";
 import { Badge, Card } from "../components/ui";
 import { ScanQrButton } from "../components/ScanQrButton";
 import { TematicaEventoCard } from "../components/TematicaEventoCard";
+import { useFieldGps } from "../contexts/FieldGpsContext";
 import { getCurrentPosition } from "../lib/geolocation";
 import { normalizeScannedQr } from "../lib/qrScanner";
-import { useGeofenceMonitor } from "../hooks/useGeofenceMonitor";
 import {
   checkInAtSite,
   checkInWithQr,
@@ -60,9 +60,12 @@ export function MarcarEntradaPage() {
 
   const workerId = user?.workerId ?? "";
   const workerNombre = user?.nombre ?? "";
-  const active = workerId ? getActiveAttendance(attendances, workerId) : null;
-  const activeSite = active ? sites.find((s) => s.id === active.siteId) ?? null : null;
-  const { dentroGeocerca, gpsError } = useGeofenceMonitor(active, activeSite, Boolean(active));
+  const activeFromStore = workerId ? getActiveAttendance(attendances, workerId) : null;
+  const fieldGps = useFieldGps();
+  const active = fieldGps.active ?? activeFromStore;
+  const activeSite =
+    fieldGps.site ?? (active ? sites.find((s) => s.id === active.siteId) ?? null : null);
+  const { dentroGeocerca, gpsError } = fieldGps;
 
   const eventoPorId = useMemo(
     () => new Map(events.map((e) => [e.id, e])),
@@ -204,7 +207,9 @@ export function MarcarEntradaPage() {
       <div className="space-y-6">
         <div>
           <h1 className="font-display text-3xl font-bold">Jornada activa</h1>
-          <p className="mt-1 text-neutral-400">GPS activo solo durante esta jornada.</p>
+          <p className="mt-1 text-neutral-400">
+            GPS activo durante la jornada (también si cambias a Turnos o Chat).
+          </p>
         </div>
 
         <TematicaEventoCard evento={eventoActivo} titulo="Recordatorio del evento" />
@@ -224,10 +229,20 @@ export function MarcarEntradaPage() {
             {active.entrada.dentroGeocerca ? " (dentro de geocerca)" : " (revisión manual)"}
           </p>
           {activeSite && (
-            <p className={`mt-2 text-sm ${dentroGeocerca ? "text-positive" : "text-alert"}`}>
-              {dentroGeocerca
-                ? `Dentro de geocerca (${activeSite.radioGeocerca}m)`
-                : "Fuera de geocerca — se notificó al administrador"}
+            <p
+              className={`mt-2 text-sm ${
+                dentroGeocerca === null
+                  ? "text-neutral-400"
+                  : dentroGeocerca
+                    ? "text-positive"
+                    : "text-alert"
+              }`}
+            >
+              {dentroGeocerca === null
+                ? "Obteniendo GPS…"
+                : dentroGeocerca
+                  ? `Dentro de geocerca (${activeSite.radioGeocerca}m)`
+                  : "Fuera de geocerca — se notificó al administrador"}
             </p>
           )}
           {active.ubicacionActual && (

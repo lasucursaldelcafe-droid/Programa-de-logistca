@@ -23,13 +23,52 @@ function parseGeocodeResponse(data: GeocodeApiResponse): GeocodeResult | null {
   };
 }
 
-/** Geocodifica una dirección con Google Geocoding API (misma clave que Maps). */
+function mapsJsReady(): boolean {
+  return typeof google !== "undefined" && Boolean(google.maps?.Geocoder);
+}
+
+/** Preferir Geocoder del Maps JS (sin CORS) cuando el mapa ya cargó la API. */
+async function geocodeWithMapsJs(address: string): Promise<GeocodeResult | null> {
+  if (!mapsJsReady()) return null;
+  const geocoder = new google.maps.Geocoder();
+  const response = await geocoder.geocode({
+    address,
+    region: "CO",
+    language: "es",
+  });
+  const first = response.results[0];
+  if (!first?.geometry?.location) return null;
+  return {
+    lat: first.geometry.location.lat(),
+    lng: first.geometry.location.lng(),
+    formattedAddress: first.formatted_address,
+  };
+}
+
+async function reverseWithMapsJs(lat: number, lng: number): Promise<string | null> {
+  if (!mapsJsReady()) return null;
+  const geocoder = new google.maps.Geocoder();
+  const response = await geocoder.geocode({
+    location: { lat, lng },
+    language: "es",
+  });
+  return response.results[0]?.formatted_address ?? null;
+}
+
+/** Geocodifica una dirección con Google Geocoding (Maps JS o REST). */
 export async function geocodeAddress(
   address: string,
   apiKey: string,
 ): Promise<GeocodeResult | null> {
   const query = address.trim();
   if (!query || !apiKey) return null;
+
+  try {
+    const viaJs = await geocodeWithMapsJs(query);
+    if (viaJs) return viaJs;
+  } catch {
+    /* fallback REST */
+  }
 
   const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
   url.searchParams.set("address", query);
@@ -54,6 +93,13 @@ export async function reverseGeocode(
   apiKey: string,
 ): Promise<string | null> {
   if (!apiKey) return null;
+
+  try {
+    const viaJs = await reverseWithMapsJs(lat, lng);
+    if (viaJs) return viaJs;
+  } catch {
+    /* fallback REST */
+  }
 
   const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
   url.searchParams.set("latlng", `${lat},${lng}`);
