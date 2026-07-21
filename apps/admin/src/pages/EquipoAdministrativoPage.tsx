@@ -41,6 +41,7 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [updatingRoleUid, setUpdatingRoleUid] = useState<string | null>(null);
+  const [busqueda, setBusqueda] = useState("");
 
   /** Roles para crear cuentas de oficina (sin ficha de trabajador). */
   const rolesParaCrear = useMemo(
@@ -56,16 +57,25 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
 
   const perfilesEditables = useMemo(() => {
     if (!user) return [];
-    return platformUsers.filter((u) => {
-      const role = u.role;
-      if (ROLES_RAIZ.includes(role)) return false;
-      if (variant === "master") {
-        // Dirección: todos los perfiles creados (oficina y campo), excepto raíces.
-        return true;
-      }
-      return rolesCuentaPlataforma("ceo").includes(role);
-    });
-  }, [platformUsers, user, variant]);
+    const q = busqueda.trim().toLowerCase();
+    return platformUsers
+      .filter((u) => {
+        const role = u.role;
+        if (ROLES_RAIZ.includes(role)) return false;
+        if (variant === "master") {
+          // Dirección: todos los perfiles creados (oficina y campo), excepto raíces.
+        } else if (!rolesCuentaPlataforma("ceo").includes(role)) {
+          return false;
+        }
+        if (!q) return true;
+        return (
+          u.nombre.toLowerCase().includes(q) ||
+          u.email.toLowerCase().includes(q) ||
+          ROLE_LABEL[u.role].toLowerCase().includes(q)
+        );
+      })
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+  }, [platformUsers, user, variant, busqueda]);
 
   if (!user || !puedeCrearCuentasPlataforma(user.role)) {
     return (
@@ -118,9 +128,10 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
 
   const descripcion =
     variant === "master"
-      ? "Una sola consola: crea el equipo de oficina y cambia el rol de cualquier perfil creado (oficina o campo), excepto Dirección general / técnica."
+      ? "Aquí modificas el rol de cualquier cuenta creada (oficina o campo): por ejemplo pabcolgom@gmail.com o Jhonny. Busca por nombre o correo y elige el nuevo rol."
       : "Crea cuentas de Personas (RH) y Finanzas, y modifica el rol de las existentes. El equipo del evento se gestiona en Equipo del evento.";
 
+  const tituloPagina = variant === "master" ? "Perfiles y roles" : "Equipo de oficina";
   const tituloLista =
     variant === "master"
       ? `Todos los perfiles (${perfilesEditables.length})`
@@ -128,7 +139,7 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
 
   return (
     <div className="space-y-8">
-      <PageHeader title="Equipo de oficina" description={descripcion} />
+      <PageHeader title={tituloPagina} description={descripcion} />
 
       <Card className="border-accent/20 bg-accent/5">
         <h2 className="font-display text-lg font-semibold">Cómo se crean las cuentas</h2>
@@ -232,12 +243,24 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
         <h2 className="font-display text-lg font-semibold">{tituloLista}</h2>
         {variant === "master" && (
           <p className="mt-2 text-sm text-neutral-400">
-            Puedes cambiar el rol de cualquier cuenta creada (oficina o campo). Las cuentas raíz no aparecen aquí.
+            Incluye supervisores y trabajadores con cuenta (p. ej. Pablo, Jhonny) y el equipo de oficina. Las cuentas raíz no aparecen aquí.
           </p>
         )}
+        <label className="mt-3 block text-sm">
+          <span className="mb-1 block text-neutral-400">Buscar por nombre o correo</span>
+          <input
+            type="search"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Ej. pabcolgom@gmail.com o Jhonny"
+            className="w-full max-w-md rounded-lg border border-border bg-bg px-3 py-2"
+          />
+        </label>
         {perfilesEditables.length === 0 ? (
           <p className="mt-3 text-sm text-neutral-500">
-            Aún no hay perfiles para editar. Crea la primera cuenta arriba o registra personal de campo.
+            {busqueda.trim()
+              ? "Ningún perfil coincide con la búsqueda."
+              : "Aún no hay perfiles para editar. Crea la primera cuenta arriba o registra personal de campo."}
           </p>
         ) : (
           <ul className="mt-4 space-y-3">

@@ -6,8 +6,10 @@ import {
   ROLE_LABEL,
   buildWorkerImportTemplateCsv,
   downloadTextFile,
+  esRolMaster,
   parseWorkerImportCsv,
   puedeGestionarPersonal,
+  rolesAsignablesPor,
   rolesPersonalCampo,
   type PerfilTrabajo,
   type UserRole,
@@ -26,7 +28,9 @@ import {
   provisionWorkerAccount,
   setWorkerHabilitado,
   updateWorkerEstado,
+  updatePlatformUserRole,
   updateWorkerPlatformRole,
+  usePlatformUsers,
   useWorkersState,
 } from "../hooks/useDataStore";
 import { getCustomRolesForBase, useCustomRoles } from "../hooks/useCustomRoles";
@@ -46,6 +50,7 @@ const PERFILES: PerfilTrabajo[] = [
 export function PersonalPage() {
   const { user } = useAuth();
   const { workers, loading } = useWorkersState();
+  const platformUsers = usePlatformUsers();
   const customRoles = useCustomRoles();
   const [form, setForm] = useState({
     nombre: "",
@@ -67,8 +72,35 @@ export function PersonalPage() {
   const [provisioningId, setProvisioningId] = useState<string | null>(null);
   const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null);
 
-  const rolesAsignables = user ? rolesPersonalCampo(user.role) : [];
+  const esDireccion = user ? esRolMaster(user.role) : false;
+  /** Dirección puede asignar cualquier rol; el resto solo roles de campo. */
+  const rolesAsignables = user
+    ? esDireccion
+      ? rolesAsignablesPor(user.role)
+      : rolesPersonalCampo(user.role)
+    : [];
   const adminAsignaRoles = rolesAsignables.length > 0;
+
+  const cuentaPorWorkerId = useMemo(() => {
+    const map = new Map<string, (typeof platformUsers)[number]>();
+    for (const u of platformUsers) {
+      if (u.workerId) map.set(u.workerId, u);
+    }
+    for (const u of platformUsers) {
+      const email = u.email.trim().toLowerCase();
+      if (!email) continue;
+      for (const w of workers) {
+        if (w.email.trim().toLowerCase() === email && !map.has(w.id)) {
+          map.set(w.id, u);
+        }
+      }
+    }
+    return map;
+  }, [platformUsers, workers]);
+
+  function rolActualWorker(workerId: string, fallback: RolCampo): UserRole {
+    return cuentaPorWorkerId.get(workerId)?.role ?? fallback;
+  }
 
   const rolesParaBase = useMemo(
     () => getCustomRolesForBase(customRoles, form.rolPlataforma),
@@ -153,13 +185,23 @@ export function PersonalPage() {
     await updateWorkerEstado(id, estado, currentUser.nombre);
   }
 
-  async function cambiarRolCampo(id: string, rol: RolCampo) {
+  async function cambiarRolPersona(id: string, rol: UserRole) {
     setUpdatingRoleId(id);
     setError(null);
     setMensaje(null);
     try {
-      await updateWorkerPlatformRole(id, rol, currentUser);
-      setMensaje(`Rol de campo actualizado a «${ROLE_LABEL[rol]}».`);
+      if (rol === "trabajador" || rol === "supervisor_sitio") {
+        await updateWorkerPlatformRole(id, rol, currentUser);
+      } else {
+        const linked = cuentaPorWorkerId.get(id);
+        if (!linked) {
+          throw new Error(
+            "Activa la cuenta de esta persona antes de asignarle un rol de oficina.",
+          );
+        }
+        await updatePlatformUserRole(linked.uid, rol, currentUser);
+      }
+      setMensaje(`Rol actualizado a «${ROLE_LABEL[rol]}».`);
     } catch (err) {
       setError(toUserFacingError(err, "No se pudo cambiar el rol.").message);
     } finally {
@@ -486,13 +528,25 @@ export function PersonalPage() {
                 <label className="flex flex-col gap-0.5 text-[10px] uppercase tracking-wide text-neutral-500">
                   Rol
                   <select
-                    value={w.rolPlataforma ?? "trabajador"}
+                    value={rolActualWorker(w.id, w.rolPlataforma ?? "trabajador")}
                     disabled={updatingRoleId === w.id}
                     onChange={(e) =>
-                      void cambiarRolCampo(w.id, e.target.value as RolCampo)
+                      void cambiarRolPersona(w.id, e.target.value as UserRole)
                     }
                     className="rounded-lg border border-border bg-bg px-2 py-1 text-xs normal-case tracking-normal text-neutral-100 disabled:opacity-50"
+                    title={
+                      esDireccion
+                        ? "Dirección puede asignar cualquier rol (oficina o campo)"
+                        : "Cambiar rol de campo"
+                    }
                   >
+                    {!rolesAsignables.includes(
+                      rolActualWorker(w.id, w.rolPlataforma ?? "trabajador"),
+                    ) && (
+                      <option value={rolActualWorker(w.id, w.rolPlataforma ?? "trabajador")}>
+                        {ROLE_LABEL[rolActualWorker(w.id, w.rolPlataforma ?? "trabajador")]}
+                      </option>
+                    )}
                     {rolesAsignables.map((rol) => (
                       <option key={rol} value={rol}>
                         {ROLE_LABEL[rol]}
