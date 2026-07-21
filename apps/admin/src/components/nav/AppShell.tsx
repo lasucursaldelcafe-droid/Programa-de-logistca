@@ -7,6 +7,7 @@ import { NotificationBell } from "../NotificationBell";
 import { WelcomeModal } from "../WelcomeModal";
 import { ChatBubble } from "../comunicacion/ChatBubble";
 import { NavIcon } from "./NavIcons";
+import { NavSearch } from "./NavSearch";
 import { SidebarNav } from "./SidebarNav";
 
 interface AppShellProps {
@@ -27,6 +28,9 @@ export function AppShell({ user, brand, brandSub, sections, onLogout }: AppShell
       {/* Sidebar — desktop / tablet landscape */}
       <aside className="hidden w-56 shrink-0 flex-col border-r border-border/80 bg-gradient-to-b from-surface-elevated via-surface to-bg lg:flex xl:w-60">
         <BrandBlock brand={brand} brandSub={brandSub} />
+        <div className="border-b border-border/60 px-3 py-3">
+          <NavSearch sections={sections} />
+        </div>
         <div className="flex-1 overflow-y-auto px-3 py-4">
           <SidebarNav sections={sections} />
         </div>
@@ -48,6 +52,9 @@ export function AppShell({ user, brand, brandSub, sections, onLogout }: AppShell
         }`}
       >
         <BrandBlock brand={brand} brandSub={brandSub} onClose={() => setMobileOpen(false)} />
+        <div className="border-b border-border/60 px-3 py-3">
+          <NavSearch sections={sections} onNavigate={() => setMobileOpen(false)} />
+        </div>
         <div className="flex-1 overflow-y-auto px-3 py-4">
           <SidebarNav sections={sections} onNavigate={() => setMobileOpen(false)} />
         </div>
@@ -67,9 +74,9 @@ export function AppShell({ user, brand, brandSub, sections, onLogout }: AppShell
             <span className="hidden font-medium min-[380px]:inline">Menú</span>
           </button>
           <div className="min-w-0 flex-1 lg:hidden">
-            <p className="truncate font-display text-sm font-semibold">{brand}</p>
-            <p className="truncate text-xs text-neutral-500">{user.nombre}</p>
+            <NavSearch sections={sections} compact onNavigate={() => setMobileOpen(false)} />
           </div>
+          <div className="hidden flex-1 lg:block" />
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <NotificationBell />
             <button

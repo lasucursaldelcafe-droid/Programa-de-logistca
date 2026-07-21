@@ -20,6 +20,7 @@ import { ReportesPage } from "./pages/ReportesPage";
 import { InformesEventoPage } from "./pages/InformesEventoPage";
 import { LoadingScreen } from "./components/FeedbackStates";
 import { AyudaPage } from "./pages/AyudaPage";
+import { GlosarioPage } from "./pages/GlosarioPage";
 import { ClientesPage } from "./pages/ClientesPage";
 import { FacturacionPage } from "./pages/FacturacionPage";
 import { InventarioPage } from "./pages/InventarioPage";
@@ -68,6 +69,7 @@ export function App() {
       <Route path="/descargas" element={<DescargasPage />} />
       <Route path="/configurar" element={<ConfigurarDesdeMovilPage />} />
       <Route path="/ayuda" element={<AyudaPage platform="admin" />} />
+      <Route path="/glosario" element={<GlosarioPage toolBase="admin" />} />
       <Route path="/unirse" element={<UnirseEmpresaPage />} />
       <Route path="/unirse-qr" element={<UnirseQrPage />} />
       <Route path="/activar/:token" element={<ActivarCuentaPage />} />
@@ -113,6 +115,7 @@ export function App() {
         <Route path="configuracion" element={<ConfiguracionPage />} />
         <Route path="operacion" element={<OperacionEventoPage />} />
         <Route path="pendientes" element={<PendientesPage />} />
+        <Route path="glosario" element={<GlosarioPage toolBase="admin" />} />
         <Route path="ayuda" element={<AyudaPage platform="admin" />} />
       </Route>
 

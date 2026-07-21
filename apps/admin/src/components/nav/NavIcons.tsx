@@ -101,6 +101,18 @@ export const NavIcons: Record<string, (props: IconProps) => ReactElement> = {
       <circle cx="12" cy="17" r="0.5" fill="currentColor" stroke="none" />
     </svg>
   ),
+  search: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.75" className={base} {...p}>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="M16.5 16.5L21 21" />
+    </svg>
+  ),
+  book: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.75" className={base} {...p}>
+      <path d="M4 5a2 2 0 012-2h11v18H6a2 2 0 01-2-2V5z" />
+      <path d="M8 7h7M8 11h7M8 15h5" />
+    </svg>
+  ),
   shield: (p) => (
     <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.75" className={base} {...p}>
       <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" />
