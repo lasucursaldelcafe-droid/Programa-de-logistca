@@ -291,6 +291,8 @@ export interface ChatMessage {
   senderNombre: string;
   senderRole: UserRole | string;
   eventId?: string | null;
+  /** audiencia del canal: evento | empleados | supervisores */
+  audience?: "evento" | "empleados" | "supervisores" | null;
   createdAt: string;
 }
 

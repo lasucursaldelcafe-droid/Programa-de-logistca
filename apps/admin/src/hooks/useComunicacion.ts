@@ -8,12 +8,18 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import { getFirestoreDb, type ChatMessage } from "@spe/shared";
+import {
+  buildEventChatChannelId,
+  chatChannelId,
+  parseEventChatChannelId,
+  type ChatAudience,
+  type ChatMessage,
+  getFirestoreDb,
+} from "@spe/shared";
 import { isFirebaseBackend } from "../lib/backend";
 
-export function chatChannelId(eventId: string | null): string {
-  return eventId ? `event-${eventId}` : "general";
-}
+export { chatChannelId, buildEventChatChannelId, parseEventChatChannelId };
+export type { ChatAudience };
 
 export function useChatMessages(channelId: string): ChatMessage[] {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -48,9 +54,14 @@ export async function sendChatMessage(data: {
   senderNombre: string;
   senderRole: string;
   eventId?: string;
+  audience?: ChatAudience;
 }): Promise<void> {
   const trimmed = data.text.trim();
   if (!trimmed) return;
+
+  const parsed = parseEventChatChannelId(data.channelId);
+  const audience = data.audience ?? parsed?.audience ?? "evento";
+  const eventId = data.eventId ?? parsed?.eventId ?? null;
 
   await addDoc(collection(getFirestoreDb(), "chatMessages"), {
     channelId: data.channelId,
@@ -59,7 +70,8 @@ export async function sendChatMessage(data: {
     senderUid: data.senderUid,
     senderNombre: data.senderNombre,
     senderRole: data.senderRole,
-    eventId: data.eventId ?? null,
+    eventId,
+    audience,
     createdAt: new Date().toISOString(),
   });
 }
