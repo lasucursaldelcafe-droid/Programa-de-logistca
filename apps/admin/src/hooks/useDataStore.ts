@@ -68,6 +68,9 @@ import {
   puedeAsignarRol,
   rolesCuentaPlataforma,
   normalizeUserRole,
+  GPS_CHECKIN_QR_ID,
+  GPS_CHECKIN_CONSENT,
+  findTurnoConfirmadoVigente,
 } from "@spe/shared";
 import { getFunctions, httpsCallable } from "firebase/functions";
 
@@ -1450,7 +1453,11 @@ export async function checkInWithQr(data: {
       workerId: data.workerId,
       workerNombre: data.workerNombre,
       shift,
-      qr,
+      siteId: qr.siteId,
+      siteNombre: qr.siteNombre ?? site.nombre,
+      eventId: qr.eventId,
+      eventNombre: qr.eventNombre ?? "",
+      qrId: qr.id,
       estado,
       entrada,
       position: data.position,
@@ -1458,8 +1465,8 @@ export async function checkInWithQr(data: {
     await notifyCheckIn({
       workerId: data.workerId,
       workerNombre: data.workerNombre,
-      siteNombre: qr.siteNombre,
-      eventNombre: qr.eventNombre,
+      siteNombre: qr.siteNombre ?? site.nombre,
+      eventNombre: qr.eventNombre ?? "",
       attendanceId,
       dentroGeocerca: dentro,
     });
@@ -1533,6 +1540,193 @@ export async function checkInWithQr(data: {
     eventNombre: qr.eventNombre,
     attendanceId: ref.id,
     dentroGeocerca: dentro,
+  });
+  return ref.id;
+}
+
+/**
+ * Activa la jornada sin QR: el trabajador confirma “ya estoy aquí”
+ * con GPS sobre un turno confirmado vigente.
+ */
+export async function checkInAtSite(data: {
+  workerId: string;
+  workerNombre: string;
+  shifts: Turno[];
+  position: GeoPosition;
+  /** Si se indica, debe coincidir con el turno vigente de ese sitio. */
+  shiftId?: string;
+}): Promise<string> {
+  const existing = getActiveAttendance(
+    isDemoMode() ? demoStore.attendances : [],
+    data.workerId,
+  );
+  // En Firestore/Sheets no tenemos lista local completa aquí; la UI ya bloquea
+  // con jornada activa. En demo sí comprobamos.
+  if (isDemoMode() && existing) {
+    throw new Error("Ya tienes una jornada activa");
+  }
+
+  let shift: Turno | null = null;
+  if (data.shiftId) {
+    shift =
+      data.shifts.find(
+        (s) =>
+          s.id === data.shiftId &&
+          s.workerId === data.workerId &&
+          s.estado === "confirmado",
+      ) ?? null;
+    if (!shift) throw new Error("Turno no encontrado o no está confirmado.");
+    const now = Date.now();
+    if (new Date(shift.inicio).getTime() > now || new Date(shift.fin).getTime() < now) {
+      throw new Error("Este turno aún no está vigente o ya terminó.");
+    }
+  } else {
+    shift = findTurnoConfirmadoVigente(data.shifts, data.workerId);
+  }
+  if (!shift) {
+    throw new Error(
+      "No tienes un turno confirmado vigente ahora. Acepta el turno en Mis turnos e inténtalo en el horario asignado.",
+    );
+  }
+
+  const site = await getSiteById(shift.siteId);
+  if (!site) throw new Error("Sitio del turno no encontrado");
+
+  const radio = site.radioGeocerca > 0 ? site.radioGeocerca : 100;
+  const dentro = isInsideGeofence(
+    data.position,
+    { lat: site.lat, lng: site.lng },
+    radio,
+  );
+
+  // “Ya estoy aquí” exige estar en el sitio; si no, pide acercarse o usar QR.
+  if (!dentro) {
+    throw new Error(
+      `Aún no estás en el sitio «${site.nombre}» (radio ${radio}m). Acércate y vuelve a pulsar «Ya estoy aquí», o escanea el QR del sitio.`,
+    );
+  }
+
+  const estado: AttendanceEstado = "activo";
+  const entrada = {
+    timestamp: new Date().toISOString(),
+    lat: data.position.lat,
+    lng: data.position.lng,
+    dentroGeocerca: true,
+  };
+
+  const siteNombre = shift.siteNombre || site.nombre;
+  const eventNombre = shift.eventNombre || "";
+
+  if (isDemoMode()) {
+    const attendanceId = demoStore.checkIn({
+      workerId: data.workerId,
+      workerNombre: data.workerNombre,
+      shift,
+      siteId: shift.siteId,
+      siteNombre,
+      eventId: shift.eventId,
+      eventNombre,
+      qrId: GPS_CHECKIN_QR_ID,
+      estado,
+      entrada,
+      position: data.position,
+    });
+    await notifyCheckIn({
+      workerId: data.workerId,
+      workerNombre: data.workerNombre,
+      siteNombre,
+      eventNombre,
+      attendanceId,
+      dentroGeocerca: true,
+    });
+    return attendanceId;
+  }
+
+  if (isSheetsBackend()) {
+    const open = (await sheetsListAll<Attendance>("attendance")).find(
+      (a) => a.workerId === data.workerId && a.estado !== "cerrado",
+    );
+    if (open) throw new Error("Ya tienes una jornada activa");
+
+    const attendanceId = `att-${Date.now().toString(36)}`;
+    await sheetsUpsertRecord("attendance", {
+      id: attendanceId,
+      workerId: data.workerId,
+      workerNombre: data.workerNombre,
+      shiftId: shift.id,
+      siteId: shift.siteId,
+      siteNombre,
+      eventId: shift.eventId,
+      eventNombre,
+      qrId: GPS_CHECKIN_QR_ID,
+      estado,
+      entrada: JSON.stringify(entrada),
+      ubicacionActual: JSON.stringify(data.position),
+      alertasGeocerca: "",
+      creadoEn: new Date().toISOString(),
+    });
+    await sheetsUpsertRecord("workers", {
+      ...(await getWorkerById(data.workerId)),
+      id: data.workerId,
+      estado: "en_sitio",
+    });
+    await notifyCheckIn({
+      workerId: data.workerId,
+      workerNombre: data.workerNombre,
+      siteNombre,
+      eventNombre,
+      attendanceId,
+      dentroGeocerca: true,
+    });
+    return attendanceId;
+  }
+
+  const openSnap = await getDocs(
+    query(
+      collection(getFirestoreDb(), "attendance"),
+      where("workerId", "==", data.workerId),
+      limit(25),
+    ),
+  );
+  const hasOpen = openSnap.docs.some((d) => {
+    const est = d.data().estado as AttendanceEstado | undefined;
+    return est === "activo" || est === "revision_manual" || est === "fuera_geocerca";
+  });
+  if (hasOpen) throw new Error("Ya tienes una jornada activa");
+
+  const ref = await addDoc(collection(getFirestoreDb(), "attendance"), {
+    workerId: data.workerId,
+    workerNombre: data.workerNombre,
+    shiftId: shift.id,
+    siteId: shift.siteId,
+    siteNombre,
+    eventId: shift.eventId,
+    eventNombre,
+    qrId: GPS_CHECKIN_QR_ID,
+    estado,
+    entrada,
+    ubicacionActual: data.position,
+    alertasGeocerca: [],
+    creadoEn: new Date().toISOString(),
+  });
+
+  await addDoc(collection(getFirestoreDb(), "consents"), {
+    workerId: data.workerId,
+    qrId: GPS_CHECKIN_QR_ID,
+    eventId: shift.eventId,
+    timestamp: new Date().toISOString(),
+    aceptado: true,
+    versionDescripcionDatos: GPS_CHECKIN_CONSENT,
+  });
+
+  await updateDoc(doc(getFirestoreDb(), "workers", data.workerId), { estado: "en_sitio" });
+  await notifyCheckIn({
+    workerId: data.workerId,
+    workerNombre: data.workerNombre,
+    siteNombre,
+    eventNombre,
+    attendanceId: ref.id,
+    dentroGeocerca: true,
   });
   return ref.id;
 }

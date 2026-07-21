@@ -100,7 +100,11 @@ function main(): void {
     workerId: worker.id,
     workerNombre: worker.nombre,
     shift,
-    qr,
+    siteId: qr.siteId,
+    siteNombre: qr.siteNombre,
+    eventId: qr.eventId,
+    eventNombre: qr.eventNombre,
+    qrId: qr.id,
     estado: "activo",
     entrada: {
       timestamp: new Date().toISOString(),

@@ -76,6 +76,7 @@ export interface Attendance {
   siteNombre?: string;
   eventId: string;
   eventNombre?: string;
+  /** Id del QR de sitio, o `"gps"` si la entrada fue por “ya estoy aquí”. */
   qrId: string;
   estado: AttendanceEstado;
   entrada: GeoRegistro;

@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import {
   SHIFT_LABEL,
+  findTurnoConfirmadoVigente,
   puedeGestionarTurnos,
   resolveEntradaPath,
   type ShiftEstado,
@@ -10,6 +11,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { Badge, Card } from "../components/ui";
 import {
   createShift,
+  toUserFacingError,
   updateShiftEstado,
   useEvents,
   useShifts,
@@ -31,12 +33,20 @@ export function TurnosPage() {
     inicio: "",
     fin: "",
   });
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [mensaje, setMensaje] = useState<string | null>(null);
 
   const esAdmin = user && puedeGestionarTurnos(user.role);
   const misTurnos =
     user?.role === "trabajador" && user.workerId
       ? shifts.filter((s) => s.workerId === user.workerId)
       : shifts;
+
+  const turnoVigente =
+    user?.role === "trabajador" && user.workerId
+      ? findTurnoConfirmadoVigente(shifts, user.workerId)
+      : null;
 
   async function crearTurno(e: React.FormEvent) {
     e.preventDefault();
@@ -59,10 +69,25 @@ export function TurnosPage() {
   }
 
   async function responderTurno(id: string, estado: "confirmado" | "rechazado") {
-    await updateShiftEstado(id, estado);
+    setBusyId(id);
+    setError(null);
+    setMensaje(null);
+    try {
+      await updateShiftEstado(id, estado);
+      setMensaje(
+        estado === "confirmado"
+          ? "Trabajo aceptado. Cuando llegues al sitio, activa la jornada."
+          : "Turno rechazado.",
+      );
+    } catch (err) {
+      setError(toUserFacingError(err, "No se pudo responder al turno.").message);
+    } finally {
+      setBusyId(null);
+    }
   }
 
   const sitesFiltrados = sites.filter((s) => !form.eventId || s.eventId === form.eventId);
+  const entradaPath = resolveEntradaPath(pathname);
 
   return (
     <div className="space-y-5">
@@ -73,13 +98,39 @@ export function TurnosPage() {
           {user?.role === "trabajador" && (
             <>
               {" "}
-              <Link to={resolveEntradaPath(pathname)} className="text-accent hover:underline">
-                Marcar entrada con QR
+              <Link to={entradaPath} className="text-accent hover:underline">
+                Marcar entrada / ya estoy aquí
               </Link>
             </>
           )}
         </p>
       </div>
+
+      {error && (
+        <p className="rounded-lg border border-alert/40 bg-alert/10 px-3 py-2 text-sm text-alert">
+          {error}
+        </p>
+      )}
+      {mensaje && (
+        <p className="rounded-lg border border-positive/40 bg-positive/10 px-3 py-2 text-sm text-positive">
+          {mensaje}
+        </p>
+      )}
+
+      {user?.role === "trabajador" && turnoVigente && (
+        <Card className="border-positive/30 bg-positive/5">
+          <p className="text-sm font-medium text-positive">Turno vigente ahora</p>
+          <p className="mt-1 text-neutral-200">
+            {turnoVigente.siteNombre} · {turnoVigente.eventNombre}
+          </p>
+          <Link
+            to={entradaPath}
+            className="mt-3 inline-block rounded-lg bg-positive px-4 py-2 text-sm font-semibold text-black"
+          >
+            Ya estoy aquí — activar jornada
+          </Link>
+        </Card>
+      )}
 
       {esAdmin && (
         <Card>
@@ -167,7 +218,10 @@ export function TurnosPage() {
 
       <div className="space-y-3">
         {misTurnos.map((t) => (
-          <Card key={t.id} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Card
+            key={t.id}
+            className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+          >
             <div>
               <div className="font-display font-semibold">{t.workerNombre ?? t.workerId}</div>
               <div className="mt-1 text-sm text-neutral-400">
@@ -184,20 +238,32 @@ export function TurnosPage() {
                 <>
                   <button
                     type="button"
-                    onClick={() => responderTurno(t.id, "confirmado")}
-                    className="rounded-lg bg-positive/20 px-3 py-1 text-xs text-positive"
+                    disabled={busyId === t.id}
+                    onClick={() => void responderTurno(t.id, "confirmado")}
+                    className="rounded-lg bg-positive/20 px-3 py-1 text-xs text-positive disabled:opacity-50"
                   >
-                    Aceptar
+                    {busyId === t.id ? "…" : "Aceptar trabajo"}
                   </button>
                   <button
                     type="button"
-                    onClick={() => responderTurno(t.id, "rechazado")}
-                    className="rounded-lg bg-alert/20 px-3 py-1 text-xs text-alert"
+                    disabled={busyId === t.id}
+                    onClick={() => void responderTurno(t.id, "rechazado")}
+                    className="rounded-lg bg-alert/20 px-3 py-1 text-xs text-alert disabled:opacity-50"
                   >
                     Rechazar
                   </button>
                 </>
               )}
+              {user?.role === "trabajador" &&
+                t.estado === "confirmado" &&
+                turnoVigente?.id === t.id && (
+                  <Link
+                    to={entradaPath}
+                    className="rounded-lg bg-positive/20 px-3 py-1 text-xs font-semibold text-positive"
+                  >
+                    Ya estoy aquí
+                  </Link>
+                )}
             </div>
           </Card>
         ))}

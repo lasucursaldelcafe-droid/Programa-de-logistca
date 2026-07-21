@@ -1,10 +1,11 @@
 import { FormEvent, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   BREAK_TIPO_LABEL,
   NOTIFICATION_TIPO_LABEL,
   puedeEnviarNotificacion,
   notificationUnreadFor,
+  resolveTurnosPath,
   type BreakTipo,
 } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
@@ -23,6 +24,7 @@ import { updateShiftEstado, useAttendances, useEvents, useShifts, useWorkers } f
 
 export function NotificacionesPage() {
   const { user } = useAuth();
+  const { pathname } = useLocation();
   const notifications = useNotifications(user);
   const breaks = useBreaks();
   const workers = useWorkers();
@@ -478,7 +480,10 @@ export function NotificacionesPage() {
                         >
                           Rechazar
                         </button>
-                        <Link to="/turnos" className="text-xs text-accent hover:underline">
+                        <Link
+                          to={resolveTurnosPath(pathname)}
+                          className="text-xs text-accent hover:underline"
+                        >
                           Ver turnos
                         </Link>
                       </>
