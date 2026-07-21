@@ -4,6 +4,7 @@ import {
   ATTENDANCE_LABEL,
   SHIFT_LABEL,
   buildDashboardKpis,
+  puedeGestionarConfiguracion,
   puedeGestionarTurnos,
   type ShiftEstado,
 } from "@spe/shared";
@@ -13,7 +14,9 @@ import { EventoOperacionSelect } from "../components/EventoOperacionSelect";
 import { MetricCard } from "../components/dashboard/MetricCard";
 import {
   createShift,
+  deleteEvent,
   deleteShift,
+  toUserFacingError,
   useAttendances,
   useQrCodes,
   useShifts,
@@ -270,6 +273,40 @@ export function OperacionEventoPage() {
           className="min-w-[220px]"
         />
       </div>
+
+      {evento && user && puedeGestionarConfiguracion(user.role) && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-alert/25 bg-alert/5 px-4 py-3">
+          <p className="text-sm text-neutral-400">
+            Eliminar <span className="font-medium text-neutral-200">{evento.nombre}</span> borra sitios,
+            turnos, QR y datos del evento. No disponible con jornadas abiertas.
+          </p>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              const ok = window.confirm(
+                `¿Eliminar el evento "${evento.nombre}"?\n\nSe borrarán sitios, turnos, QR, asistencias, chat y nómina de ese evento. Esta acción no se puede deshacer.`,
+              );
+              if (!ok) return;
+              setError(null);
+              setMensaje(null);
+              setBusy(true);
+              void deleteEvent(evento.id, user.nombre)
+                .then(() => {
+                  setMensaje(`Evento "${evento.nombre}" eliminado.`);
+                  setEventId("");
+                })
+                .catch((err) => {
+                  setError(toUserFacingError(err, "No se pudo eliminar el evento").message);
+                })
+                .finally(() => setBusy(false));
+            }}
+            className="shrink-0 rounded-lg border border-alert/40 px-3 py-1.5 text-xs font-semibold text-alert hover:bg-alert/10 disabled:opacity-50"
+          >
+            Eliminar evento
+          </button>
+        </div>
+      )}
 
       {evento && (
         <div className="flex flex-wrap gap-2 border-b border-border/60 pb-3" role="tablist" aria-label="Secciones del evento">

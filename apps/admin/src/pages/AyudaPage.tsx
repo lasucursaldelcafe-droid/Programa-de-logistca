@@ -11,7 +11,7 @@ const PLATFORM_TITLE: Record<Platform, string> = {
 
 const PLATFORM_STEPS: Record<Platform, string[]> = {
   admin: [
-    "Configura el evento y los sitios GPS en QR Sitios.",
+    "Configura el evento y los sitios GPS en Configuración / QR Sitios. Desde Configuración u Operación puedes eliminar un evento (borra sitios, turnos y datos asociados; no si hay jornadas abiertas).",
     "Registra personal y envía invitaciones desde Cuentas.",
     "Crea turnos con trabajador, sitio y horario.",
     "Monitorea el mapa en vivo y atiende reportes de incidencias.",

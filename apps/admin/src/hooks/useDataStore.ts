@@ -7,6 +7,7 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   setDoc,
@@ -72,6 +73,7 @@ import {
   GPS_CHECKIN_QR_ID,
   GPS_CHECKIN_CONSENT,
   findTurnoConfirmadoVigente,
+  buildEventChatChannelId,
 } from "@spe/shared";
 import { getFunctions, httpsCallable } from "firebase/functions";
 
@@ -2077,6 +2079,172 @@ export async function updateEvento(
     return;
   }
   await updateDoc(doc(getFirestoreDb(), "events", eventId), data);
+}
+
+async function deleteCollectionByEventId(
+  collectionName: string,
+  eventId: string,
+): Promise<void> {
+  const snap = await getDocs(
+    query(collection(getFirestoreDb(), collectionName), where("eventId", "==", eventId)),
+  );
+  await Promise.all(
+    snap.docs.map((d) =>
+      deleteDoc(d.ref).catch(() => {
+        /* permiso denegado en colecciones restringidas (p. ej. reports) */
+      }),
+    ),
+  );
+}
+
+async function deleteChatMessagesForEvent(eventId: string): Promise<void> {
+  const db = getFirestoreDb();
+  const byEvent = await getDocs(
+    query(collection(db, "chatMessages"), where("eventId", "==", eventId)),
+  );
+  await Promise.all(byEvent.docs.map((d) => deleteDoc(d.ref).catch(() => undefined)));
+
+  const channelIds = (["evento", "empleados", "supervisores"] as const).map((audience) =>
+    buildEventChatChannelId(eventId, audience),
+  );
+  for (const channelId of channelIds) {
+    const byChannel = await getDocs(
+      query(collection(db, "chatMessages"), where("channelId", "==", channelId)),
+    );
+    await Promise.all(byChannel.docs.map((d) => deleteDoc(d.ref).catch(() => undefined)));
+  }
+}
+
+/**
+ * Elimina un evento y datos relacionados (sitios, turnos, QR, asistencias cerradas,
+ * notificaciones, chat, nómina del evento, etc.).
+ * Bloquea si hay jornadas GPS abiertas.
+ */
+export async function deleteEvent(
+  eventId: string,
+  actorNombre?: string,
+): Promise<void> {
+  const id = eventId.trim();
+  if (!id) throw new Error("Evento no válido.");
+
+  if (isDemoMode()) {
+    demoStore.removeEvent(id, actorNombre);
+    return;
+  }
+
+  if (isSheetsBackend()) {
+    const [sites, shifts, attendances, qrs, payroll, reportes] = await Promise.all([
+      sheetsListAll<Sitio>("sites"),
+      sheetsListAll<Turno>("shifts"),
+      sheetsListAll<Attendance>("attendance"),
+      sheetsListAll<QrCode>("qrCodes"),
+      sheetsListAll<{ id: string; eventId?: string }>("payroll"),
+      sheetsListAll<{ id: string; eventId?: string }>("reports"),
+    ]);
+
+    const hasActive = attendances.some(
+      (a) => a.eventId === id && a.estado !== "cerrado",
+    );
+    if (hasActive) {
+      throw new Error(
+        "No se puede eliminar: hay jornadas activas en este evento. Ciérralas primero.",
+      );
+    }
+
+    await Promise.all([
+      ...sites.filter((s) => s.eventId === id).map((s) => sheetsDeleteRecord("sites", s.id)),
+      ...shifts.filter((s) => s.eventId === id).map((s) => sheetsDeleteRecord("shifts", s.id)),
+      ...attendances
+        .filter((a) => a.eventId === id)
+        .map((a) => sheetsDeleteRecord("attendance", a.id)),
+      ...qrs.filter((q) => q.eventId === id).map((q) => sheetsDeleteRecord("qrCodes", q.id)),
+      ...payroll
+        .filter((p) => p.eventId === id)
+        .map((p) => sheetsDeleteRecord("payroll", p.id)),
+      ...reportes
+        .filter((r) => r.eventId === id)
+        .map((r) => sheetsDeleteRecord("reports", r.id)),
+      sheetsDeleteRecord("events", id),
+    ]);
+
+    const setup = await sheetsGetById<Record<string, unknown>>("setupConfig", "default");
+    if (setup && String(setup.eventoId ?? "") === id) {
+      await sheetsUpsertRecord(
+        "setupConfig",
+        {
+          ...setup,
+          id: "default",
+          eventoId: "",
+          completado: false,
+          pasoActual: "evento",
+          pasosCompletados: "[]",
+          actualizadoEn: new Date().toISOString(),
+        },
+        "id",
+      );
+    }
+    return;
+  }
+
+  const db = getFirestoreDb();
+  const eventRef = doc(db, "events", id);
+  const eventSnap = await getDoc(eventRef);
+  if (!eventSnap.exists()) {
+    throw new Error("Evento no encontrado.");
+  }
+
+  const attSnap = await getDocs(
+    query(collection(db, "attendance"), where("eventId", "==", id)),
+  );
+  const hasActive = attSnap.docs.some((d) => {
+    const estado = d.data().estado as string | undefined;
+    return estado !== "cerrado";
+  });
+  if (hasActive) {
+    throw new Error(
+      "No se puede eliminar: hay jornadas activas en este evento. Ciérralas primero.",
+    );
+  }
+
+  await Promise.all([
+    deleteCollectionByEventId("sites", id),
+    deleteCollectionByEventId("shifts", id),
+    deleteCollectionByEventId("qrCodes", id),
+    deleteCollectionByEventId("consents", id),
+    deleteCollectionByEventId("notifications", id),
+    deleteCollectionByEventId("payroll", id),
+    deleteCollectionByEventId("reports", id),
+    deleteCollectionByEventId("videoRooms", id),
+  ]);
+
+  await Promise.all(attSnap.docs.map((d) => deleteDoc(d.ref).catch(() => undefined)));
+
+  const convSnap = await getDocs(
+    query(collection(db, "conversations"), where("eventId", "==", id)),
+  );
+  for (const conv of convSnap.docs) {
+    const msgSnap = await getDocs(
+      query(collection(db, "messages"), where("conversationId", "==", conv.id)),
+    );
+    await Promise.all(msgSnap.docs.map((d) => deleteDoc(d.ref).catch(() => undefined)));
+    await deleteDoc(conv.ref).catch(() => undefined);
+  }
+
+  await deleteChatMessagesForEvent(id);
+
+  const setupRef = doc(db, "setupConfig", "default");
+  const setupSnap = await getDoc(setupRef);
+  if (setupSnap.exists() && setupSnap.data().eventoId === id) {
+    await updateDoc(setupRef, {
+      eventoId: deleteField(),
+      completado: false,
+      pasoActual: "evento",
+      pasosCompletados: [],
+      actualizadoEn: new Date().toISOString(),
+    }).catch(() => undefined);
+  }
+
+  await deleteDoc(eventRef);
 }
 
 export async function createSite(data: {
