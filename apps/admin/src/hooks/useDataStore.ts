@@ -31,6 +31,7 @@ import {
   isInsideGeofence,
   isWithinTimeWindow,
   parseQrPayload,
+  assertFirestoreSafe,
   buildQrCodeDocument,
   buildQrCodeId,
   buildQrCodeToken,
@@ -1358,17 +1359,22 @@ export async function createQrCode(data: CreateQrCodeInput): Promise<string> {
   const secret = data.modo === "rotativo" ? crypto.randomUUID().slice(0, 8) : undefined;
 
   const qr = buildQrCodeDocument(data, { token, secret });
+  assertFirestoreSafe(qr, "qrCodes");
 
-  if (isDemoMode()) {
-    demoStore.addQrCode({ ...qr, id });
+  try {
+    if (isDemoMode()) {
+      demoStore.addQrCode({ ...qr, id });
+      return id;
+    }
+    if (isSheetsBackend()) {
+      await sheetsUpsertRecord("qrCodes", { ...qr, id });
+      return id;
+    }
+    await setDoc(doc(getFirestoreDb(), "qrCodes", id), qr);
     return id;
+  } catch (err) {
+    throw toUserFacingError(err, "No se pudo guardar el código QR en la base de datos.");
   }
-  if (isSheetsBackend()) {
-    await sheetsUpsertRecord("qrCodes", { ...qr, id });
-    return id;
-  }
-  await setDoc(doc(getFirestoreDb(), "qrCodes", id), qr);
-  return id;
 }
 
 export async function deactivateQrCode(qrId: string): Promise<void> {

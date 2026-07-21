@@ -20,6 +20,7 @@ import {
   createEvent,
   createQrCode,
   createSite,
+  toUserFacingError,
   updateEvento,
   useEvents,
   useQrCodes,
@@ -303,7 +304,7 @@ export function ConfiguracionPage() {
           : "Todos los sitios ya tenían QR activo.",
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al generar QR");
+      setError(toUserFacingError(err, "No se pudo generar el QR de los sitios.").message);
     } finally {
       setBusy(false);
     }
