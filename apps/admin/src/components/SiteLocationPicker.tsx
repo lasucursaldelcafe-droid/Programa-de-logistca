@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { APIProvider, Circle, Map, Marker, useMap, type MapMouseEvent } from "@vis.gl/react-google-maps";
-import { geocodeAddress, reverseGeocode } from "../lib/geocode";
+import { geocodeAddress, reverseGeocode, toGeocodeUserMessage } from "../lib/geocode";
 import { getGoogleMapsApiKey, isGoogleMapsEnabled } from "../lib/googleMaps";
 
 export interface SiteLocationValue {
@@ -233,7 +233,7 @@ export function SiteLocationPicker({ value, onChange }: SiteLocationPickerProps)
     }
     if (!mapsEnabled) {
       setGeocodeError(
-        "Configura la clave de Google Maps para buscar direcciones automáticamente.",
+        "Configura la clave de Google Maps para buscar direcciones. Mientras tanto, toca el mapa para marcar el punto.",
       );
       return;
     }
@@ -241,7 +241,9 @@ export function SiteLocationPicker({ value, onChange }: SiteLocationPickerProps)
     try {
       const result = await geocodeAddress(value.direccion, apiKey);
       if (!result) {
-        setGeocodeError("No se encontró esa dirección. Ajusta el texto o marca el punto en el mapa.");
+        setGeocodeError(
+          "No se encontró esa dirección. Ajusta el texto o toca el mapa / arrastra el pin.",
+        );
         return;
       }
       patch({
@@ -250,7 +252,7 @@ export function SiteLocationPicker({ value, onChange }: SiteLocationPickerProps)
         lng: result.lng.toFixed(6),
       });
     } catch (err) {
-      setGeocodeError(err instanceof Error ? err.message : "Error al geocodificar");
+      setGeocodeError(toGeocodeUserMessage(err));
     } finally {
       setGeocodeBusy(false);
     }
@@ -280,8 +282,15 @@ export function SiteLocationPicker({ value, onChange }: SiteLocationPickerProps)
       </label>
 
       {geocodeError && (
-        <p className="text-sm text-alert">{geocodeError}</p>
+        <p className="rounded-lg border border-alert/40 bg-alert/10 px-3 py-2 text-sm text-alert">
+          {geocodeError}
+        </p>
       )}
+
+      <p className="text-xs text-neutral-500">
+        La búsqueda por dirección es opcional. Puedes guardar el sitio solo tocando el mapa o
+        arrastrando el pin (eso define el GPS de la geocerca).
+      </p>
 
       <div className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
