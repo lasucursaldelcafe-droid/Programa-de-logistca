@@ -2,7 +2,7 @@
   "backend": "firebase",
   "demoMode": false,
   "preferLiveUi": true,
-  "uiVersion": "cecb3a848039",
+  "uiVersion": "0656ab698ba3",
   "canonicalAppUrl": "https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/",
   "setupCompletado": {
     "firebaseSecrets": true,
