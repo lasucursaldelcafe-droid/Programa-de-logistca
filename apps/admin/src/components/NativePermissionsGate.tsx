@@ -1,4 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { hasSeenWelcome } from "@spe/shared";
+import { useAuth } from "../contexts/AuthContext";
 import { isNativePlatform } from "../lib/platform";
 import {
   hasPromptedNativePermissions,
@@ -46,11 +48,12 @@ function statusClass(status: NativePermissionResult["status"]): string {
 }
 
 /**
- * En la APK/app nativa, muestra una sola vez el flujo para conceder
- * GPS, notificaciones, cámara, micrófono, archivos y teléfono (llamadas).
+ * En la APK/app nativa, muestra una sola vez el flujo de permisos
+ * **después** de la bienvenida, para no solapar dos modales.
  */
 export function NativePermissionsGate({ children }: { children: ReactNode }) {
   const native = isNativePlatform();
+  const { user } = useAuth();
   const [ready, setReady] = useState(!native);
   const [showPrompt, setShowPrompt] = useState(false);
   const [requesting, setRequesting] = useState(false);
@@ -60,25 +63,61 @@ export function NativePermissionsGate({ children }: { children: ReactNode }) {
     if (!native) return;
 
     let cancelled = false;
-    void (async () => {
+    let intervalId: ReturnType<typeof setInterval> | undefined;
+
+    async function tryShowPrompt(uid: string | undefined) {
+      if (!uid) {
+        setShowPrompt(false);
+        setReady(true);
+        return;
+      }
       const already = await hasPromptedNativePermissions();
       if (cancelled) return;
-      if (!already) {
-        setShowPrompt(true);
+      if (already) {
+        setShowPrompt(false);
+        setReady(true);
+        return;
       }
+      // Esperar a que el usuario cierre la bienvenida (si aplica).
+      if (!hasSeenWelcome(uid)) {
+        setReady(true);
+        setShowPrompt(false);
+        return;
+      }
+      setShowPrompt(true);
       setReady(true);
-    })();
+    }
+
+    void tryShowPrompt(user?.uid);
+
+    if (user?.uid && !hasSeenWelcome(user.uid)) {
+      intervalId = setInterval(() => {
+        if (!user.uid) return;
+        if (hasSeenWelcome(user.uid)) {
+          void tryShowPrompt(user.uid);
+          if (intervalId) clearInterval(intervalId);
+        }
+      }, 350);
+    }
+
+    const onWelcomeDone = () => {
+      void tryShowPrompt(user?.uid);
+    };
+    window.addEventListener("spe:welcome-dismissed", onWelcomeDone);
 
     return () => {
       cancelled = true;
+      if (intervalId) clearInterval(intervalId);
+      window.removeEventListener("spe:welcome-dismissed", onWelcomeDone);
     };
-  }, [native]);
+  }, [native, user?.uid]);
 
   const allowAccess = async () => {
     setRequesting(true);
     try {
       const next = await requestAllNativePermissions();
       setResults(next);
+      await markNativePermissionsPrompted();
     } finally {
       setRequesting(false);
     }
@@ -113,8 +152,8 @@ export function NativePermissionsGate({ children }: { children: ReactNode }) {
               Permisos del teléfono
             </h2>
             <p className="mt-2 text-sm text-neutral-400">
-              Para GPS, chat, voz, cámara, notificaciones, archivos y llamadas al celular del
-              personal, Android pide autorización. Concédelos ahora para que la app funcione completa.
+              Para llegar al sitio (GPS), recibir avisos y usar cámara o chat de voz, el teléfono pide
+              autorización. Puedes concederlos ahora o más tarde en Ajustes.
             </p>
 
             <ul className="mt-4 space-y-3">
@@ -140,8 +179,7 @@ export function NativePermissionsGate({ children }: { children: ReactNode }) {
 
             {results && results.some((r) => r.status === "denied") && (
               <p className="mt-3 text-xs text-neutral-500">
-                Si denegaste alguno, puedes activarlo después en Ajustes del teléfono → Apps → SPE
-                Eventos → Permisos.
+                Si denegaste alguno, actívalo en Ajustes → Apps → SPE Eventos → Permisos.
               </p>
             )}
 
@@ -152,7 +190,7 @@ export function NativePermissionsGate({ children }: { children: ReactNode }) {
                     type="button"
                     disabled={requesting}
                     onClick={() => void allowAccess()}
-                    className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-bg transition hover:bg-accent/90 disabled:opacity-60"
+                    className="min-h-11 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-bg transition hover:bg-accent/90 disabled:opacity-60"
                   >
                     {requesting ? "Solicitando…" : "Permitir accesos"}
                   </button>
@@ -160,7 +198,7 @@ export function NativePermissionsGate({ children }: { children: ReactNode }) {
                     type="button"
                     disabled={requesting}
                     onClick={() => void dismiss()}
-                    className="rounded-xl px-4 py-2.5 text-sm font-medium text-neutral-400 ring-1 ring-white/10 transition hover:bg-white/5"
+                    className="min-h-11 rounded-xl px-4 py-2.5 text-sm font-medium text-neutral-400 ring-1 ring-white/10 transition hover:bg-white/5"
                   >
                     Más tarde
                   </button>
@@ -169,7 +207,7 @@ export function NativePermissionsGate({ children }: { children: ReactNode }) {
                 <button
                   type="button"
                   onClick={() => setShowPrompt(false)}
-                  className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-bg transition hover:bg-accent/90"
+                  className="min-h-11 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-bg transition hover:bg-accent/90"
                 >
                   Continuar
                 </button>

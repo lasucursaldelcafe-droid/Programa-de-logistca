@@ -59,6 +59,12 @@ body {
   padding-left: env(safe-area-inset-left, 0px);
 }
 
+/* Targets táctiles mínimos (~44px) para botones clave en móvil */
+.spe-touch {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+}
+
 /* Contenedor de página: ancho fluido según equipo */
 .spe-page {
   width: 100%;

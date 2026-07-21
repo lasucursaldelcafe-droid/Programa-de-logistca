@@ -148,6 +148,24 @@ export const NavIcons: Record<string, (props: IconProps) => ReactElement> = {
       <path d="M21 11.5a8.4 8.4 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.4 8.4 0 013.8-.9h.5a8.5 8.5 0 018 8v.5z" />
     </svg>
   ),
+  bell: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.75" className={base} {...p}>
+      <path d="M6 9a6 6 0 0 1 12 0c0 7 3 7 3 7H3s3 0 3-7" />
+      <path d="M10 19a2 2 0 0 0 4 0" />
+    </svg>
+  ),
+  checkin: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.75" className={base} {...p}>
+      <path d="M12 21s-7-4.5-7-10a7 7 0 1 1 14 0c0 5.5-7 10-7 10z" />
+      <circle cx="12" cy="11" r="2.5" />
+    </svg>
+  ),
+  logout: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.75" className={base} {...p}>
+      <path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4" />
+      <path d="M15 16l4-4-4-4M19 12H9" />
+    </svg>
+  ),
 };
 
 export function NavIcon({ name, className }: { name: string; className?: string }) {

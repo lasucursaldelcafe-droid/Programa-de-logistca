@@ -320,7 +320,7 @@ export function getWorkerBottomNavItems(): NavLinkItem[] {
   return [
     { to: "/worker", label: "Inicio", icon: "grid", end: true },
     { to: "/worker/turnos", label: "Mis turnos", icon: "calendar" },
-    { to: "/worker/entrada", label: "Escanear QR", icon: "qr" },
+    { to: "/worker/entrada", label: "Entrada", icon: "checkin" },
     { to: "/worker/reportar", label: "Reportar", icon: "flag" },
     { to: "/worker/comunicacion", label: "Chat", icon: "message" },
   ];

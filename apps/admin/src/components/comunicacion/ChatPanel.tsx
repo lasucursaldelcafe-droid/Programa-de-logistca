@@ -67,7 +67,7 @@ export function ChatPanel({
           : "Mensaje al evento…";
 
   return (
-    <div className="flex h-[min(70vh,560px)] flex-col rounded-2xl border border-border bg-surface">
+    <div className="flex h-[min(70vh,560px)] max-h-[calc(100dvh-12rem)] flex-col rounded-2xl border border-border bg-surface sm:max-h-[min(70vh,560px)]">
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
         {messages.length === 0 ? (
           <p className="text-center text-sm text-neutral-500">
@@ -114,7 +114,7 @@ export function ChatPanel({
         <div ref={bottomRef} />
       </div>
 
-      <form onSubmit={(e) => void onSubmit(e)} className="border-t border-border p-3">
+      <form onSubmit={(e) => void onSubmit(e)} className="border-t border-border p-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]">
         {error && <p className="mb-2 text-xs text-alert">{error}</p>}
         {!canSend && (
           <p className="mb-2 text-xs text-neutral-500">
@@ -128,13 +128,13 @@ export function ChatPanel({
             onChange={(e) => setText(e.target.value)}
             placeholder={placeholder}
             maxLength={2000}
-            className="min-w-0 flex-1 rounded-xl border border-border bg-bg px-3 py-2 text-sm text-white placeholder:text-neutral-500"
+            className="min-h-11 min-w-0 flex-1 rounded-xl border border-border bg-bg px-3 py-2 text-sm text-white placeholder:text-neutral-500"
             disabled={!user || sending || !canSend}
           />
           <button
             type="submit"
             disabled={!user || sending || !text.trim() || !canSend}
-            className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
+            className="min-h-11 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
           >
             {sending ? "…" : "Enviar"}
           </button>

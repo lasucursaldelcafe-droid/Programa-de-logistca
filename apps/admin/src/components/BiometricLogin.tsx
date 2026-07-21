@@ -28,7 +28,7 @@ export function BiometricLoginButton({
     })();
   }, []);
 
-  if (!available) return null;
+  if (!available || !enabled) return null;
 
   async function handleBiometric() {
     setBusy(true);
@@ -50,15 +50,11 @@ export function BiometricLoginButton({
   return (
     <button
       type="button"
-      disabled={busy || !enabled}
+      disabled={busy}
       onClick={handleBiometric}
-      className="w-full rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-neutral-200 hover:border-accent disabled:opacity-40"
+      className="min-h-11 w-full rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-neutral-200 hover:border-accent disabled:opacity-40"
     >
-      {busy
-        ? "Verificando…"
-        : enabled
-          ? "Ingresar con huella o rostro"
-          : "Biometría disponible tras el primer inicio de sesión"}
+      {busy ? "Verificando…" : "Ingresar con huella o rostro"}
     </button>
   );
 }

@@ -107,22 +107,30 @@ export function WorkerHomePage() {
         </Card>
       ) : (
         <Card>
-          <p className="text-sm text-neutral-400">Sin jornada activa</p>
-          <p className="mt-1 text-xs text-neutral-500">
-            Primero acepta el turno. Cuando estés en el sitio, activa la llegada.
+          <p className="text-sm font-medium text-neutral-200">Sin jornada activa</p>
+          <p className="mt-1 text-sm text-neutral-500">
+            {pendientes.length > 0
+              ? "Primero acepta el turno abajo. Cuando estés en el sitio, activa la llegada."
+              : "Cuando te asignen un turno, aparecerá aquí. Mientras tanto puedes revisar avisos o ayuda."}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Link
               to={workerPath("turnos")}
-              className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-neutral-200"
+              className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 text-sm font-semibold text-neutral-200"
             >
               Mis turnos
             </Link>
             <Link
               to={workerPath("entrada")}
-              className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black"
+              className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black"
             >
               Ir a entrada
+            </Link>
+            <Link
+              to={workerPath("notificaciones")}
+              className="inline-flex min-h-11 items-center rounded-lg px-3 py-2 text-sm text-accent hover:underline"
+            >
+              Ver avisos
             </Link>
           </div>
         </Card>
@@ -152,7 +160,7 @@ export function WorkerHomePage() {
                     type="button"
                     disabled={busyId === t.id}
                     onClick={() => void responder(t.id, "confirmado")}
-                    className="rounded-lg bg-positive/20 px-3 py-1.5 text-xs font-semibold text-positive disabled:opacity-50"
+                    className="min-h-11 rounded-lg bg-positive/20 px-4 py-2.5 text-sm font-semibold text-positive disabled:opacity-50"
                   >
                     {busyId === t.id ? "…" : "Aceptar trabajo"}
                   </button>
@@ -160,7 +168,7 @@ export function WorkerHomePage() {
                     type="button"
                     disabled={busyId === t.id}
                     onClick={() => void responder(t.id, "rechazado")}
-                    className="rounded-lg bg-alert/20 px-3 py-1.5 text-xs font-semibold text-alert disabled:opacity-50"
+                    className="min-h-11 rounded-lg bg-alert/20 px-4 py-2.5 text-sm font-semibold text-alert disabled:opacity-50"
                   >
                     Rechazar
                   </button>

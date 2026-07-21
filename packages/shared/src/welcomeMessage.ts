@@ -112,11 +112,11 @@ const WELCOME_BY_ROLE: Record<UserRole, Omit<WelcomeContent, "saludo" | "motivac
   trabajador: {
     titulo: "¡Bienvenida a tu sesión en el evento!",
     mensaje:
-      "Tu app es para el día a día en sitio: turnos, marcar entrada, reportar y conversar con el equipo. Cada turno bien hecho construye tu desarrollo profesional.",
+      "Tu app es para el día a día en sitio: turnos, llegada, reportar y chat. Cada turno bien hecho construye tu desarrollo profesional.",
     puntos: [
-      "Confirma tus turnos y llega a tiempo al sitio indicado.",
-      "Marca entrada escaneando el código del sitio.",
-      "Si algo ocurre, repórtalo desde la app: tu voz mejora la operación.",
+      "Acepta tus turnos desde Inicio o Mis turnos.",
+      "Cuando llegues al sitio, pulsa «Ya estoy aquí» (GPS). El código QR es opcional.",
+      "Si algo ocurre, repórtalo o escribe por el chat: tu voz mejora la operación.",
     ],
     cierre: "Estamos contigo: tu crecimiento y el del evento van de la mano.",
   },

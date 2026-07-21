@@ -35,6 +35,11 @@ export function WelcomeModal({ user }: WelcomeModalProps) {
   function handleDismiss(): void {
     markWelcomeSeen(user.uid);
     setOpen(false);
+    try {
+      window.dispatchEvent(new CustomEvent("spe:welcome-dismissed", { detail: { uid: user.uid } }));
+    } catch {
+      /* ignore */
+    }
   }
 
   return (
@@ -75,7 +80,7 @@ export function WelcomeModal({ user }: WelcomeModalProps) {
           <button
             type="button"
             onClick={handleDismiss}
-            className="w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-bg transition hover:opacity-90"
+            className="min-h-12 w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-bg transition hover:opacity-90"
           >
             Entrar a trabajar
           </button>

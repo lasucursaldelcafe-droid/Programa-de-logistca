@@ -10,6 +10,7 @@ import {
 } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
 import { Badge, Card } from "../components/ui";
+import { EmptyState } from "../components/EmptyState";
 import {
   createShift,
   deleteShift,
@@ -382,7 +383,7 @@ export function TurnosPage() {
                       type="button"
                       disabled={busyId === t.id}
                       onClick={() => void responderTurno(t.id, "confirmado")}
-                      className="rounded-lg bg-positive/20 px-3 py-1 text-xs text-positive disabled:opacity-50"
+                      className="min-h-11 rounded-lg bg-positive/20 px-3 py-2 text-sm text-positive disabled:opacity-50"
                     >
                       {busyId === t.id ? "…" : "Aceptar trabajo"}
                     </button>
@@ -390,7 +391,7 @@ export function TurnosPage() {
                       type="button"
                       disabled={busyId === t.id}
                       onClick={() => void responderTurno(t.id, "rechazado")}
-                      className="rounded-lg bg-alert/20 px-3 py-1 text-xs text-alert disabled:opacity-50"
+                      className="min-h-11 rounded-lg bg-alert/20 px-3 py-2 text-sm text-alert disabled:opacity-50"
                     >
                       Rechazar
                     </button>
@@ -401,7 +402,7 @@ export function TurnosPage() {
                   turnoVigente?.id === t.id && (
                     <Link
                       to={entradaPath}
-                      className="rounded-lg bg-positive/20 px-3 py-1 text-xs font-semibold text-positive"
+                      className="inline-flex min-h-11 items-center rounded-lg bg-positive/20 px-3 py-2 text-sm font-semibold text-positive"
                     >
                       Ya estoy aquí
                     </Link>
@@ -449,7 +450,18 @@ export function TurnosPage() {
           );
         })}
         {misTurnos.length === 0 && (
-          <p className="text-sm text-neutral-500">No hay turnos para mostrar.</p>
+          user?.role === "trabajador" ? (
+            <EmptyState
+              title="Aún no tienes turnos"
+              description="Cuando te asignen un turno, podrás aceptarlo aquí y activar la llegada en el sitio."
+              action={{ to: "/worker/ayuda", label: "Ver ayuda" }}
+            />
+          ) : (
+            <EmptyState
+              title="No hay turnos para mostrar"
+              description="Crea un turno o cambia los filtros de evento y estado."
+            />
+          )
         )}
       </div>
     </div>

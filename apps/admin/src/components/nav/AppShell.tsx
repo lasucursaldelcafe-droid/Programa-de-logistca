@@ -5,6 +5,7 @@ import type { AppUser } from "@spe/shared";
 import type { NavSection } from "../../config/navigation";
 import { NotificationBell } from "../NotificationBell";
 import { WelcomeModal } from "../WelcomeModal";
+import { EnablePushBanner } from "../EnablePushBanner";
 import { NavIcon } from "./NavIcons";
 import { SidebarNav } from "./SidebarNav";
 
@@ -70,7 +71,7 @@ export function AppShell({ user, brand, brandSub, sections, onLogout }: AppShell
             <p className="truncate text-xs text-neutral-500">{user.nombre}</p>
           </div>
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-            <NotificationBell />
+            <NotificationBell compact />
             <button
               type="button"
               onClick={async () => {
@@ -83,6 +84,7 @@ export function AppShell({ user, brand, brandSub, sections, onLogout }: AppShell
             </button>
           </div>
         </header>
+        <EnablePushBanner />
         <main className="spe-animate-in flex-1 px-3 py-4 sm:px-4 lg:px-6 lg:py-5">
           <div className="spe-page-wide min-w-0">
             <Outlet />
