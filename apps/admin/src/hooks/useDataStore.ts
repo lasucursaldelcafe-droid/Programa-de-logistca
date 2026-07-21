@@ -938,7 +938,12 @@ export async function changeOwnPassword(
 /** Crea cuenta de acceso: usuario = correo, contraseña = documento (sin puntos ni espacios). */
 export async function provisionWorkerAccount(
   workerId: string,
-  options?: { actorNombre?: string; sendEmail?: boolean },
+  options?: {
+    actorNombre?: string;
+    sendEmail?: boolean;
+    /** Recrea/actualiza Auth aunque cuentaCreada ya sea true (clave = cédula). */
+    forcePasswordReset?: boolean;
+  },
 ): Promise<void> {
   if (isDemoMode()) {
     demoStore.provisionWorkerAccount(workerId, options?.actorNombre);
@@ -947,7 +952,7 @@ export async function provisionWorkerAccount(
 
   const worker = await getWorkerById(workerId);
   if (!worker) throw new Error("Trabajador no encontrado");
-  if (worker.cuentaCreada) return;
+  if (worker.cuentaCreada && !options?.forcePasswordReset) return;
 
   const password = workerDocumentPassword(worker.documento);
   const email = worker.email.trim().toLowerCase();
@@ -978,15 +983,20 @@ export async function provisionWorkerAccount(
 
   try {
     const fn = httpsCallable<
-      { workerId: string; sendEmail?: boolean },
+      { workerId: string; sendEmail?: boolean; forcePasswordReset?: boolean },
       { uid: string }
     >(getFunctions(getFirebaseApp(), "us-central1"), "provisionWorkerAccount");
-    await fn({ workerId, sendEmail: options?.sendEmail });
+    await fn({
+      workerId,
+      sendEmail: options?.sendEmail,
+      forcePasswordReset: options?.forcePasswordReset === true,
+    });
   } catch (err) {
     // Producción sin Functions desplegadas (o error INTERNAL): Auth REST + Firestore.
     try {
       await provisionWorkerAccountViaAuthRest(worker, {
         sendEmail: options?.sendEmail !== false,
+        forcePasswordReset: options?.forcePasswordReset === true,
       });
     } catch (fallbackErr) {
       throw toUserFacingError(
@@ -1000,7 +1010,7 @@ export async function provisionWorkerAccount(
 /** Alta de cuenta de trabajador sin Admin SDK (Identity Toolkit + Firestore). */
 async function provisionWorkerAccountViaAuthRest(
   worker: Worker,
-  options?: { sendEmail?: boolean },
+  options?: { sendEmail?: boolean; forcePasswordReset?: boolean },
 ): Promise<void> {
   const password = workerDocumentPassword(worker.documento);
   const email = worker.email.trim().toLowerCase();
