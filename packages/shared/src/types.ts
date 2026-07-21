@@ -217,6 +217,7 @@ export type NotificationTipo =
   | "videollamada_iniciada"
   | "emergencia"
   | "break_recordatorio"
+  | "alta_qr"
   | "sistema";
 
 export type BreakTipo = "almuerzo" | "break" | "receso";
@@ -401,6 +402,7 @@ export const NOTIFICATION_TIPO_LABEL: Record<NotificationTipo, string> = {
   videollamada_iniciada: "Videollamada",
   emergencia: "Emergencia",
   break_recordatorio: "Recordatorio break",
+  alta_qr: "Alta por QR",
   sistema: "Sistema",
 };
 

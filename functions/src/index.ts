@@ -8,6 +8,7 @@ import { resolveRecipientUids, resolveChatRecipientUids, comunicacionLinkForUid 
 import { mailConfigured, sendMail } from "./mail";
 import { buildInvitationEmail, buildShiftAssignedEmail, resolveAppUrl } from "./emailTemplates";
 export { provisionWorkerAccount, importWorkersBulk, createPlatformAccountFn } from "./provisionWorkers";
+export { resolveSiteQr, onboardFromSiteQr } from "./onboardFromQr";
 
 const gmailUser = defineSecret("GMAIL_USER");
 const gmailAppPassword = defineSecret("GMAIL_APP_PASSWORD");

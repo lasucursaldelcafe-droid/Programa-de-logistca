@@ -1265,6 +1265,93 @@ function resolveToken(qr: QrCode, token: string): boolean {
   return token === qr.token;
 }
 
+export interface SiteQrPreview {
+  qrId: string;
+  siteId: string;
+  siteNombre: string;
+  eventId: string;
+  eventNombre: string;
+  ventanaInicio: string;
+  ventanaFin: string;
+  descripcionDatos: string;
+}
+
+/** Vista previa del QR de sitio (callable, sin login). */
+export async function resolveSiteQrPreview(
+  qrId: string,
+  token: string,
+): Promise<SiteQrPreview> {
+  if (isDemoMode()) {
+    const qr = demoStore.qrCodes.find((q) => q.id === qrId);
+    if (!qr || qr.token !== token) throw new Error("Código QR no encontrado.");
+    return {
+      qrId: qr.id,
+      siteId: qr.siteId ?? "",
+      siteNombre: qr.siteNombre ?? "",
+      eventId: qr.eventId ?? "",
+      eventNombre: qr.eventNombre ?? "",
+      ventanaInicio: qr.ventanaInicio ?? "",
+      ventanaFin: qr.ventanaFin ?? "",
+      descripcionDatos: qr.descripcionDatos ?? "",
+    };
+  }
+  const fn = httpsCallable<{ qrId: string; token: string }, SiteQrPreview>(
+    getFunctions(getFirebaseApp(), "us-central1"),
+    "resolveSiteQr",
+  );
+  try {
+    const result = await fn({ qrId, token });
+    return result.data;
+  } catch (err) {
+    throw toUserFacingError(err, "No se pudo validar el QR del sitio.");
+  }
+}
+
+/** Alta por QR: cuenta + puesto (turno confirmado) + aviso a admins/CEO. */
+export async function onboardFromSiteQr(data: {
+  qrId: string;
+  token: string;
+  nombre: string;
+  documento: string;
+  email: string;
+  telefono?: string;
+}): Promise<{
+  uid: string;
+  workerId: string;
+  shiftId: string;
+  email: string;
+  siteNombre: string;
+  eventNombre: string;
+}> {
+  if (isDemoMode()) {
+    throw new Error("El alta por QR requiere Firebase en producción.");
+  }
+  const fn = httpsCallable<
+    {
+      qrId: string;
+      token: string;
+      nombre: string;
+      documento: string;
+      email: string;
+      telefono?: string;
+    },
+    {
+      uid: string;
+      workerId: string;
+      shiftId: string;
+      email: string;
+      siteNombre: string;
+      eventNombre: string;
+    }
+  >(getFunctions(getFirebaseApp(), "us-central1"), "onboardFromSiteQr");
+  try {
+    const result = await fn(data);
+    return result.data;
+  } catch (err) {
+    throw toUserFacingError(err, "No se pudo registrar con el QR del sitio.");
+  }
+}
+
 export async function createQrCode(data: CreateQrCodeInput): Promise<string> {
   const id = buildQrCodeId(data.siteId);
   const token = buildQrCodeToken(crypto.randomUUID());

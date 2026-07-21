@@ -2,14 +2,17 @@ import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { formatQrPayload, getRotatingToken } from "@spe/shared";
 import type { QrCode } from "@spe/shared";
+import { buildSiteQrJoinUrl } from "../lib/urls";
 
 export function QrDisplay({ qr, effectiveToken }: { qr: QrCode; effectiveToken: string }) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
-  const payload = formatQrPayload(qr.id, effectiveToken);
+  /** URL pública: al escanear con la cámara abre el alta / puesto. */
+  const joinUrl = buildSiteQrJoinUrl(qr.id, effectiveToken);
+  const legacyPayload = formatQrPayload(qr.id, effectiveToken);
 
   useEffect(() => {
     let cancelled = false;
-    QRCode.toDataURL(payload, { width: 220, margin: 2, color: { dark: "#E8823C", light: "#0A0A0A" } })
+    QRCode.toDataURL(joinUrl, { width: 220, margin: 2, color: { dark: "#E8823C", light: "#0A0A0A" } })
       .then((url) => {
         if (!cancelled) setDataUrl(url);
       })
@@ -19,7 +22,7 @@ export function QrDisplay({ qr, effectiveToken }: { qr: QrCode; effectiveToken: 
     return () => {
       cancelled = true;
     };
-  }, [payload]);
+  }, [joinUrl]);
 
   return (
     <div className="flex flex-col items-center gap-3">
@@ -30,8 +33,14 @@ export function QrDisplay({ qr, effectiveToken }: { qr: QrCode; effectiveToken: 
           Generando QR…
         </div>
       )}
+      <p className="max-w-xs text-center text-xs text-neutral-400">
+        Escanea para configurar usuario, habilitar puesto y avisar a administración.
+      </p>
       <code className="max-w-full break-all rounded bg-bg px-2 py-1 font-mono text-[10px] text-neutral-400">
-        {payload}
+        {joinUrl}
+      </code>
+      <code className="max-w-full break-all font-mono text-[9px] text-neutral-600">
+        Entrada (app): {legacyPayload}
       </code>
     </div>
   );

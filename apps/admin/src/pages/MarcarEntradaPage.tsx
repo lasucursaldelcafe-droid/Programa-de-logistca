@@ -1,8 +1,9 @@
-import { FormEvent, useMemo, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import {
   ATTENDANCE_LABEL,
   findProximoTurnoConfirmado,
+  parseQrPayload,
   resolveTurnosPath,
 } from "@spe/shared";
 import { useAuth } from "../contexts/AuthContext";
@@ -24,6 +25,7 @@ import {
 export function MarcarEntradaPage() {
   const { user } = useAuth();
   const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
   const shifts = useShifts();
   const sites = useSites();
   const events = useEvents();
@@ -34,6 +36,16 @@ export function MarcarEntradaPage() {
   const [pendingQr, setPendingQr] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const fromQuery = searchParams.get("qr")?.trim();
+    if (!fromQuery) return;
+    setRawQr(fromQuery);
+    if (parseQrPayload(fromQuery)) {
+      setPendingQr(fromQuery);
+      setConsentAccepted(false);
+    }
+  }, [searchParams]);
 
   const workerId = user?.workerId ?? "";
   const workerNombre = user?.nombre ?? "";
@@ -55,20 +67,28 @@ export function MarcarEntradaPage() {
     ? eventoPorId.get(proximoTurno.eventId) ?? null
     : null;
 
-  if (!user || user.role !== "trabajador" || !user.workerId) {
-    return <p className="text-neutral-400">Solo trabajadores pueden marcar entrada.</p>;
+  if (
+    !user ||
+    (user.role !== "trabajador" && user.role !== "supervisor_sitio") ||
+    !user.workerId
+  ) {
+    return <p className="text-neutral-400">Solo personal de campo puede marcar entrada.</p>;
   }
 
   async function iniciarCheckin(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    const qr = qrCodes.find((q) => rawQr.includes(q.id));
+    const trimmed = rawQr.trim();
+    const parsed = parseQrPayload(trimmed);
+    const qr = parsed
+      ? qrCodes.find((q) => q.id === parsed.qrId)
+      : qrCodes.find((q) => trimmed.includes(q.id));
     if (qr) {
-      setPendingQr(rawQr.trim());
+      setPendingQr(trimmed);
       setConsentAccepted(false);
       return;
     }
-    setError("Pega un código QR válido del sitio.");
+    setError("Pega un código QR válido del sitio (o el enlace unirse-qr).");
   }
 
   async function confirmarEntrada() {

@@ -76,7 +76,8 @@ export function QrSitiosPage() {
       <div>
         <h1 className="font-display text-3xl font-bold">Códigos QR de sitio</h1>
         <p className="mt-1 text-neutral-400">
-          Genera QR por sitio para activar GPS y marcar entrada con consentimiento.
+          El QR abre el registro en el teléfono: la persona configura su usuario, se le habilita el
+          puesto en el sitio y administración/CEO reciben aviso para configurar perfiles.
         </p>
       </div>
 
@@ -196,7 +197,7 @@ export function QrSitiosPage() {
                 {qr.descripcionDatos}
               </p>
               <code className="mt-2 block font-mono text-[10px] text-neutral-500">
-                Demo rápido: {formatQrPayload(qr.id, qr.modo === "rotativo" ? token : qr.token)}
+                Payload app: {formatQrPayload(qr.id, qr.modo === "rotativo" ? token : qr.token)}
               </code>
             </Card>
           );
