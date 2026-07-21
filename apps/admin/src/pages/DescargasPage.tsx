@@ -82,7 +82,8 @@ export function DescargasPage() {
           </h1>
           <p className="mx-auto mt-3 max-w-2xl text-neutral-400">
             Una sola app para Admin, Master y Trabajador. Elige tu plataforma o revisa lo que falta
-            configurar.
+            configurar. En Android, al abrir la APK la app pide GPS, cámara, micrófono, notificaciones,
+            archivos y teléfono para chat, voz y operación en sitio.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <a href={adminLogin} className={authButtonClass}>

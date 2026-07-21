@@ -107,7 +107,7 @@ export function getPlatformDownloads(base: DeploymentBase): PlatformDownloadSpec
     {
       id: "android",
       label: "Android — APK",
-      description: "App nativa para GPS, QR y biometría en campo.",
+      description: "App nativa con GPS, chat, voz, cámara, notificaciones y biometría.",
       icon: "🤖",
       assetPattern: "SPE-Eventos-.*-android\\.apk$",
       fallbackHref: () => buildReleasesUrl(base.owner, base.repo),
@@ -115,6 +115,7 @@ export function getPlatformDownloads(base: DeploymentBase): PlatformDownloadSpec
         "Descarga el .apk en el teléfono.",
         "Permite orígenes desconocidos en Ajustes → Seguridad.",
         "Instala y abre SPE Eventos.",
+        "Al abrir, acepta GPS, cámara, micrófono, notificaciones, archivos y teléfono.",
         "Inicia sesión con la misma cuenta Firebase que en web/PC.",
       ],
     },
