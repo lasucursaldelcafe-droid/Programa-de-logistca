@@ -2553,16 +2553,16 @@ export async function createCustomRole(
   const id = `role-${Date.now().toString(36)}`;
   const role: CustomRole = {
     id,
-    nombre: data.nombre,
-    descripcion: data.descripcion,
+    nombre: data.nombre.trim(),
     baseRole: data.baseRole,
     permisos: data.permisos,
     activo: data.activo,
-    modoAcceso: data.modoAcceso,
-    plantillaId: data.plantillaId,
     creadoEn: new Date().toISOString(),
     creadoPor,
-    creadoPorNombre,
+    ...(data.descripcion?.trim() ? { descripcion: data.descripcion.trim() } : {}),
+    ...(data.modoAcceso ? { modoAcceso: data.modoAcceso } : {}),
+    ...(data.plantillaId?.trim() ? { plantillaId: data.plantillaId.trim() } : {}),
+    ...(creadoPorNombre.trim() ? { creadoPorNombre: creadoPorNombre.trim() } : {}),
   };
 
   if (isDemoMode()) {
@@ -2570,10 +2570,11 @@ export async function createCustomRole(
     return id;
   }
 
-  const record = {
+  const record = omitUndefinedFields({
     ...role,
     permisos: serializeCustomRolePermisos(role.permisos),
-  };
+  });
+  assertFirestoreSafe(record, "customRoles");
 
   if (isSheetsBackend()) {
     await sheetsUpsertRecord("customRoles", record);
@@ -2596,7 +2597,14 @@ export async function updateCustomRole(
   _actorNombre: string,
 ): Promise<void> {
   if (isDemoMode()) {
-    demoStore.updateCustomRole(id, data);
+    const demoPatch: Partial<CustomRole> = { ...data };
+    if (data.descripcion !== undefined && !data.descripcion.trim()) {
+      delete demoPatch.descripcion;
+    }
+    if (data.plantillaId !== undefined && !data.plantillaId.trim()) {
+      delete demoPatch.plantillaId;
+    }
+    demoStore.updateCustomRole(id, demoPatch);
     return;
   }
 
@@ -2604,21 +2612,42 @@ export async function updateCustomRole(
     const existing = await sheetsGetById<Record<string, unknown>>("customRoles", id);
     if (!existing) throw new Error("Rol no encontrado");
     const currentPermisos = parseCustomRolePermisos(existing.permisos);
-    const merged: CustomRole = {
+    const descripcion =
+      data.descripcion !== undefined
+        ? data.descripcion.trim() || undefined
+        : existing.descripcion
+          ? String(existing.descripcion)
+          : undefined;
+    const plantillaId =
+      data.plantillaId !== undefined
+        ? data.plantillaId.trim() || undefined
+        : existing.plantillaId
+          ? String(existing.plantillaId)
+          : undefined;
+    const modoAcceso =
+      data.modoAcceso ?? (existing.modoAcceso as RoleAccessMode | undefined);
+    const merged = omitUndefinedFields({
       id,
-      nombre: String(existing.nombre ?? ""),
-      descripcion: existing.descripcion ? String(existing.descripcion) : undefined,
-      baseRole: (existing.baseRole as CustomRole["baseRole"]) ?? "trabajador",
+      nombre: String(data.nombre ?? existing.nombre ?? ""),
+      descripcion,
+      baseRole: (data.baseRole ??
+        (existing.baseRole as CustomRole["baseRole"]) ??
+        "trabajador") as CustomRoleBase,
       permisos: data.permisos ?? currentPermisos,
       activo: data.activo ?? existing.activo !== "false",
+      modoAcceso,
+      plantillaId,
       creadoEn: String(existing.creadoEn ?? new Date().toISOString()),
       creadoPor: String(existing.creadoPor ?? ""),
-      creadoPorNombre: existing.creadoPorNombre ? String(existing.creadoPorNombre) : undefined,
-      ...data,
-    };
+      creadoPorNombre: existing.creadoPorNombre
+        ? String(existing.creadoPorNombre)
+        : undefined,
+    });
     await sheetsUpsertRecord("customRoles", {
       ...merged,
-      permisos: serializeCustomRolePermisos(merged.permisos),
+      permisos: serializeCustomRolePermisos(
+        (merged.permisos as SpePermission[]) ?? currentPermisos,
+      ),
     });
     return;
   }
@@ -2626,8 +2655,21 @@ export async function updateCustomRole(
   const ref = doc(getFirestoreDb(), "customRoles", id);
   const snap = await getDoc(ref);
   if (!snap.exists()) throw new Error("Rol no encontrado");
-  const patch = { ...data } as Record<string, unknown>;
-  if (data.permisos) patch.permisos = serializeCustomRolePermisos(data.permisos);
+  const patch = omitUndefinedFields({
+    nombre: data.nombre?.trim(),
+    descripcion:
+      data.descripcion !== undefined ? data.descripcion.trim() || undefined : undefined,
+    baseRole: data.baseRole,
+    activo: data.activo,
+    modoAcceso: data.modoAcceso,
+    plantillaId:
+      data.plantillaId !== undefined ? data.plantillaId.trim() || undefined : undefined,
+    permisos: data.permisos
+      ? serializeCustomRolePermisos(data.permisos)
+      : undefined,
+  });
+  if (Object.keys(patch).length === 0) return;
+  assertFirestoreSafe(patch, "customRoles");
   await updateDoc(ref, patch);
 }
 
