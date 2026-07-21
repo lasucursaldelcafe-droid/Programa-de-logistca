@@ -12,7 +12,11 @@ import { useAuth } from "../contexts/AuthContext";
 import { Card } from "../components/ui";
 import { PageHeader } from "../components/nav/PageHeader";
 import { PermissionDenied } from "../components/FeedbackStates";
-import { createPlatformAccount, usePlatformUsers } from "../hooks/useDataStore";
+import {
+  createPlatformAccount,
+  toUserFacingError,
+  usePlatformUsers,
+} from "../hooks/useDataStore";
 
 interface EquipoAdministrativoPageProps {
   /** Vista desde consola Master (CEO/Master App) */
@@ -73,7 +77,7 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
         role: rolesDisponibles[0] ?? "administrador",
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo crear la cuenta.");
+      setError(toUserFacingError(err, "No se pudo crear la cuenta.").message);
     } finally {
       setBusy(false);
     }
