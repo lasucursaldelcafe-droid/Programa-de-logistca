@@ -195,7 +195,7 @@ export function ComunicacionPage() {
             eventId={eventId}
             onChange={setEventId}
             label="Evento"
-            className="min-w-[220px]"
+            className="w-full sm:w-auto"
           />
         )}
 

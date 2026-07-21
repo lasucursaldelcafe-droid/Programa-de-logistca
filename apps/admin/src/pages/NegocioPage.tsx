@@ -322,7 +322,7 @@ export function NegocioPage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[640px] text-left text-sm">
+                <table className="w-full min-w-[32rem] text-left text-sm sm:min-w-[640px]">
                   <thead className="border-b border-border bg-bg/50 text-xs uppercase text-neutral-500">
                     <tr>
                       <th scope="col" className="px-4 py-3">Cliente</th>
@@ -469,7 +469,7 @@ export function NegocioPage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[640px] text-left text-sm">
+                <table className="w-full min-w-[32rem] text-left text-sm sm:min-w-[640px]">
                   <thead className="border-b border-border bg-bg/50 text-xs uppercase text-neutral-500">
                     <tr>
                       <th scope="col" className="px-4 py-3">Código</th>

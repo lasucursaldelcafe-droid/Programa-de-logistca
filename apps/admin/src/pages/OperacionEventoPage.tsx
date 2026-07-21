@@ -270,7 +270,7 @@ export function OperacionEventoPage() {
           events={events}
           eventId={eventId}
           onChange={setEventId}
-          className="min-w-[220px]"
+          className="w-full sm:w-auto"
         />
       </div>
 

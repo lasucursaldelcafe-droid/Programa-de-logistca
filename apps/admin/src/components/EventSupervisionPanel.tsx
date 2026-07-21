@@ -129,7 +129,7 @@ export function EventSupervisionPanel({ evento, sites, attendances }: EventSuper
                   Agrega sitios en el asistente de evento para ver el plano.
                 </p>
               ) : (
-                <LiveMap sites={mapSitesGeneral} attendances={mapAttendancesGeneral} className="h-[28rem]" />
+                <LiveMap sites={mapSitesGeneral} attendances={mapAttendancesGeneral} className="spe-map-frame" />
               )}
             </div>
           </Card>
@@ -255,7 +255,7 @@ export function EventSupervisionPanel({ evento, sites, attendances }: EventSuper
                 <LiveMap
                   sites={mapSitesIndividual}
                   attendances={mapAttendancesIndividual}
-                  className="h-[26rem]"
+                  className="spe-map-frame"
                 />
               )}
             </div>

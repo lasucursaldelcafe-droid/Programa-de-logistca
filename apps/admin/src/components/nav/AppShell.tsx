@@ -21,10 +21,10 @@ export function AppShell({ user, brand, brandSub, sections, onLogout }: AppShell
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-screen spe-app-bg lg:flex">
+    <div className="min-h-dvh spe-app-bg safe-area-px lg:flex">
       <WelcomeModal user={user} />
-      {/* Sidebar — desktop: siempre visible */}
-      <aside className="hidden w-56 shrink-0 flex-col border-r border-border/80 bg-gradient-to-b from-surface-elevated via-surface to-bg lg:flex">
+      {/* Sidebar — desktop / tablet landscape */}
+      <aside className="hidden w-56 shrink-0 flex-col border-r border-border/80 bg-gradient-to-b from-surface-elevated via-surface to-bg lg:flex xl:w-60">
         <BrandBlock brand={brand} brandSub={brandSub} />
         <div className="flex-1 overflow-y-auto px-3 py-4">
           <SidebarNav sections={sections} />
@@ -32,7 +32,7 @@ export function AppShell({ user, brand, brandSub, sections, onLogout }: AppShell
         <UserFooter user={user} onLogout={onLogout} navigate={navigate} />
       </aside>
 
-      {/* Mobile drawer */}
+      {/* Mobile / tablet drawer */}
       {mobileOpen && (
         <button
           type="button"
@@ -42,7 +42,7 @@ export function AppShell({ user, brand, brandSub, sections, onLogout }: AppShell
         />
       )}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-surface transition-transform lg:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-[min(18rem,88vw)] flex-col border-r border-border bg-surface transition-transform safe-area-pt safe-area-pb lg:hidden ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -54,22 +54,22 @@ export function AppShell({ user, brand, brandSub, sections, onLogout }: AppShell
       </aside>
 
       {/* Main */}
-      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border/80 bg-bg/85 px-4 py-3 backdrop-blur-md lg:px-8">
+      <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-border/80 bg-bg/85 px-3 py-2.5 backdrop-blur-md safe-area-pt sm:gap-3 sm:px-4 sm:py-3 lg:px-8">
           <button
             type="button"
-            className="flex items-center gap-1.5 rounded-lg px-2 py-2 text-sm text-neutral-300 hover:bg-neutral-800 lg:hidden"
+            className="flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-2 text-sm text-neutral-300 hover:bg-neutral-800 lg:hidden"
             onClick={() => setMobileOpen(true)}
             aria-label="Abrir menú"
           >
             <NavIcon name="menu" />
-            <span className="font-medium">Menú</span>
+            <span className="hidden font-medium min-[380px]:inline">Menú</span>
           </button>
           <div className="min-w-0 flex-1 lg:hidden">
             <p className="truncate font-display text-sm font-semibold">{brand}</p>
             <p className="truncate text-xs text-neutral-500">{user.nombre}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <NotificationBell />
             <button
               type="button"
@@ -77,14 +77,16 @@ export function AppShell({ user, brand, brandSub, sections, onLogout }: AppShell
                 await onLogout();
                 navigate("/login");
               }}
-              className="hidden rounded-lg px-3 py-2 text-sm text-neutral-400 hover:bg-neutral-800 hover:text-white sm:block lg:hidden"
+              className="rounded-lg px-2.5 py-2 text-sm text-neutral-400 hover:bg-neutral-800 hover:text-white lg:hidden"
             >
               Salir
             </button>
           </div>
         </header>
-        <main className="spe-animate-in flex-1 px-3 py-4 lg:px-6 lg:py-5">
-          <Outlet />
+        <main className="spe-animate-in flex-1 px-3 py-4 sm:px-4 lg:px-6 lg:py-5">
+          <div className="spe-page-wide min-w-0">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
@@ -102,15 +104,15 @@ function BrandBlock({
 }) {
   return (
     <div className="flex items-start justify-between border-b border-border px-4 py-4">
-      <div>
-        <p className="font-display text-lg font-semibold tracking-tight text-white">{brand}</p>
-        {brandSub && <p className="mt-0.5 text-xs text-neutral-500">{brandSub}</p>}
+      <div className="min-w-0">
+        <p className="truncate font-display text-lg font-semibold tracking-tight text-white">{brand}</p>
+        {brandSub && <p className="mt-0.5 truncate text-xs text-neutral-500">{brandSub}</p>}
       </div>
       {onClose && (
         <button
           type="button"
           onClick={onClose}
-          className="rounded-lg p-1 text-neutral-500 hover:text-white"
+          className="shrink-0 rounded-lg p-1 text-neutral-500 hover:text-white"
           aria-label="Cerrar"
         >
           <NavIcon name="close" />

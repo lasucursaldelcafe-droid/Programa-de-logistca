@@ -12,10 +12,10 @@ export function WorkerLayout() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-bg pb-20">
+    <div className="min-h-dvh bg-bg pb-[calc(5rem+env(safe-area-inset-bottom,0px))] safe-area-px">
       <WelcomeModal user={user} />
-      <header className="sticky top-0 z-20 border-b border-border bg-bg/90 backdrop-blur">
-        <div className="mx-auto flex max-w-lg items-center justify-between gap-2 px-4 py-3">
+      <header className="sticky top-0 z-20 border-b border-border bg-bg/90 backdrop-blur safe-area-pt">
+        <div className="mx-auto flex w-full max-w-lg items-center justify-between gap-2 px-3 py-3 sm:px-4 md:max-w-2xl lg:max-w-3xl">
           <div className="min-w-0">
             <p className="truncate font-display text-sm font-semibold">App Trabajador</p>
             <p className="truncate text-xs text-neutral-500">
@@ -44,7 +44,7 @@ export function WorkerLayout() {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-lg px-4 py-6">
+      <main className="mx-auto w-full max-w-lg px-3 py-5 sm:px-4 sm:py-6 md:max-w-2xl lg:max-w-3xl">
         <Outlet />
       </main>
       <WorkerBottomNav />

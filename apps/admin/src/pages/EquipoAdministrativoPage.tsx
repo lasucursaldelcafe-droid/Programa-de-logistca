@@ -228,7 +228,7 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
                   <div className="mt-1 text-xs text-neutral-500">{resumenRol(u.role)}</div>
                 </div>
                 {rolesDisponibles.length > 0 ? (
-                  <label className="flex flex-col gap-1 text-xs text-neutral-400">
+                  <label className="flex w-full flex-col gap-1 text-xs text-neutral-400 sm:w-auto sm:min-w-[11rem]">
                     <span>Rol</span>
                     <select
                       value={u.role}
@@ -236,7 +236,7 @@ export function EquipoAdministrativoPage({ variant = "admin" }: EquipoAdministra
                       onChange={(e) =>
                         void onChangeRole(u.uid, e.target.value as UserRole)
                       }
-                      className="rounded-lg border border-border bg-bg px-3 py-1.5 text-sm text-neutral-100 disabled:opacity-50"
+                      className="w-full rounded-lg border border-border bg-bg px-3 py-1.5 text-sm text-neutral-100 disabled:opacity-50"
                       title={
                         u.uid === user.uid
                           ? "No puedes cambiar tu propio rol"

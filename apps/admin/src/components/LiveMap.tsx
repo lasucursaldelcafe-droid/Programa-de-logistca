@@ -15,7 +15,7 @@ interface LiveMapProps {
 
 export function LiveMap({ sites, attendances, className }: LiveMapProps) {
   const useGoogle = isGoogleMapsEnabled();
-  const heightClass = className ?? "h-80";
+  const heightClass = className ?? "spe-map-frame";
 
   if (useGoogle) {
     return (
