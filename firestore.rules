@@ -196,8 +196,15 @@ service cloud.firestore {
 
     match /reports/{reportId} {
       allow read: if isPlatformAdmin() || isMaster()
-        || (isWorker() && resource.data.workerId == currentWorkerId());
-      allow create: if isWorker();
+        || (isWorker() && resource.data.workerId == currentWorkerId())
+        || (signedIn()
+          && role() == 'supervisor_sitio'
+          && resource.data.workerId == currentWorkerId());
+      // Trabajador (y supervisor de sitio con ficha) pueden crear reportes.
+      allow create: if signedIn()
+        && request.resource.data.workerId == currentWorkerId()
+        && (isWorker()
+          || (role() == 'supervisor_sitio' && currentWorkerId() is string));
       allow update: if isPlatformAdmin() || isMaster();
       allow delete: if isMaster();
     }

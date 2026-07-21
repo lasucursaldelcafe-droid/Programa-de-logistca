@@ -32,6 +32,7 @@ import {
   isWithinTimeWindow,
   parseQrPayload,
   assertFirestoreSafe,
+  omitUndefinedFields,
   buildQrCodeDocument,
   buildQrCodeId,
   buildQrCodeToken,
@@ -2126,6 +2127,10 @@ export function useReportes(): Reporte[] {
     const unsub = onSnapshot(
       query(collection(getFirestoreDb(), "reports"), orderBy("creadoEn", "desc")),
       (snap) => setReportes(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Reporte))),
+      (err) => {
+        console.error("No se pudieron cargar los reportes:", err);
+        setReportes([]);
+      },
     );
     return unsub;
   }, []);
@@ -2280,48 +2285,60 @@ export async function createReporte(data: {
   tipo: ReporteTipo;
   mensaje: string;
 }): Promise<string> {
+  const mensaje = data.mensaje.trim();
+  if (!data.workerId.trim()) throw new Error("Falta el perfil de trabajador.");
+  if (!mensaje) throw new Error("Escribe un mensaje para el supervisor.");
+
   const id = `rep-${Date.now().toString(36)}`;
-  const reporte: Omit<Reporte, "id"> = {
-    ...data,
-    estado: "abierto",
+  // No incluir opcionales undefined: Firestore rechaza esos campos.
+  const reporte = omitUndefinedFields({
+    workerId: data.workerId,
+    workerNombre: data.workerNombre,
+    tipo: data.tipo,
+    mensaje,
+    estado: "abierto" as const,
     creadoEn: new Date().toISOString(),
-  };
+    shiftId: data.shiftId,
+    siteId: data.siteId,
+    siteNombre: data.siteNombre,
+    eventId: data.eventId,
+  });
+  assertFirestoreSafe(reporte, "reports");
+
+  async function notifySafe() {
+    try {
+      await notifyReporteTrabajador({
+        workerId: data.workerId,
+        workerNombre: data.workerNombre,
+        siteNombre: data.siteNombre,
+        tipo: data.tipo,
+        mensaje,
+        reporteId: id,
+      });
+    } catch (err) {
+      // El reporte ya está guardado; no fallar el envío por la notificación.
+      console.error("No se pudo notificar el reporte:", err);
+    }
+  }
 
   if (isDemoMode()) {
-    demoStore.addReporte({ ...reporte, id });
-    await notifyReporteTrabajador({
-      workerId: data.workerId,
-      workerNombre: data.workerNombre,
-      siteNombre: data.siteNombre,
-      tipo: data.tipo,
-      mensaje: data.mensaje,
-      reporteId: id,
-    });
+    demoStore.addReporte({ ...(reporte as Omit<Reporte, "id">), id });
+    await notifySafe();
     return id;
   }
 
   if (isSheetsBackend()) {
     await sheetsUpsertRecord("reports", { ...reporte, id });
-    await notifyReporteTrabajador({
-      workerId: data.workerId,
-      workerNombre: data.workerNombre,
-      siteNombre: data.siteNombre,
-      tipo: data.tipo,
-      mensaje: data.mensaje,
-      reporteId: id,
-    });
+    await notifySafe();
     return id;
   }
 
-  await setDoc(doc(getFirestoreDb(), "reports", id), reporte);
-  await notifyReporteTrabajador({
-    workerId: data.workerId,
-    workerNombre: data.workerNombre,
-    siteNombre: data.siteNombre,
-    tipo: data.tipo,
-    mensaje: data.mensaje,
-    reporteId: id,
-  });
+  try {
+    await setDoc(doc(getFirestoreDb(), "reports", id), reporte);
+  } catch (err) {
+    throw toUserFacingError(err, "No se pudo guardar el reporte.");
+  }
+  await notifySafe();
   return id;
 }
 

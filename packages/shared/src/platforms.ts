@@ -79,7 +79,8 @@ export function puedeVerAuditoriaGlobal(role: UserRole): boolean {
 }
 
 export function puedeReportarASupervisor(role: UserRole): boolean {
-  return normalizeUserRole(role) === "trabajador";
+  const r = normalizeUserRole(role);
+  return r === "trabajador" || r === "supervisor_sitio";
 }
 
 // Re-export desde accounts para compatibilidad

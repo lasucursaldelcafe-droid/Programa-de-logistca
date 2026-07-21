@@ -71,3 +71,14 @@ export function assertFirestoreSafe(value: unknown, path = "root"): void {
     assertFirestoreSafe(nested, `${path}.${key}`);
   }
 }
+
+/** Quita claves con `undefined` (Firestore las rechaza con invalid-argument). */
+export function omitUndefinedFields<T extends Record<string, unknown>>(
+  value: T,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, nested] of Object.entries(value)) {
+    if (nested !== undefined) out[key] = nested;
+  }
+  return out;
+}
