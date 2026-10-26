@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Tutorial SPE — Guía completa paso a paso</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --border: #2d3a4f;
+      --text: #e8edf4;
+      --muted: #94a3b8;
+      --accent: #f59e0b;
+      --positive: #22c55e;
+      --link: #60a5fa;
+      --warn: #f97316;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      font-size: 15px;
+    }
+    .page { max-width: 980px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+    .cover {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--surface), #121a24);
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+    .cover h1 { font-size: 1.75rem; margin-bottom: 0.5rem; }
+    .cover p { color: var(--muted); }
+    .badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #000;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      margin-bottom: 0.75rem;
+    }
+    nav.toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    nav.toc h2 { font-size: 1rem; margin-bottom: 0.75rem; color: var(--accent); }
+    nav.toc ol { padding-left: 1.25rem; }
+    nav.toc li { margin: 0.35rem 0; }
+    nav.toc a { color: var(--link); text-decoration: none; }
+    nav.toc a:hover { text-decoration: underline; }
+    nav.toc .sub { list-style: circle; margin-top: 0.25rem; font-size: 0.92rem; }
+    section { margin-bottom: 3rem; scroll-margin-top: 1rem; }
+    section > h2 {
+      font-size: 1.35rem;
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 0.4rem;
+      margin-bottom: 1rem;
+    }
+    section > h3 {
+      font-size: 1.05rem;
+      color: var(--accent);
+      margin: 1.75rem 0 0.5rem;
+    }
+    .feature {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      padding: 1.25rem 1.35rem;
+      margin: 1.25rem 0;
+    }
+    .feature-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0.5rem 1rem;
+      margin-bottom: 0.75rem;
+    }
+    .feature-header h4 { font-size: 1.05rem; margin: 0; }
+    .route {
+      font-family: ui-monospace, monospace;
+      font-size: 0.8rem;
+      color: var(--link);
+      background: rgba(96, 165, 250, 0.1);
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+    }
+    .role-tag {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+    }
+    .funcion {
+      background: rgba(245, 158, 11, 0.12);
+      border-left: 3px solid var(--accent);
+      padding: 0.6rem 0.85rem;
+      margin: 0.75rem 0;
+      font-size: 0.9rem;
+      border-radius: 0 6px 6px 0;
+    }
+    .funcion strong { color: var(--accent); }
+    .feature p, .feature ol, .feature ul { color: var(--muted); margin: 0.45rem 0; }
+    .feature ol, .feature ul { padding-left: 1.25rem; }
+    .feature ol.steps { counter-reset: step; list-style: none; padding-left: 0; }
+    .feature ol.steps > li {
+      counter-increment: step;
+      position: relative;
+      padding-left: 2.25rem;
+      margin: 0.55rem 0;
+    }
+    .feature ol.steps > li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0.1rem;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #000;
+      font-weight: 700;
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .actions {
+      margin: 0.75rem 0;
+      font-size: 0.88rem;
+    }
+    .actions dt { color: var(--accent); font-weight: 600; margin-top: 0.5rem; }
+    .actions dd { color: var(--muted); margin-left: 0; padding-left: 0.75rem; border-left: 2px solid var(--border); }
+    .tip, .warn {
+      font-size: 0.88rem;
+      padding: 0.55rem 0.75rem;
+      border-radius: 6px;
+      margin: 0.65rem 0;
+    }
+    .tip { background: rgba(34, 197, 94, 0.1); border-left: 3px solid var(--positive); color: var(--muted); }
+    .warn { background: rgba(249, 115, 22, 0.1); border-left: 3px solid var(--warn); color: var(--muted); }
+    figure {
+      margin: 1rem 0 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #000;
+    }
+    figure img { display: block; width: 100%; height: auto; }
+    figure.mobile img { max-width: 390px; margin: 0 auto; }
+    figcaption {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 1rem 0;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.45rem 0.6rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--surface); color: var(--accent); }
+    code {
+      background: #0d1117;
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+    .roles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .role-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      background: var(--surface);
+    }
+    .role-card h4 { color: var(--accent); margin-bottom: 0.35rem; }
+    .role-card p { font-size: 0.88rem; color: var(--muted); }
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    footer a { color: var(--link); }
+    @media print {
+      body { background: #fff; color: #111; }
+      .cover, .feature, nav.toc, .role-card { border-color: #ccc; background: #f9f9f9; }
+      figure { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="cover">
+      <span class="badge">Guía completa</span>
+      <h1>Tutorial SPE — Sistema de Personal para Eventos</h1>
+      <p>Manual paso a paso de <strong>cada pantalla y cada función</strong> de la app: qué hace, cómo crear, cómo usar y quién tiene permiso. Una sola aplicación web — al iniciar sesión se abre el panel según tu rol.</p>
+      <p style="margin-top:0.75rem"><strong>App en línea:</strong>
+        <a href="https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/" style="color:var(--link)">GitHub Pages SPE</a>
+        · <strong>Tutorial:</strong> este documento
+      </p>
+      <p style="margin-top:0.5rem;font-size:0.85rem;color:var(--muted)">Si las capturas no coinciden con el texto, recarga forzada: <kbd>Ctrl+F5</kbd> (Windows) o <kbd>Cmd+Shift+R</kbd> (Mac).</p>
+    </header>
+
+    <nav class="toc">
+      <h2>Índice</h2>
+      <ol>
+        <li><a href="#roles">Roles, cuentas y mapa del menú</a></li>
+        <li><a href="#acceso">Acceso e inicio de sesión</a>
+          <ul class="sub">
+            <li><a href="#login">Login</a></li>
+            <li><a href="#unirse">Unirse / Activar cuenta</a></li>
+            <li><a href="#perfil">Completar perfil</a></li>
+          </ul>
+        </li>
+        <li><a href="#admin-menu">Panel Administrador — todas las opciones</a>
+          <ul class="sub">
+            <li><a href="#panel">Resumen</a></li>
+            <li><a href="#configuracion">Configuración (wizard)</a></li>
+            <li><a href="#personal">Personal</a></li>
+            <li><a href="#cuentas">Cuentas</a></li>
+            <li><a href="#turnos">Turnos</a></li>
+            <li><a href="#qr-sitios">QR y sitios</a></li>
+            <li><a href="#mapa">Mapa en vivo</a></li>
+            <li><a href="#supervision">Supervisión</a></li>
+            <li><a href="#reportes">Reportes</a></li>
+            <li><a href="#nomina">Nómina</a></li>
+            <li><a href="#notificaciones">Notificaciones</a></li>
+            <li><a href="#clientes">Clientes</a></li>
+            <li><a href="#facturacion">Facturación</a></li>
+            <li><a href="#inventario">Inventario</a></li>
+            <li><a href="#integraciones">Integraciones / APIs</a></li>
+            <li><a href="#ayuda-admin">Ayuda</a></li>
+          </ul>
+        </li>
+        <li><a href="#trabajador">App Trabajador — todas las pestañas</a></li>
+        <li><a href="#master">Panel Master</a></li>
+        <li><a href="#flujos">Flujos completos de principio a fin</a></li>
+      </ol>
+    </nav>
+
+    <!-- ROLES -->
+    <section id="roles">
+      <h2>1. Roles, cuentas y mapa del menú</h2>
+
+      <div class="roles-grid">
+        <div class="role-card">
+          <h4>Administrador</h4>
+          <p>Configura el evento, personal, turnos, QR, mapa, nómina e integraciones. Acceso completo al menú Admin.</p>
+          <p><code>admin@eventos.test</code> / <code>Admin123!</code></p>
+        </div>
+        <div class="role-card">
+          <h4>Supervisor de sitio</h4>
+          <p>Opera el evento en campo: turnos, mapa, reportes, personal. <strong>No</strong> ve Cuentas ni Configuración. Nómina e integraciones en solo lectura.</p>
+          <p>Se crea desde Personal con rol «Supervisor de sitio» + invitación en Cuentas.</p>
+        </div>
+        <div class="role-card">
+          <h4>Master</h4>
+          <p>Vista global de plataforma: informes CSV, auditoría de nómina, listado de administradores.</p>
+          <p><code>master@eventos.test</code> / <code>Master123!</code></p>
+        </div>
+        <div class="role-card">
+          <h4>Trabajador</h4>
+          <p>App móvil: turnos, escanear QR+GPS, reportar incidencias. <strong>No viene precargado</strong> — el admin lo registra e invita.</p>
+        </div>
+      </div>
+
+      <h3>Menú lateral — Administrador / Supervisor</h3>
+      <table>
+        <thead>
+          <tr><th>Sección</th><th>Opción</th><th>Ruta</th><th>Admin</th><th>Supervisor</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Inicio</td><td>Resumen</td><td><code>/panel</code></td><td>✓</td><td>✓</td></tr>
+          <tr><td rowspan="5">Operación</td><td>Turnos</td><td><code>/turnos</code></td><td>✓</td><td>✓</td></tr>
+          <tr><td>Mapa en vivo</td><td><code>/mapa</code></td><td>✓</td><td>✓</td></tr>
+          <tr><td>QR y sitios</td><td><code>/qr-sitios</code></td><td>✓</td><td>✓</td></tr>
+          <tr><td>Supervisión</td><td><code>/supervision</code></td><td>✓</td><td>✓</td></tr>
+          <tr><td>Reportes</td><td><code>/reportes</code></td><td>✓</td><td>✓</td></tr>
+          <tr><td rowspan="3">Equipo</td><td>Personal</td><td><code>/personal</code></td><td>✓</td><td>✓</td></tr>
+          <tr><td>Cuentas</td><td><code>/cuentas</code></td><td>✓</td><td>—</td></tr>
+          <tr><td>Nómina</td><td><code>/nomina</code></td><td>✓ gestión</td><td>✓ lectura</td></tr>
+          <tr><td rowspan="3">Negocio</td><td>Clientes</td><td><code>/clientes</code></td><td>✓</td><td>✓</td></tr>
+          <tr><td>Facturación</td><td><code>/facturacion</code></td><td>✓</td><td>✓</td></tr>
+          <tr><td>Inventario</td><td><code>/inventario</code></td><td>✓</td><td>✓</td></tr>
+          <tr><td rowspan="3">Sistema</td><td>Configuración</td><td><code>/configuracion</code></td><td>✓</td><td>—</td></tr>
+          <tr><td>APIs / Integraciones</td><td><code>/integraciones</code></td><td>✓ edición</td><td>✓ lectura</td></tr>
+          <tr><td>Ayuda</td><td><code>/ayuda</code></td><td>✓</td><td>✓</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Barra inferior — Trabajador</h3>
+      <table>
+        <thead><tr><th>Pestaña</th><th>Ruta</th><th>Función principal</th></tr></thead>
+        <tbody>
+          <tr><td>Inicio</td><td><code>/worker</code></td><td>Resumen, jornada activa, turnos por confirmar</td></tr>
+          <tr><td>Turnos</td><td><code>/worker/turnos</code></td><td>Aceptar o rechazar turnos asignados</td></tr>
+          <tr><td>Escanear</td><td><code>/worker/entrada</code></td><td>Marcar entrada/salida con QR + GPS</td></tr>
+          <tr><td>Reportar</td><td><code>/worker/reportar</code></td><td>Enviar incidencia al supervisor</td></tr>
+          <tr><td>Alertas</td><td><code>/worker/notificaciones</code></td><td>Notificaciones, emergencias, turnos</td></tr>
+          <tr><td>Ayuda</td><td><code>/worker/ayuda</code></td><td>Guía para trabajador</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ACCESO -->
+    <section id="acceso">
+      <h2>2. Acceso e inicio de sesión</h2>
+
+      <div class="feature" id="login">
+        <div class="feature-header">
+          <h4>Iniciar sesión</h4>
+          <span class="route">/login</span>
+          <span class="role-tag">Todos los roles</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Punto único de entrada. Tras autenticarse, la app redirige automáticamente al panel según el rol (Admin → <code>/panel</code>, Master → <code>/master</code>, Trabajador → <code>/worker</code>).</div>
+        <ol class="steps">
+          <li>Abre la URL de la app SPE en el navegador.</li>
+          <li>Escribe tu <strong>correo</strong> y <strong>contraseña</strong>.</li>
+          <li>Pulsa <strong>Iniciar sesión</strong>.</li>
+          <li>En modo demo puedes pulsar <strong>Usar</strong> junto a las cuentas precargadas (Admin o Master).</li>
+          <li>(Opcional) Activa <strong>inicio con huella/rostro</strong> si tu dispositivo lo soporta.</li>
+        </ol>
+        <dl class="actions">
+          <dt>Recuperar contraseña</dt>
+          <dd>En la pantalla de login → enlace «¿Olvidaste tu contraseña?» → sigue el correo de Firebase.</dd>
+          <dt>Unirme con código</dt>
+          <dd>Enlace inferior para trabajadores nuevos que aún no tienen contraseña → <code>/unirse</code>.</dd>
+          <dt>Ayuda</dt>
+          <dd>Enlace a la guía integrada → <code>/ayuda</code>.</dd>
+        </dl>
+        <figure>
+          <img src="tutorial-imagenes/01-login.png?v=2026071721" alt="Pantalla de inicio de sesión" width="1280" height="720" />
+          <figcaption>Pantalla de login — punto de entrada único</figcaption>
+        </figure>
+      </div>
+
+      <div class="feature" id="unirse">
+        <div class="feature-header">
+          <h4>Unirme a la empresa</h4>
+          <span class="route">/unirse</span>
+          <span class="role-tag">Trabajador nuevo</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Validar la invitación del administrador con correo + código de 6 dígitos antes de crear la contraseña.</div>
+        <ol class="steps">
+          <li>Desde login → <strong>Unirme con código de invitación</strong>.</li>
+          <li>Ingresa el <strong>correo</strong> que registró el administrador en Personal (debe coincidir exactamente).</li>
+          <li>Ingresa el <strong>código de 6 dígitos</strong> que recibiste por correo (un solo uso).</li>
+          <li>Pulsa continuar → la app te lleva a <strong>Activar cuenta</strong>.</li>
+        </ol>
+        <div class="warn"><strong>Importante:</strong> El trabajador no tiene usuario fijo de fábrica. Sin invitación del admin en Cuentas, este paso fallará.</div>
+        <figure>
+          <img src="tutorial-imagenes/02-unirse.png?v=2026071721" alt="Unirse con código" width="1280" height="720" />
+          <figcaption>Unirse — verificación de invitación</figcaption>
+        </figure>
+      </div>
+
+      <div class="feature">
+        <div class="feature-header">
+          <h4>Activar cuenta</h4>
+          <span class="route">/activar/:token</span>
+          <span class="role-tag">Invitado</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Crear la contraseña personal y activar el acceso a la plataforma.</div>
+        <ol class="steps">
+          <li>Abre el enlace del correo de invitación (o llega desde <code>/unirse</code>).</li>
+          <li>Confirma el código de acceso si se solicita.</li>
+          <li>Crea una <strong>contraseña</strong> (mínimo 8 caracteres) y confírmala.</li>
+          <li>Pulsa <strong>Activar cuenta</strong>.</li>
+          <li>Si falta teléfono → redirige a Completar perfil; si no → panel del rol.</li>
+        </ol>
+        <figure>
+          <img src="tutorial-imagenes/26-activar-cuenta.png?v=2026071721" alt="Activar cuenta con contraseña" width="1280" height="720" />
+          <figcaption>Activar cuenta — crear contraseña con código de invitación</figcaption>
+        </figure>
+      </div>
+
+      <div class="feature" id="perfil">
+        <div class="feature-header">
+          <h4>Completar perfil</h4>
+          <span class="route">/completar-perfil</span>
+          <span class="role-tag">Trabajador</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Completar datos obligatorios antes de usar la app de campo.</div>
+        <ol class="steps">
+          <li>Confirma tu <strong>nombre</strong> (el correo viene bloqueado).</li>
+          <li>Ingresa tu <strong>teléfono</strong> (obligatorio para contacto en el evento).</li>
+          <li>Pulsa <strong>Guardar</strong> → acceso a <code>/worker</code>.</li>
+        </ol>
+        <figure class="mobile">
+          <img src="tutorial-imagenes/27-completar-perfil.png?v=2026071721" alt="Completar perfil trabajador" width="390" height="844" />
+          <figcaption>Completar perfil — teléfono obligatorio</figcaption>
+        </figure>
+      </div>
+
+      <div class="feature">
+        <div class="feature-header">
+          <h4>Ayuda pública</h4>
+          <span class="route">/ayuda</span>
+          <span class="role-tag">Público</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Guía de uso sin necesidad de iniciar sesión.</div>
+        <figure>
+          <img src="tutorial-imagenes/03-ayuda-publica.png?v=2026071721" alt="Ayuda pública" width="1280" height="720" />
+          <figcaption>Ayuda — accesible desde login</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ADMIN -->
+    <section id="admin-menu">
+      <h2>3. Panel Administrador — cada opción paso a paso</h2>
+      <p style="color:var(--muted);margin-bottom:1rem">Tras login como Administrador o Supervisor, usa el menú lateral. A continuación: qué hace cada pantalla, cómo crear registros y cómo usarlas en el día a día.</p>
+
+      <!-- PANEL -->
+      <div class="feature" id="panel">
+        <div class="feature-header">
+          <h4>Resumen (Dashboard)</h4>
+          <span class="route">/panel</span>
+          <span class="role-tag">Admin · Supervisor</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Vista general del evento activo: KPIs, gráficos, actividad reciente y acceso rápido al asistente de configuración.</div>
+        <p><strong>Qué muestra:</strong></p>
+        <ul>
+          <li>Trabajadores registrados, en sitio, turnos pendientes/confirmados</li>
+          <li>Jornadas GPS activas y alertas de geocerca</li>
+          <li>Nómina pendiente vs pagada, cuentas sin activar</li>
+          <li>Gráficos por estado y desglose por sitio</li>
+          <li>Feed de actividad reciente (entradas, reportes, turnos)</li>
+        </ul>
+        <ol class="steps">
+          <li>Al entrar, revisa el <strong>filtro de evento</strong> en la parte superior (si hay varios eventos).</li>
+          <li>Interpreta los KPIs para saber el estado operativo del día.</li>
+          <li>Si eres admin y aparece el <strong>banner de configuración incompleta</strong>, pulsa para ir a <code>/configuracion</code>.</li>
+          <li>Usa los accesos del menú lateral para profundizar en cada área.</li>
+        </ol>
+        <figure>
+          <img src="tutorial-imagenes/04-panel-admin.png?v=2026071721" alt="Panel administrador" width="1280" height="720" />
+          <figcaption>Resumen — dashboard operativo</figcaption>
+        </figure>
+      </div>
+
+      <!-- CONFIGURACION -->
+      <div class="feature" id="configuracion">
+        <div class="feature-header">
+          <h4>Configuración — Asistente inicial</h4>
+          <span class="route">/configuracion</span>
+          <span class="role-tag">Solo Admin</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Wizard de 5 pasos para dejar el evento listo: evento → sitios GPS → tarifas → QR → resumen.</div>
+
+        <h3 style="font-size:0.95rem;color:var(--text);margin:1rem 0 0.5rem">Paso 1 — Evento</h3>
+        <ol class="steps">
+          <li>Escribe el <strong>nombre del evento</strong> (ej. «Festival Logística 2026»).</li>
+          <li>Define <strong>fecha de inicio</strong> y <strong>fecha de fin</strong>.</li>
+          <li>Pulsa <strong>Crear evento</strong> → avanza al paso 2.</li>
+        </ol>
+
+        <h3 style="font-size:0.95rem;color:var(--text);margin:1rem 0 0.5rem">Paso 2 — Sitios y geocercas</h3>
+        <ol class="steps">
+          <li>Para cada punto físico del evento, completa: <strong>nombre</strong>, <strong>latitud</strong>, <strong>longitud</strong>, <strong>radio de geocerca</strong> (metros, ej. 80).</li>
+          <li>Pulsa <strong>Agregar sitio</strong>. Repite por cada entrada, escenario o zona.</li>
+          <li>Necesitas al menos <strong>1 sitio</strong> para continuar.</li>
+          <li>Pulsa <strong>Continuar</strong> al paso 3.</li>
+        </ol>
+        <div class="tip">Usa Google Maps para obtener lat/lng del punto exacto donde estará el QR de entrada.</div>
+
+        <h3 style="font-size:0.95rem;color:var(--text);margin:1rem 0 0.5rem">Paso 3 — Tarifas de nómina</h3>
+        <ol class="steps">
+          <li>Revisa la tarifa por hora (COP) para cada <strong>perfil de trabajo</strong>: logística, recreación, montaje, chef, seguridad, etc.</li>
+          <li>Ajusta los valores según tu convenio.</li>
+          <li>Pulsa <strong>Guardar tarifas</strong> y <strong>Continuar</strong>.</li>
+        </ol>
+
+        <h3 style="font-size:0.95rem;color:var(--text);margin:1rem 0 0.5rem">Paso 4 — Códigos QR</h3>
+        <ol class="steps">
+          <li>La app lista sitios que aún no tienen QR.</li>
+          <li>Pulsa <strong>Generar QR para todos</strong> (modo por jornada, ventana = fechas del evento).</li>
+          <li>Continúa al resumen.</li>
+        </ol>
+
+        <h3 style="font-size:0.95rem;color:var(--text);margin:1rem 0 0.5rem">Paso 5 — Resumen</h3>
+        <ol class="steps">
+          <li>Verifica: evento, sitios, tarifas y QR generados.</li>
+          <li>Pulsa <strong>Finalizar configuración</strong>.</li>
+          <li>Opcional: <strong>Configurar otro evento</strong> o ir directo a <strong>QR Sitios</strong>.</li>
+        </ol>
+        <dl class="actions">
+          <dt>Reiniciar asistente</dt>
+          <dd>Botón «Reiniciar asistente» — vuelve al paso 1 (no borra datos existentes).</dd>
+          <dt>Saltar paso</dt>
+          <dd>Puedes avanzar manualmente entre pasos si ya completaste uno antes.</dd>
+        </dl>
+        <figure>
+          <img src="tutorial-imagenes/05-configuracion.png?v=2026071721" alt="Configuración" width="1280" height="720" />
+          <figcaption>Asistente de configuración — wizard 5 pasos</figcaption>
+        </figure>
+      </div>
+
+      <!-- PERSONAL -->
+      <div class="feature" id="personal">
+        <div class="feature-header">
+          <h4>Personal</h4>
+          <span class="route">/personal</span>
+          <span class="role-tag">Admin · Supervisor</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Alta de personas en el evento, perfiles de trabajo, estado operativo y rol de plataforma.</div>
+
+        <h3 style="font-size:0.95rem;color:var(--text);margin:1rem 0 0.5rem">Cómo registrar una persona nueva</h3>
+        <ol class="steps">
+          <li>En el formulario <strong>Nueva persona</strong>, completa: nombre, documento, teléfono, email.</li>
+          <li>Selecciona uno o más <strong>perfiles</strong> (logística, recreación, montaje, chef, seguridad, anfitrión, supervisor).</li>
+          <li>Si eres admin, elige <strong>Rol en la plataforma</strong>: Trabajador o Supervisor de sitio.</li>
+          <li>Pulsa <strong>Registrar</strong> → la persona aparece en la lista inferior.</li>
+          <li>Ve a <strong>Cuentas</strong> para enviar la invitación por correo (paso obligatorio para que puedan entrar).</li>
+        </ol>
+
+        <dl class="actions">
+          <dt>Cambiar estado operativo</dt>
+          <dd>En cada fila: En sitio · Descanso · Inactivo · Sin asignar. Refleja dónde está la persona durante el evento.</dd>
+          <dt>Habilitar / Inhabilitar acceso</dt>
+          <dd>Desactiva temporalmente el acceso sin borrar el registro.</dd>
+          <dt>Eliminar persona</dt>
+          <dd>Botón eliminar → confirmación. Solo admin; úsalo si registraste por error.</dd>
+        </dl>
+        <div class="tip">El supervisor puede registrar personal, pero solo el admin puede asignar rol «Supervisor de sitio».</div>
+        <figure>
+          <img src="tutorial-imagenes/06-personal.png?v=2026071721" alt="Personal" width="1280" height="720" />
+          <figcaption>Personal — registro y gestión de equipo</figcaption>
+        </figure>
+      </div>
+
+      <!-- CUENTAS -->
+      <div class="feature" id="cuentas">
+        <div class="feature-header">
+          <h4>Cuentas e invitaciones</h4>
+          <span class="route">/cuentas</span>
+          <span class="role-tag">Solo Admin</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Crear invitaciones por correo, activar cuentas, restablecer contraseñas y revocar accesos.</div>
+
+        <h3 style="font-size:0.95rem;color:var(--text);margin:1rem 0 0.5rem">Cómo invitar a un trabajador (paso a paso)</h3>
+        <ol class="steps">
+          <li>Primero regístralo en <strong>Personal</strong> con su correo correcto.</li>
+          <li>En Cuentas → sección <strong>Personal sin cuenta activa</strong>, localiza a la persona.</li>
+          <li>Pulsa <strong>Enviar invitación por correo</strong>.</li>
+          <li>Se genera un código de <strong>6 dígitos</strong> y un enlace de activación.</li>
+          <li>Se abre tu cliente de correo con el mensaje prellenado (o copia manualmente con «Copiar enlace» / «Copiar correo»).</li>
+          <li>El trabajador abre el enlace, crea su contraseña y completa perfil.</li>
+        </ol>
+
+        <dl class="actions">
+          <dt>Copiar enlace</dt>
+          <dd>Copia URLs web y app Android para compartir por WhatsApp si el correo falla.</dd>
+          <dt>Revocar invitación</dt>
+          <dd>En historial de invitaciones pendientes → invalida el código antes de que se use.</dd>
+          <dt>Restablecer contraseña</dt>
+          <dd>En cuentas activas → ingresa nueva contraseña temporal para el trabajador.</dd>
+          <dt>Habilitar / Inhabilitar</dt>
+          <dd>Bloquea el acceso de una cuenta ya activada sin eliminar al trabajador.</dd>
+        </dl>
+        <figure>
+          <img src="tutorial-imagenes/07-cuentas.png?v=2026071721" alt="Cuentas" width="1280" height="720" />
+          <figcaption>Cuentas — invitaciones y activación</figcaption>
+        </figure>
+      </div>
+
+      <!-- TURNOS -->
+      <div class="feature" id="turnos">
+        <div class="feature-header">
+          <h4>Turnos</h4>
+          <span class="route">/turnos</span>
+          <span class="role-tag">Admin · Supervisor · Trabajador</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Asignar quién trabaja, dónde y cuándo. La ubicación se define <em>por turno</em>, no por persona fija.</div>
+
+        <h3 style="font-size:0.95rem;color:var(--text);margin:1rem 0 0.5rem">Cómo crear un turno (Admin/Supervisor)</h3>
+        <ol class="steps">
+          <li>En <strong>Asignar turno</strong>, selecciona el <strong>trabajador</strong>.</li>
+          <li>Elige el <strong>evento</strong> y el <strong>sitio</strong> (solo sitios de ese evento).</li>
+          <li>Define <strong>fecha/hora de inicio</strong> y <strong>fin</strong>.</li>
+          <li>Pulsa crear → el turno queda en estado <strong>Pendiente</strong>.</li>
+          <li>El trabajador debe <strong>aceptar</strong> el turno en su app antes de marcar entrada.</li>
+        </ol>
+
+        <dl class="actions">
+          <dt>Estados del turno</dt>
+          <dd>Pendiente → Confirmado (aceptado) / Rechazado → Completado (tras jornada).</dd>
+          <dt>Trabajador acepta/rechaza</dt>
+          <dd>Desde <code>/worker/turnos</code> o desde una notificación en Alertas.</dd>
+        </dl>
+        <div class="warn">Sin turno confirmado en el sitio correcto, el check-in con QR puede fallar.</div>
+        <figure>
+          <img src="tutorial-imagenes/09-turnos-admin.png?v=2026071721" alt="Turnos" width="1280" height="720" />
+          <figcaption>Turnos — asignación por evento y sitio</figcaption>
+        </figure>
+      </div>
+
+      <!-- QR -->
+      <div class="feature" id="qr-sitios">
+        <div class="feature-header">
+          <h4>QR y sitios</h4>
+          <span class="route">/qr-sitios</span>
+          <span class="role-tag">Admin · Supervisor</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Generar códigos QR por sitio para que los trabajadores marquen entrada con consentimiento GPS y validación de geocerca.</div>
+
+        <h3 style="font-size:0.95rem;color:var(--text);margin:1rem 0 0.5rem">Cómo generar un QR</h3>
+        <ol class="steps">
+          <li>Selecciona <strong>evento</strong> y <strong>sitio</strong>.</li>
+          <li>Elige el <strong>modo</strong>:
+            <ul>
+              <li><strong>Un solo uso</strong> — válido para una sola marcación.</li>
+              <li><strong>Por jornada</strong> — válido durante la ventana del evento (recomendado).</li>
+              <li><strong>Rotativo</strong> — el token cambia cada X segundos (mayor seguridad).</li>
+            </ul>
+          </li>
+          <li>Revisa el texto de <strong>consentimiento GPS</strong> (lo ve el trabajador al escanear).</li>
+          <li>Pulsa <strong>Generar QR</strong> → aparece el código visual en pantalla.</li>
+          <li>Imprime o muestra el QR en el punto de entrada del sitio.</li>
+        </ol>
+
+        <dl class="actions">
+          <dt>Desactivar QR</dt>
+          <dd>En la lista de QR activos → desactivar si se comprometió o terminó el evento en ese sitio.</dd>
+          <dt>Copiar payload (demo)</dt>
+          <dd>Para pruebas sin cámara: copia el texto del QR y pégalo en la app trabajador.</dd>
+        </dl>
+        <figure>
+          <img src="tutorial-imagenes/08-qr-sitios.png?v=2026071721" alt="QR sitios" width="1280" height="720" />
+          <figcaption>QR Sitios — generación por punto GPS</figcaption>
+        </figure>
+      </div>
+
+      <!-- MAPA -->
+      <div class="feature" id="mapa">
+        <div class="feature-header">
+          <h4>Mapa en vivo</h4>
+          <span class="route">/mapa</span>
+          <span class="role-tag">Admin · Supervisor</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Ver en tiempo real la ubicación GPS de trabajadores con jornada activa, geocercas y alertas.</div>
+        <ol class="steps">
+          <li>Abre Mapa en vivo durante el evento (cuando hay jornadas activas).</li>
+          <li>Observa los <strong>marcadores</strong> de trabajadores sobre el mapa.</li>
+          <li>Revisa KPIs: jornadas activas, alertas fuera de geocerca, sitios con personal.</li>
+          <li>En la lista inferior, identifica quién está fuera de la geocerca y contacta al trabajador.</li>
+        </ol>
+        <div class="tip">El GPS solo se activa mientras la jornada está abierta (después del check-in hasta el check-out).</div>
+        <figure>
+          <img src="tutorial-imagenes/10-mapa.png?v=2026071721" alt="Mapa en vivo" width="1280" height="720" />
+          <figcaption>Mapa en vivo — supervisión GPS</figcaption>
+        </figure>
+      </div>
+
+      <!-- SUPERVISION -->
+      <div class="feature" id="supervision">
+        <div class="feature-header">
+          <h4>Supervisión</h4>
+          <span class="route">/supervision</span>
+          <span class="role-tag">Admin · Supervisor</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Panel alternativo de supervisión con KPIs, mapa embebido y lista detallada de personal rastreado.</div>
+        <ol class="steps">
+          <li>Revisa contadores de personal activo y alertas.</li>
+          <li>Consulta la lista de trabajadores con estado GPS (dentro/fuera de geocerca).</li>
+          <li>Usa el mapa integrado para ubicación visual rápida.</li>
+          <li>Coordina con Reportes si un trabajador envió incidencia.</li>
+        </ol>
+        <figure>
+          <img src="tutorial-imagenes/22-supervision.png?v=2026071721" alt="Supervisión GPS" width="1280" height="720" />
+          <figcaption>Supervisión — personal rastreado y KPIs</figcaption>
+        </figure>
+      </div>
+
+      <!-- REPORTES -->
+      <div class="feature" id="reportes">
+        <div class="feature-header">
+          <h4>Reportes de trabajadores</h4>
+          <span class="route">/reportes</span>
+          <span class="role-tag">Admin · Supervisor</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Recibir y gestionar incidencias enviadas desde la app Trabajador.</div>
+        <p><strong>Tipos de reporte:</strong> Retraso · Incidente · No puedo entrar · Problema con equipo/QR · Otro.</p>
+        <p><strong>Estados:</strong> Abierto → En revisión → Resuelto.</p>
+        <ol class="steps">
+          <li>Cuando un trabajador reporta desde <code>/worker/reportar</code>, aparece aquí en tiempo real.</li>
+          <li>Lee el mensaje, tipo y sitio asociado.</li>
+          <li>Pulsa <strong>En revisión</strong> mientras investigas.</li>
+          <li>Al resolver el problema, pulsa <strong>Marcar resuelto</strong>.</li>
+        </ol>
+        <figure>
+          <img src="tutorial-imagenes/11-reportes.png?v=2026071721" alt="Reportes" width="1280" height="720" />
+          <figcaption>Reportes — gestión de incidencias</figcaption>
+        </figure>
+      </div>
+
+      <!-- NOMINA -->
+      <div class="feature" id="nomina">
+        <div class="feature-header">
+          <h4>Nómina</h4>
+          <span class="route">/nomina</span>
+          <span class="role-tag">Admin (gestión) · Supervisor (lectura)</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Calcular pagos según jornadas cerradas (entrada + salida), tarifas por perfil, exportar CSV y marcar como pagado.</div>
+
+        <h3 style="font-size:0.95rem;color:var(--text);margin:1rem 0 0.5rem">Cómo cerrar nómina del evento</h3>
+        <ol class="steps">
+          <li>Asegúrate de que los trabajadores hayan marcado <strong>salida</strong> (jornadas cerradas).</li>
+          <li>En Nómina, (opcional) filtra por evento o trabajador.</li>
+          <li>Pulsa <strong>Calcular nómina</strong> → procesa jornadas cerradas aún no calculadas.</li>
+          <li>Revisa cada registro: horas trabajadas, perfil, refrigerios, total en COP.</li>
+          <li>Ajusta <strong>tarifas por perfil</strong> si es necesario antes de recalcular.</li>
+          <li>Pulsa <strong>Marcar como pagado</strong> en cada registro liquidado.</li>
+          <li>Pulsa <strong>Exportar CSV</strong> para entregar a contabilidad.</li>
+        </ol>
+        <div class="warn">Solo se calculan jornadas con estado <strong>cerrado</strong> y salida registrada. Entradas sin salida no generan pago.</div>
+        <figure>
+          <img src="tutorial-imagenes/12-nomina.png?v=2026071721" alt="Nómina" width="1280" height="720" />
+          <figcaption>Nómina — cálculo y exportación</figcaption>
+        </figure>
+      </div>
+
+      <!-- NOTIFICACIONES -->
+      <div class="feature" id="notificaciones">
+        <div class="feature-header">
+          <h4>Notificaciones</h4>
+          <span class="route">/notificaciones</span>
+          <span class="role-tag">Admin · Supervisor · Trabajador</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Bandeja de alertas, botón de emergencia, programación de breaks y respuesta a turnos.</div>
+
+        <h3 style="font-size:0.95rem;color:var(--text);margin:1rem 0 0.5rem">Alerta de emergencia</h3>
+        <ol class="steps">
+          <li>Escribe el <strong>mensaje</strong> de emergencia.</li>
+          <li>Elige el <strong>alcance</strong>: Todos · Por evento · Por sitio · Solo activos GPS.</li>
+          <li>Pulsa <strong>Enviar alerta de emergencia</strong>.</li>
+          <li>Los trabajadores reciben push/notificación inmediata.</li>
+        </ol>
+
+        <h3 style="font-size:0.95rem;color:var(--text);margin:1rem 0 0.5rem">Programar break / almuerzo</h3>
+        <ol class="steps">
+          <li>Selecciona el <strong>turno</strong> del trabajador.</li>
+          <li>Elige tipo: almuerzo, break o receso.</li>
+          <li>Define hora de inicio y fin del recordatorio.</li>
+          <li>Guarda → el sistema envía aviso al trabajador en ese horario.</li>
+        </ol>
+
+        <dl class="actions">
+          <dt>Bandeja</dt>
+          <dd>Entradas, salidas, geocerca, turnos pendientes, emergencias. Pulsa para marcar como leída.</dd>
+          <dt>Campana del header</dt>
+          <dd>Acceso rápido a notificaciones desde cualquier pantalla admin.</dd>
+        </dl>
+        <figure>
+          <img src="tutorial-imagenes/13-notificaciones.png?v=2026071721" alt="Notificaciones" width="1280" height="720" />
+          <figcaption>Notificaciones — emergencias y bandeja</figcaption>
+        </figure>
+      </div>
+
+      <!-- NEGOCIO -->
+      <div class="feature" id="clientes">
+        <div class="feature-header">
+          <h4>Clientes</h4>
+          <span class="route">/clientes</span>
+          <span class="role-tag">Admin · Supervisor · Solo lectura</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Consultar cartera de clientes sincronizada (demo o vía Siigo).</div>
+        <ul>
+          <li>KPIs: total clientes, cartera activa.</li>
+          <li>Tabla: nombre, NIT, ciudad, contacto, saldo cartera.</li>
+        </ul>
+        <div class="tip">Para datos reales, conecta Siigo en Integraciones y sincroniza.</div>
+        <figure>
+          <img src="tutorial-imagenes/23-clientes.png?v=2026071721" alt="Clientes" width="1280" height="720" />
+          <figcaption>Clientes — cartera y contactos</figcaption>
+        </figure>
+      </div>
+
+      <div class="feature" id="facturacion">
+        <div class="feature-header">
+          <h4>Facturación</h4>
+          <span class="route">/facturacion</span>
+          <span class="role-tag">Admin · Supervisor · Solo lectura</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Vista de documentos de facturación (emitida, borrador, pagada, anulada).</div>
+        <ul>
+          <li>Total facturado, documentos emitidos, por cobrar.</li>
+          <li>Lista con número, cliente, fecha, estado y valor.</li>
+        </ul>
+        <figure>
+          <img src="tutorial-imagenes/24-facturacion.png?v=2026071721" alt="Facturación" width="1280" height="720" />
+          <figcaption>Facturación — documentos emitidos y por cobrar</figcaption>
+        </figure>
+      </div>
+
+      <div class="feature" id="inventario">
+        <div class="feature-header">
+          <h4>Inventario</h4>
+          <span class="route">/inventario</span>
+          <span class="role-tag">Admin · Supervisor · Solo lectura</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Consultar referencias, stock bajo y catálogo de productos.</div>
+        <ul>
+          <li>Alertas de stock bajo.</li>
+          <li>Tabla con referencia, nombre, stock, precio.</li>
+        </ul>
+        <figure>
+          <img src="tutorial-imagenes/25-inventario.png?v=2026071721" alt="Inventario" width="1280" height="720" />
+          <figcaption>Inventario — stock y referencias</figcaption>
+        </figure>
+      </div>
+
+      <!-- INTEGRACIONES -->
+      <div class="feature" id="integraciones">
+        <div class="feature-header">
+          <h4>Integraciones / APIs</h4>
+          <span class="route">/integraciones</span>
+          <span class="role-tag">Admin (edición) · Supervisor (lectura)</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Conectar servicios externos: Siigo, WhatsApp, Facebook, Instagram, Webhook, Web Form.</div>
+
+        <h3 style="font-size:0.95rem;color:var(--text);margin:1rem 0 0.5rem">Cómo conectar Siigo (ejemplo)</h3>
+        <ol class="steps">
+          <li>Expande el panel <strong>Siigo</strong>.</li>
+          <li>Sube archivo <code>.json</code> / <code>.env</code> con credenciales o complétalas manualmente.</li>
+          <li>Pulsa <strong>Guardar y conectar</strong>.</li>
+          <li>Pulsa <strong>Probar conexión</strong> para verificar.</li>
+          <li>(Opcional) <strong>Sincronizar datos demo</strong> para poblar Clientes/Facturación/Inventario.</li>
+        </ol>
+
+        <dl class="actions">
+          <dt>WhatsApp / Redes</dt>
+          <dd>Configura tokens y plantillas para alertas automáticas al personal.</dd>
+          <dt>Webhook / Web Form</dt>
+          <dd>Recibe eventos externos o envía datos de asistencia a otros sistemas.</dd>
+          <dt>Desconectar / Borrar</dt>
+          <dd>Elimina credenciales almacenadas de forma segura.</dd>
+        </dl>
+        <figure>
+          <img src="tutorial-imagenes/14-integraciones.png?v=2026071721" alt="Integraciones" width="1280" height="720" />
+          <figcaption>Integraciones — conexión de APIs</figcaption>
+        </figure>
+      </div>
+
+      <div class="feature" id="ayuda-admin">
+        <div class="feature-header">
+          <h4>Ayuda (dentro de la app)</h4>
+          <span class="route">/ayuda</span>
+          <span class="role-tag">Todos</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Guía interactiva por fases (preparar evento, operación, cierre) y preguntas frecuentes.</div>
+        <p>Accede desde el menú Sistema → Ayuda o desde el enlace en login. Complementa este tutorial HTML con instrucciones contextuales dentro de la app.</p>
+      </div>
+    </section>
+
+    <!-- TRABAJADOR -->
+    <section id="trabajador">
+      <h2>4. App Trabajador — cada pestaña paso a paso</h2>
+      <p style="color:var(--muted);margin-bottom:1rem">Vista optimizada para móvil. Tras activar cuenta y completar perfil, usa la barra inferior.</p>
+
+      <div class="feature">
+        <div class="feature-header">
+          <h4>Inicio</h4>
+          <span class="route">/worker</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Saludo personalizado, estado de jornada activa, acceso rápido a escaneo y turnos pendientes.</div>
+        <ol class="steps">
+          <li>Al abrir la app, revisa si tienes <strong>jornada activa</strong> (entrada ya marcada).</li>
+          <li>Si hay turnos por confirmar, aparecen destacados → ve a Turnos.</li>
+          <li>Usa el botón de escaneo rápido si estás en el sitio.</li>
+        </ol>
+        <figure class="mobile">
+          <img src="tutorial-imagenes/18-worker-inicio.png?v=2026071721" alt="Inicio trabajador" width="390" height="844" />
+          <figcaption>Inicio — resumen del trabajador</figcaption>
+        </figure>
+      </div>
+
+      <div class="feature">
+        <div class="feature-header">
+          <h4>Turnos</h4>
+          <span class="route">/worker/turnos</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Ver turnos asignados y confirmar o rechazar asistencia.</div>
+        <ol class="steps">
+          <li>Revisa la lista de turnos: evento, sitio, horario y estado.</li>
+          <li>Para turnos <strong>Pendientes</strong>, pulsa <strong>Aceptar</strong> o <strong>Rechazar</strong>.</li>
+          <li>Solo con turno <strong>Confirmado</strong> podrás marcar entrada en ese sitio y horario.</li>
+          <li>Enlace directo a <strong>Marcar entrada con QR</strong> cuando estés listo.</li>
+        </ol>
+        <figure class="mobile">
+          <img src="tutorial-imagenes/19-worker-turnos.png?v=2026071721" alt="Turnos trabajador" width="390" height="844" />
+          <figcaption>Turnos — aceptar o rechazar</figcaption>
+        </figure>
+      </div>
+
+      <div class="feature">
+        <div class="feature-header">
+          <h4>Escanear (marcar entrada / salida)</h4>
+          <span class="route">/worker/entrada</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Registrar entrada y salida validando QR del sitio + ubicación GPS + consentimiento de datos.</div>
+
+        <h3 style="font-size:0.95rem;color:var(--text);margin:1rem 0 0.5rem">Marcar entrada</h3>
+        <ol class="steps">
+          <li>Llega al sitio asignado con turno confirmado.</li>
+          <li>Escanea el QR impreso o pega el código (modo demo).</li>
+          <li>Lee el aviso de <strong>consentimiento GPS</strong> y acéptalo.</li>
+          <li>La app obtiene tu ubicación → valida que estás dentro de la geocerca.</li>
+          <li>Si todo es correcto → <strong>Jornada activa</strong>. El GPS se monitorea hasta la salida.</li>
+        </ol>
+
+        <h3 style="font-size:0.95rem;color:var(--text);margin:1rem 0 0.5rem">Marcar salida</h3>
+        <ol class="steps">
+          <li>Con jornada activa, pulsa <strong>Marcar salida</strong>.</li>
+          <li>Se registra GPS de salida → jornada <strong>cerrada</strong>.</li>
+          <li>Esa jornada queda disponible para cálculo de nómina.</li>
+        </ol>
+        <div class="warn">Si estás fuera de la geocerca, se registra alerta al administrador. El GPS es obligatorio.</div>
+        <figure class="mobile">
+          <img src="tutorial-imagenes/20-worker-entrada.png?v=2026071721" alt="Marcar entrada" width="390" height="844" />
+          <figcaption>Escanear — consentimiento GPS antes de marcar entrada</figcaption>
+        </figure>
+      </div>
+
+      <div class="feature">
+        <div class="feature-header">
+          <h4>Reportar incidencia</h4>
+          <span class="route">/worker/reportar</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Avisar al supervisor sobre problemas en campo.</div>
+        <ol class="steps">
+          <li>Selecciona el <strong>tipo</strong>: retraso, incidente, no puedo entrar, equipo/QR, otro.</li>
+          <li>Escribe un <strong>mensaje</strong> describiendo la situación.</li>
+          <li>Pulsa <strong>Enviar al supervisor</strong>.</li>
+          <li>El reporte aparece en Admin → Reportes en segundos.</li>
+        </ol>
+        <figure class="mobile">
+          <img src="tutorial-imagenes/21-worker-reportar.png?v=2026071721" alt="Reportar" width="390" height="844" />
+          <figcaption>Reportar — incidencias al supervisor</figcaption>
+        </figure>
+      </div>
+
+      <div class="feature">
+        <div class="feature-header">
+          <h4>Alertas / Notificaciones</h4>
+          <span class="route">/worker/notificaciones</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Recibir emergencias, recordatorios de break, confirmaciones de turno y avisos de geocerca.</div>
+        <ol class="steps">
+          <li>Revisa la bandeja de notificaciones no leídas.</li>
+          <li>Pulsa una notificación para marcarla como leída.</li>
+          <li>Desde turnos pendientes en notificaciones, acepta o rechaza directamente.</li>
+        </ol>
+        <figure class="mobile">
+          <img src="tutorial-imagenes/28-worker-notificaciones.png?v=2026071721" alt="Alertas trabajador" width="390" height="844" />
+          <figcaption>Alertas — notificaciones del trabajador</figcaption>
+        </figure>
+      </div>
+
+      <div class="feature">
+        <div class="feature-header">
+          <h4>Ayuda trabajador</h4>
+          <span class="route">/worker/ayuda</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Guía resumida del flujo: activar cuenta → turnos → QR → reportar.</div>
+      </div>
+    </section>
+
+    <!-- MASTER -->
+    <section id="master">
+      <h2>5. Panel Master — plataforma global</h2>
+      <p style="color:var(--muted);margin-bottom:1rem">Para dueño de plataforma o gerencia. Login con <code>master@eventos.test</code>.</p>
+
+      <div class="feature">
+        <div class="feature-header">
+          <h4>Resumen Master</h4>
+          <span class="route">/master</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> KPIs globales de todos los eventos: trabajadores, jornadas activas, reportes abiertos, nómina acumulada.</div>
+        <ul>
+          <li>Lista de eventos con estado y métricas por evento.</li>
+          <li>Vista rápida de salud de la plataforma.</li>
+        </ul>
+        <figure>
+          <img src="tutorial-imagenes/15-master-panel.png?v=2026071721" alt="Panel Master" width="1280" height="720" />
+          <figcaption>Master — resumen global</figcaption>
+        </figure>
+      </div>
+
+      <div class="feature">
+        <div class="feature-header">
+          <h4>Administradores</h4>
+          <span class="route">/master/administradores</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Listado de cuentas con rol administrador (solo lectura).</div>
+        <div class="tip">Para crear nuevos administradores: Admin → Personal (rol admin) → Cuentas (invitar). Master no crea cuentas directamente.</div>
+        <figure>
+          <img src="tutorial-imagenes/29-master-administradores.png?v=2026071721" alt="Administradores Master" width="1280" height="720" />
+          <figcaption>Master — listado de administradores</figcaption>
+        </figure>
+      </div>
+
+      <div class="feature">
+        <div class="feature-header">
+          <h4>Informes globales</h4>
+          <span class="route">/master/informes</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Métricas consolidadas y exportación CSV de toda la plataforma.</div>
+        <ol class="steps">
+          <li>Revisa totales: trabajadores, eventos, turnos, asistencias, reportes, nómina.</li>
+          <li>Pulsa <strong>Exportar CSV</strong>.</li>
+          <li>Se descarga <code>informe-plataforma-YYYY-MM-DD.csv</code> para análisis en Excel.</li>
+        </ol>
+        <figure>
+          <img src="tutorial-imagenes/16-master-informes.png?v=2026071721" alt="Informes Master" width="1280" height="720" />
+          <figcaption>Informes — exportación CSV global</figcaption>
+        </figure>
+      </div>
+
+      <div class="feature">
+        <div class="feature-header">
+          <h4>Auditoría</h4>
+          <span class="route">/master/auditoria</span>
+        </div>
+        <div class="funcion"><strong>Función:</strong> Trazabilidad de acciones sensibles de nómina.</div>
+        <ul>
+          <li>Registros calculados, marcados como pagados, exportaciones CSV.</li>
+          <li>Quién ejecutó la acción, cuándo y detalle.</li>
+        </ul>
+        <figure>
+          <img src="tutorial-imagenes/17-master-auditoria.png?v=2026071721" alt="Auditoría" width="1280" height="720" />
+          <figcaption>Auditoría — historial de nómina</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- FLUJOS -->
+    <section id="flujos">
+      <h2>6. Flujos completos de principio a fin</h2>
+
+      <h3>Flujo A — Preparar un evento desde cero</h3>
+      <table>
+        <thead><tr><th>Paso</th><th>Dónde</th><th>Acción</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><code>/configuracion</code></td><td>Wizard: crear evento, sitios GPS, tarifas, QR</td></tr>
+          <tr><td>2</td><td><code>/personal</code></td><td>Registrar todo el equipo con perfiles y roles</td></tr>
+          <tr><td>3</td><td><code>/cuentas</code></td><td>Enviar invitación por correo a cada persona</td></tr>
+          <tr><td>4</td><td><code>/turnos</code></td><td>Asignar trabajador + sitio + horario</td></tr>
+          <tr><td>5</td><td><code>/qr-sitios</code></td><td>Verificar/imprimir QR en cada punto de entrada</td></tr>
+          <tr><td>6</td><td><code>/panel</code></td><td>Confirmar KPIs listos para el día del evento</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Flujo B — Onboarding del trabajador</h3>
+      <table>
+        <thead><tr><th>Paso</th><th>Dónde</th><th>Acción</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Correo</td><td>Recibir código de 6 dígitos + enlace</td></tr>
+          <tr><td>2</td><td><code>/unirse</code> o <code>/activar/:token</code></td><td>Validar código y crear contraseña</td></tr>
+          <tr><td>3</td><td><code>/completar-perfil</code></td><td>Completar teléfono</td></tr>
+          <tr><td>4</td><td><code>/worker/turnos</code></td><td>Aceptar turno asignado</td></tr>
+          <tr><td>5</td><td><code>/worker/entrada</code></td><td>Escanear QR en el sitio</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Flujo C — Día del evento (operación)</h3>
+      <table>
+        <thead><tr><th>Quién</th><th>Acción</th></tr></thead>
+        <tbody>
+          <tr><td>Trabajador</td><td>Confirma turno → escanea QR → jornada activa con GPS</td></tr>
+          <tr><td>Admin/Supervisor</td><td>Monitorea <code>/mapa</code> y <code>/supervision</code></td></tr>
+          <tr><td>Trabajador</td><td>Reporta incidencias en <code>/worker/reportar</code></td></tr>
+          <tr><td>Admin/Supervisor</td><td>Atiende en <code>/reportes</code></td></tr>
+          <tr><td>Admin</td><td>Envía emergencia desde <code>/notificaciones</code> si aplica</td></tr>
+          <tr><td>Trabajador</td><td>Marca salida al terminar → jornada cerrada</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Flujo D — Cierre y nómina</h3>
+      <table>
+        <thead><tr><th>Paso</th><th>Dónde</th><th>Acción</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Campo</td><td>Todos los trabajadores marcan salida</td></tr>
+          <tr><td>2</td><td><code>/nomina</code></td><td>Calcular nómina → revisar → marcar pagado</td></tr>
+          <tr><td>3</td><td><code>/nomina</code></td><td>Exportar CSV para contabilidad</td></tr>
+          <tr><td>4</td><td><code>/master/auditoria</code></td><td>Master verifica trazabilidad</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Flujo E — Invitar supervisor de sitio</h3>
+      <ol class="steps">
+        <li><code>/personal</code> → registrar con rol «Supervisor de sitio».</li>
+        <li><code>/cuentas</code> → enviar invitación.</li>
+        <li>Supervisor activa cuenta y accede a <code>/panel</code> con permisos reducidos (sin Cuentas ni Configuración).</li>
+      </ol>
+    </section>
+
+    <footer>
+      <p>SPE — Sistema de Personal para Eventos · Tutorial completo · julio 2026</p>
+      <p>Regenerar capturas: <code>npm run tutorial:capturas</code> (servidor demo en :5173)</p>
+      <p>
+        <a href="https://lasucursaldelcafe-droid.github.io/Programa-de-logistca/">Abrir app</a> ·
+        <a href="GUIA.md">Guía markdown</a> ·
+        <a href="CUENTAS-Y-ROLES.md">Cuentas y roles</a>
+      </p>
+    </footer>
+  </div>
+</body>
+</html>
