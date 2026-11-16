@@ -1,0 +1,19 @@
+{
+  "name": "SPE Eventos — Personal",
+  "short_name": "SPE",
+  "description": "Sistema de personal para eventos: turnos, GPS, QR y nómina",
+  "start_url": "./login",
+  "display": "standalone",
+  "background_color": "#070708",
+  "theme_color": "#f09040",
+  "orientation": "portrait-primary",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
